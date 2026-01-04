@@ -11,12 +11,19 @@ import AdminLayout from "../layouts/AdminLayout";
 import WaiterLayout from "../layouts/WaiterLayout";
 import KitchenLayout from "../layouts/KitchenLayout";
 
+// Public - Common & Error Pages (NEW)
+import LandingPage from "../features/Public/LandingPage"; // Trang giới thiệu khi vào domain chính
+import NotFound from "../features/Public/NotFound"; // Trang 404
+import Unauthorized from "../features/Public/Unauthorized"; // Trang 403
+
 // Public - Customer
 import ScanQR from "../features/Customer/ScanQR";
 import Menu from "../features/Customer/Menu";
 import Cart from "../features/Customer/Cart";
 import OrderStatus from "../features/Customer/OrderStatus";
 import Bill from "../features/Customer/Bill";
+import OrderHistory from "../features/Customer/OrderHistory"; // (NEW) Xem lịch sử ăn uống
+import UserProfile from "../features/Customer/UserProfile";   // (NEW) Cập nhật thông tin khách
 
 // Admin
 import DashBoard from "../features/Admin/Dashboard";
@@ -25,16 +32,20 @@ import TableManagement from "../features/Admin/TableManagement";
 import OrderManagement from "../features/Admin/OrderManagement";
 import UserManagement from "../features/Admin/UserManagement";
 import Reports from "../features/Admin/Reports";
+import Settings from "../features/Admin/Settings"; // (NEW) Cài đặt nhà hàng
 
 // Waiter
 import WaiterOrders from "../features/Waiter/Orders";
 import WaiterTables from "../features/Waiter/Tables";
+import WaiterNotifications from "../features/Waiter/Notifications"; // (NEW) Thông báo gọi phục vụ
 
 // Kitchen
 import KitchenOrders from "../features/Kitchen/Orders";
+import KitchenHistory from "../features/Kitchen/History"; // (NEW) Lịch sử món đã nấu
+import MainLayout from "../layouts/MainLayout";
 
 const routers = [
-  // ===== PUBLIC ROUTES =====
+  // ===== PUBLIC ROUTES (Login/Register/Scan) =====
   {
     element: <PublicRoute />,
     children: [
@@ -54,14 +65,23 @@ const routers = [
         path: "/menu/:tableCode",
         element: <Menu />,
       },
+      // Trang báo lỗi không có quyền truy cập
+      {
+        path: "/unauthorized",
+        element: <Unauthorized />,
+      },
     ],
   },
 
-  // ===== CUSTOMER (LOGIN OPTIONAL) =====
+  // ===== CUSTOMER (Main Layout) =====
   {
     path: "/",
-    element: <Layout />,
+    element: <MainLayout />,
     children: [
+      {
+        index: true, // Mặc định khi vào "/"
+        element: <LandingPage />,
+      },
       {
         path: "cart",
         element: <Cart />,
@@ -73,6 +93,15 @@ const routers = [
       {
         path: "bill",
         element: <Bill />,
+      },
+      // (NEW) Các trang bổ sung cho khách hàng
+      {
+        path: "history",
+        element: <OrderHistory />,
+      },
+      {
+        path: "profile",
+        element: <UserProfile />,
       },
     ],
   },
@@ -93,6 +122,8 @@ const routers = [
             path: "menu",
             element: <MenuManagement />,
           },
+          // (Option) Thêm route con nếu muốn edit chi tiết
+          // { path: "menu/edit/:id", element: <EditMenuItem /> },
           {
             path: "tables",
             element: <TableManagement />,
@@ -109,6 +140,11 @@ const routers = [
             path: "reports",
             element: <Reports />,
           },
+          // (NEW) Cài đặt thông tin nhà hàng, thuế, giờ mở cửa
+          {
+            path: "settings",
+            element: <Settings />,
+          },
         ],
       },
     ],
@@ -123,12 +159,21 @@ const routers = [
         element: <WaiterLayout />,
         children: [
           {
+            index: true, // Mặc định vào danh sách bàn hoặc order
+            element: <WaiterTables />,
+          },
+          {
             path: "orders",
             element: <WaiterOrders />,
           },
           {
             path: "tables",
             element: <WaiterTables />,
+          },
+          // (NEW) Xem các yêu cầu hỗ trợ từ khách
+          {
+            path: "notifications",
+            element: <WaiterNotifications />,
           },
         ],
       },
@@ -144,12 +189,27 @@ const routers = [
         element: <KitchenLayout />,
         children: [
           {
+            index: true,
+            element: <KitchenOrders />,
+          },
+          {
             path: "orders",
             element: <KitchenOrders />,
+          },
+          // (NEW) Xem lại các món đã trả trong ngày
+          {
+            path: "history",
+            element: <KitchenHistory />,
           },
         ],
       },
     ],
+  },
+
+  // ===== CATCH ALL (404) =====
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ];
 
