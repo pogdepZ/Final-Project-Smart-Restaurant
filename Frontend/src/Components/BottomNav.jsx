@@ -36,7 +36,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="h-[60px] bg-white border-t border-gray-200 flex justify-around items-center px-2 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+    <nav className="h-15 bg-white border-t border-gray-200 flex justify-around items-center px-2 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
       {navItems.map((item) => (
         <NavLink
           key={item.path}

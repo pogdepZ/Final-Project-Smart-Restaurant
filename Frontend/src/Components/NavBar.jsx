@@ -17,7 +17,7 @@ const Navbar = () => {
         
         {/* 1. LOGO & BRAND */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 bg-linear-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
             <span className="text-white font-black text-xl">S</span>
           </div>
           <div className="hidden md:block">

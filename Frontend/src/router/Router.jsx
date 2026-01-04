@@ -43,6 +43,7 @@ import WaiterNotifications from "../features/Waiter/Notifications"; // (NEW) Th�
 import KitchenOrders from "../features/Kitchen/Orders";
 import KitchenHistory from "../features/Kitchen/History"; // (NEW) Lịch sử món đã nấu
 import MainLayout from "../layouts/MainLayout";
+import Booking from "../features/Customer/Booking";
 
 const routers = [
   // ===== PUBLIC ROUTES (Login/Register/Scan) =====
@@ -93,6 +94,10 @@ const routers = [
       {
         path: "bill",
         element: <Bill />,
+      },
+      {
+        path: 'booking',
+        element: <Booking/>
       },
       // (NEW) Các trang bổ sung cho khách hàng
       {
