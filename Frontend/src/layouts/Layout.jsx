@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from "react-router-dom";
-import Header from "../components/Header";
-import BottomNav from "../components/BottomNav";
+import Header from "../Components/Header";
+import BottomNav from "../Components/BottomNav";
 
 const Layout = () => {
   return (
