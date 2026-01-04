@@ -76,7 +76,7 @@ const ScanQR = () => {
     <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-6 text-center text-white relative overflow-hidden">
       
       {/* Background decoration */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 animate-gradient"></div>
+      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-orange-500 via-red-500 to-orange-500 animate-gradient"></div>
       <div className="absolute -top-20 -right-20 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
       <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-red-500/10 rounded-full blur-3xl"></div>
 

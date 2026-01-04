@@ -88,6 +88,10 @@ const routers = [
         element: <Cart />,
       },
       {
+        path: "menu",
+        element: <Menu/>
+      },
+      {
         path: "order/status",
         element: <OrderStatus />,
       },

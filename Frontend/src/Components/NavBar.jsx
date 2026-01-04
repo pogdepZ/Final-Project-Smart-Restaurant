@@ -31,7 +31,7 @@ const Navbar = () => {
         {/* 2. MIDDLE NAVIGATION (Desktop) */}
         <div className="hidden md:flex items-center gap-8">
           <NavLink to="/" label="Trang chủ" />
-          <NavLink to="/menu-preview" label="Thực đơn" />
+          <NavLink to="/menu" label="Thực đơn" />
           {/* Nút xem sơ đồ bàn / Đặt bàn */}
           <NavLink to="/booking" label="Đặt bàn / Sơ đồ" icon={<MapPin size={16} />} />
         </div>
