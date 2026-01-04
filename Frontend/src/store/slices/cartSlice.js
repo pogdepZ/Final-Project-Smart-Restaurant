@@ -22,17 +22,28 @@ const cartSlice = createSlice({
   reducers: {
     addToCart: (state, action) => {
       const item = action.payload;
-      const existingItem = state.items.find(i => i.id === item.id);
+      // Tìm item giống với cùng modifiers
+      const existingItem = state.items.find(i => 
+        i.id === item.id && 
+        JSON.stringify(i.modifiers || {}) === JSON.stringify(item.modifiers || {})
+      );
       
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
-        state.items.push({ ...item, quantity: 1 });
+        state.items.push({ ...item, quantity: 1, modifiers: item.modifiers || {} });
       }
       
       // Cập nhật totals
       state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-      state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+      state.totalPrice = state.items.reduce((sum, i) => {
+        let itemPrice = i.price;
+        // Tính thêm giá của modifiers nếu có
+        if (i.modifiers) {
+          // Logic tính giá modifiers sẽ được xử lý ở component
+        }
+        return sum + (itemPrice * i.quantity);
+      }, 0);
       
       // Lưu vào localStorage
       localStorage.setItem('cart', JSON.stringify(state.items));
@@ -126,6 +137,17 @@ const cartSlice = createSlice({
       // Lưu vào localStorage
       localStorage.setItem('cart', JSON.stringify(state.items));
     },
+    
+    // Update modifiers cho một item trong cart
+    updateItemModifiers: (state, action) => {
+      const { itemIndex, modifiers } = action.payload;
+      if (state.items[itemIndex]) {
+        state.items[itemIndex].modifiers = modifiers;
+        
+        // Lưu vào localStorage
+        localStorage.setItem('cart', JSON.stringify(state.items));
+      }
+    },
   },
 });
 
@@ -137,6 +159,7 @@ export const {
   decrementQuantity,
   clearCart,
   loadCart,
+  updateItemModifiers,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
