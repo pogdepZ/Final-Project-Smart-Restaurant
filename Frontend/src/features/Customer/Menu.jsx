@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, ShoppingBag, Star, Flame } from 'lucide-react';
-import FoodDetailPopup from './DetailFoodPopup'
+import { Search, ShoppingBag, Star, Flame, Check } from 'lucide-react';
+import FoodDetailPopup from './DetailFoodPopup';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectTotalItems } from '../../store/slices/cartSlice';
-// --- MOCK DATA (Giữ nguyên) ---
+import { addToCart, selectTotalItems } from '../../store/slices/cartSlice';
+import { toast } from 'react-toastify';
+
+// --- MOCK DATA ĐẦY ĐỦ ---
 const mockMenuData = [
   // --- APPETIZERS (Khai vị) ---
   { id: 1, name: 'Buffalo Wings', category: 'Appetizers', price: 12.99, description: 'Cánh gà chiên giòn sốt cay Buffalo kèm sốt phô mai xanh.', image: 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=400' },
@@ -81,30 +83,22 @@ const mockMenuData = [
 ];
 
 const Menu = () => {
-  
-  
   const dispatch = useDispatch();
-  const totalCartItems = useSelector(selectTotalItems);
+ 
   
-  const [activeCategory, setActiveCategory] = useState('Appetizers'); // Category đang được highlight
+  const [activeCategory, setActiveCategory] = useState('Appetizers');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFood, setSelectedFood] = useState(null);
+  const [addedItems, setAddedItems] = useState(new Set()); 
 
-  // Refs
-  const scrollContainerRef = useRef(null); // Ref cho thanh menu ngang
-  const categoryRefs = useRef({}); // Ref cho từng khu vực món ăn (để cuộn tới)
+  const scrollContainerRef = useRef(null);
+  const categoryRefs = useRef({});
 
-  // Lấy danh sách Categories
   const categories = useMemo(() => ['All', ...new Set(mockMenuData.map(item => item.category))], []);
 
-  // --- 1. XỬ LÝ SCROLL SPY (Cuộn tới đâu sáng tới đó) ---
   useEffect(() => {
     const handleScroll = () => {
-      // Logic Scroll Spy
-      // Lấy vị trí scroll hiện tại + offset (để trừ hao chiều cao header)
       const scrollPosition = window.scrollY + 200;
-
-      // Duyệt qua từng section để xem mình đang đứng ở đâu
       for (const category of categories) {
         if (category === 'All') continue;
         const element = categoryRefs.current[category];
@@ -112,12 +106,10 @@ const Menu = () => {
           const { offsetTop, offsetHeight } = element;
           if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
             setActiveCategory(category);
-
-            // Tự động cuộn thanh menu ngang để nút active luôn hiện ra
             const btn = document.getElementById(`btn-${category}`);
             if (btn && scrollContainerRef.current) {
               scrollContainerRef.current.scrollTo({
-                left: btn.offsetLeft - 100, // Căn giữa một chút
+                left: btn.offsetLeft - 100,
                 behavior: 'smooth'
               });
             }
@@ -126,35 +118,26 @@ const Menu = () => {
         }
       }
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [categories]);
 
-  // --- 2. XỬ LÝ CLICK VÀO CATEGORY ---
   const handleCategoryClick = (category) => {
     if (category === 'All') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setActiveCategory('All');
       return;
     }
-
     setActiveCategory(category);
     const element = categoryRefs.current[category];
     if (element) {
-      // Cuộn tới section đó, trừ đi chiều cao của Header
       const y = element.getBoundingClientRect().top + window.scrollY - 120;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
 
-  // --- 3. LOGIC LỌC DỮ LIỆU ---
-  // Thay vì lọc mất category, ta sẽ giữ nguyên cấu trúc Category -> Món ăn
-  // Chỉ lọc món ăn bên trong. Nếu category nào hết món (do search) thì ẩn đi.
   const categorizedMenu = useMemo(() => {
-    // Lấy danh sách category cần hiển thị (trừ 'All')
     const cats = categories.filter(c => c !== 'All');
-
     return cats.map(cat => {
       const items = mockMenuData.filter(item =>
         item.category === cat &&
@@ -162,14 +145,12 @@ const Menu = () => {
           item.description.toLowerCase().includes(searchQuery.toLowerCase()))
       );
       return { category: cat, items };
-    }).filter(group => group.items.length > 0); // Chỉ lấy nhóm nào có món
+    }).filter(group => group.items.length > 0);
   }, [categories, searchQuery]);
 
-  // --- 4. HANDLE ADD TO CART ---
-  const handleAddToCart = (item) => {
+  const handleAddToCart = (e, item) => {
+    e.stopPropagation();
     dispatch(addToCart(item));
-    
-    // Animation feedback
     setAddedItems(prev => new Set(prev).add(item.id));
     setTimeout(() => {
       setAddedItems(prev => {
@@ -178,32 +159,17 @@ const Menu = () => {
         return newSet;
       });
     }, 1000);
-    
-    // Toast notification
     toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
       position: "bottom-right",
       autoClose: 2000,
     });
-  };  {/* Cart Badge */}
-            {totalCartItems > 0 && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                <ShoppingBag size={18} className="text-orange-500" />
-                <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                  {totalCartItems}
-                </span>
-              </div>
-            )}
-          
+  };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
-
-      {/* --- HEADER (STICKY) --- */}
+      {/* --- HEADER --- */}
       <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/98 backdrop-blur-2xl shadow-2xl py-4">
-
-        {/* Search & Categories */}
         <div className="px-4 container mx-auto max-w-5xl">
-
           {/* Search Bar */}
           <div className="relative group max-w-lg mx-auto mb-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
@@ -217,38 +183,39 @@ const Menu = () => {
           </div>
 
           {/* Categories Bar */}
-          <div
-            ref={scrollContainerRef}
-            className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 pt-1 select-none scroll-smooth"
-          >
-            {categories.filter(c => c !== 'All').map(category => (
-              <button
-                key={category}
-                id={`btn-${category}`}
-                onClick={() => handleCategoryClick(category)}
-                className={`whitespace-nowrap rounded-full font-bold tracking-wide transition-all duration-300 ease-out border shrink-0 px-4 py-1.5 text-xs ${activeCategory === category
-                  ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-105'
-                  : 'bg-neutral-900 border-neutral-800 text-gray-400 hover:border-orange-500/50 hover:text-white hover:scale-105'
-                  }`}
-              >
-                {category}
-              </button>
-            ))}
+          <div className="relative">
+            <div
+              ref={scrollContainerRef}
+              className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 pt-1 select-none scroll-smooth pr-16"
+            >
+              {categories.filter(c => c !== 'All').map(category => (
+                <button
+                  key={category}
+                  id={`btn-${category}`}
+                  onClick={() => handleCategoryClick(category)}
+                  className={`whitespace-nowrap rounded-full font-bold tracking-wide transition-all duration-300 ease-out border shrink-0 px-4 py-1.5 text-xs ${activeCategory === category
+                    ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-105'
+                    : 'bg-neutral-900 border-neutral-800 text-gray-400 hover:border-orange-500/50 hover:text-white hover:scale-105'
+                    }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          
           </div>
         </div>
       </div>
 
-      {/* --- MENU SECTIONS (Danh sách món theo nhóm) --- */}
+      {/* --- MENU SECTIONS --- */}
       <div className="container mx-auto max-w-5xl px-4 pt-4">
-
         {categorizedMenu.length > 0 ? (
           categorizedMenu.map((group) => (
-            <div
-              key={group.category}
-              ref={(el) => (categoryRefs.current[group.category] = el)} // Gán Ref để theo dõi
-              className="mb-12 scroll-mt-32" // scroll-mt để khi cuộn tới nó không bị header che mất
+            <div 
+              key={group.category} 
+              ref={(el) => (categoryRefs.current[group.category] = el)}
+              className="mb-12 scroll-mt-36"
             >
-              {/* Tên danh mục (Header của Section) */}
               <div className="flex items-center gap-4 mb-6">
                 <h2 className="text-2xl font-black text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500 uppercase tracking-tight">
                   {group.category}
@@ -256,17 +223,12 @@ const Menu = () => {
                 <div className="h-px flex-1 bg-linear-to-r from-orange-500/50 to-transparent"></div>
               </div>
 
-              {/* Grid Món ăn */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
                 {group.items.map(item => (
-                  <div key={item.id} onClick={() => setSelectedFood(item)} className="group flex gap-4 bg-transparent hover:bg-white/5 p-3 rounded-2xl transition-all duration-300 border border-transparent hover:border-white/5">
-
-                    {/* Ảnh món (Nhỏ gọn bên trái - Kiểu List View) */}
+                  <div key={item.id} onClick={() => setSelectedFood(item)} className="group flex gap-4 bg-transparent hover:bg-white/5 p-3 rounded-2xl transition-all duration-300 border border-transparent hover:border-white/5 cursor-pointer">
                     <div className="w-28 h-28 shrink-0 rounded-xl overflow-hidden relative">
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                     </div>
-
-                    {/* Thông tin */}
                     <div className="flex-1 flex flex-col justify-between py-1">
                       <div>
                         <div className="flex justify-between items-start">
@@ -275,12 +237,21 @@ const Menu = () => {
                         </div>
                         <p className="text-sm text-gray-500 line-clamp-2 mt-1">{item.description}</p>
                       </div>
-
                       <div className="flex justify-between items-end mt-2">
                         <span className="text-xl font-black text-white">${item.price.toFixed(2)}</span>
-
-                        <button className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all shadow-lg active:scale-90">
-                          <ShoppingBag size={18} />
+                        <button 
+                          onClick={(e) => handleAddToCart(e, item)}
+                          className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg active:scale-90 relative ${
+                            addedItems.has(item.id)
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : 'bg-neutral-800 border-white/10 text-orange-500 hover:bg-orange-500 hover:text-white hover:border-orange-500'
+                          }`}
+                        >
+                          {addedItems.has(item.id) ? (
+                            <Check size={18} className="animate-bounce" />
+                          ) : (
+                            <ShoppingBag size={18} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -295,6 +266,7 @@ const Menu = () => {
           </div>
         )}
       </div>
+
       {selectedFood && (
         <FoodDetailPopup
           food={selectedFood}

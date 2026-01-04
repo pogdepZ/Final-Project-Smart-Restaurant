@@ -99,7 +99,7 @@ const SignIn = () => {
             </div>
 
             {/* Nút Đăng nhập chính */}
-            <button className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-black rounded-xl shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all transform active:scale-95 flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
+            <button className="w-full py-4 bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-black rounded-xl shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all transform active:scale-95 flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
               Đăng Nhập
               <ArrowRight size={18} />
             </button>
