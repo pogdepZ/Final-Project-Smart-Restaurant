@@ -44,7 +44,7 @@ const Navbar = () => {
             <div className="w-9 h-9 bg-linear-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
               <IoRestaurant className="text-white font-black text-lg"></IoRestaurant>
             </div>
-            <div className="hidden md:block">
+            <div className="md:block">
               <h1 className="text-white font-bold text-lg tracking-wide font-display">Lumière Bistro</h1>
             </div>
           </Link>
