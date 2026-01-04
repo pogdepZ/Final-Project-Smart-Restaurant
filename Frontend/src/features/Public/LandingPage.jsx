@@ -35,7 +35,7 @@ const LandingPage = () => {
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           {/* Nút chính: Quét QR hoặc Xem Menu */}
           <Link
-            to="/menu-preview"
+            to="/menu"
             className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(249,115,22,0.4)]"
           >
             Xem Thực Đơn
