@@ -4,6 +4,7 @@ import { ShoppingBag, User, Menu as MenuIcon, X, MapPin, LogOut } from 'lucide-r
 import { useSelector } from 'react-redux';
 import { selectTotalItems } from '../store/slices/cartSlice';
 import { selectIsAuthenticated, selectCurrentUser } from '../store/slices/authSlice';
+import { IoRestaurant } from "react-icons/io5";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -37,14 +38,14 @@ const Navbar = () => {
     <>
       <nav className="fixed top-0 w-full z-50 bg-neutral-950/95 backdrop-blur-md border-b border-white/10 h-16">
         <div className="container mx-auto px-4 h-full flex items-center justify-between">
-          
+
           {/* 1. LOGO */}
           <Link to="/" onClick={closeMenu} className="flex items-center gap-2 group z-50">
             <div className="w-9 h-9 bg-linear-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <span className="text-white font-black text-lg">S</span>
+              <IoRestaurant className="text-white font-black text-lg"></IoRestaurant>
             </div>
             <div className="hidden md:block">
-              <h1 className="text-white font-bold text-lg tracking-wide">SMART RESTO</h1>
+              <h1 className="text-white font-bold text-lg tracking-wide font-display">Lumière Bistro</h1>
             </div>
           </Link>
 
@@ -70,9 +71,9 @@ const Navbar = () => {
             {/* User Info / Login */}
             {isLoggedIn ? (
               <Link to="/profile" onClick={closeMenu} className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
-                 <div className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500">
-                   <User size={20} />
-                 </div>
+                <div className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500">
+                  <User size={20} />
+                </div>
               </Link>
             ) : (
               <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
@@ -82,7 +83,7 @@ const Navbar = () => {
             )}
 
             {/* Hamburger Button (Chỉ hiện Mobile) */}
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-transform active:scale-90"
             >
@@ -93,20 +94,18 @@ const Navbar = () => {
       </nav>
 
       {/* --- 4. MOBILE MENU OVERLAY & DRAWER --- */}
-      
+
       {/* Lớp phủ đen mờ (Bấm vào đây cũng tắt menu) */}
-      <div 
-        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm ${
-          isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-        }`}
+      <div
+        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+          }`}
         onClick={closeMenu}
       ></div>
 
       {/* Menu trượt từ phải sang */}
-      <div 
-        className={`fixed top-0 right-0 h-full w-70 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col md:hidden ${
-          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <div
+        className={`fixed top-0 right-0 h-full w-70 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col md:hidden ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* User Info Mobile */}
         {isLoggedIn ? (
@@ -147,12 +146,12 @@ const Navbar = () => {
 
         {/* Footer Mobile Menu */}
         <div className="mt-auto mb-8">
-           {isLoggedIn && (
-             <button onClick={() => { console.log('Logout'); closeMenu(); }} className="flex items-center gap-2 text-red-500 font-medium hover:text-red-400">
-               <LogOut size={20} /> Đăng xuất
-             </button>
-           )}
-           <p className="text-xs text-gray-600 mt-6 text-center">Version 1.0.0</p>
+          {isLoggedIn && (
+            <button onClick={() => { console.log('Logout'); closeMenu(); }} className="flex items-center gap-2 text-red-500 font-medium hover:text-red-400">
+              <LogOut size={20} /> Đăng xuất
+            </button>
+          )}
+          <p className="text-xs text-gray-600 mt-6 text-center">Version 1.0.0</p>
         </div>
       </div>
     </>
@@ -169,8 +168,8 @@ const NavLink = ({ to, label, icon }) => (
 
 // Component con Link Mobile (Đã thêm onClick)
 const MobileLink = ({ to, label, onClick }) => (
-  <Link 
-    to={to} 
+  <Link
+    to={to}
     onClick={onClick} // <-- Đây là mấu chốt: Bấm xong thì gọi hàm đóng menu
     className="block py-3 px-4 rounded-xl text-base font-medium text-gray-300 hover:bg-white/5 hover:text-orange-500 transition-colors active:scale-95"
   >
