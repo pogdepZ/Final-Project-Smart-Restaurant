@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, Menu as MenuIcon, X, MapPin } from 'lucide-react';
+import { IoRestaurant } from "react-icons/io5";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -14,14 +15,15 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 w-full z-50 bg-neutral-900/95 backdrop-blur-md border-b border-white/10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        
+
         {/* 1. LOGO & BRAND */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
-            <span className="text-white font-black text-xl">S</span>
+          <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:rotate-6 transition-all duration-300">
+            {/* Dùng chữ L từ Pacifico làm biểu tượng */}
+            <IoRestaurant className='text-white font-display text-2xl mb-1'></IoRestaurant>
           </div>
           <div className="hidden md:block">
-            <h1 className="text-white font-bold text-lg tracking-wide">SMART RESTO</h1>
+            <h1 className="text-white font-bold text-2xl tracking-wide font-display">Lumière Bistro</h1>
             <p className="text-xs text-gray-400">Taste the difference</p>
           </div>
         </Link>
@@ -50,26 +52,26 @@ const Navbar = () => {
           {isLoggedIn ? (
             // Đã đăng nhập -> Hiện Avatar
             <div className="flex items-center gap-3 pl-4 border-l border-white/10">
-               {tableNumber && (
-                  <span className="hidden lg:block px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold border border-orange-500/30">
-                    {tableNumber}
-                  </span>
-               )}
-               <Link to="/profile" className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500 hover:bg-neutral-700">
-                 <User size={20} />
-               </Link>
+              {tableNumber && (
+                <span className="hidden lg:block px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold border border-orange-500/30">
+                  {tableNumber}
+                </span>
+              )}
+              <Link to="/profile" className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500 hover:bg-neutral-700">
+                <User size={20} />
+              </Link>
             </div>
           ) : (
             // Chưa đăng nhập -> Hiện Sign In / Sign Up
             <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
-              <Link 
-                to="/signin" 
+              <Link
+                to="/signin"
                 className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
               >
                 Đăng nhập
               </Link>
-              <Link 
-                to="/signup" 
+              <Link
+                to="/signup"
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-lg shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
               >
                 Đăng ký
@@ -78,7 +80,7 @@ const Navbar = () => {
           )}
 
           {/* Mobile Menu Toggle */}
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="md:hidden p-2 text-gray-300 hover:text-white"
           >
@@ -93,7 +95,7 @@ const Navbar = () => {
           <MobileLink to="/" label="Trang chủ" />
           <MobileLink to="/menu-preview" label="Thực đơn" />
           <MobileLink to="/booking" label="Sơ đồ bàn / Đặt chỗ" />
-          
+
           {!isLoggedIn && (
             <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/10">
               <Link to="/signin" className="py-2.5 text-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5">
