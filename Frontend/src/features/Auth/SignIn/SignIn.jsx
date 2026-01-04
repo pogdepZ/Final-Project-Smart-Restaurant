@@ -18,7 +18,7 @@ const SignIn = () => {
         <div className="absolute inset-0 bg-linear-to-r from-neutral-950/80 via-neutral-950/40 to-transparent"></div>
       </div>
       {/* CỘT TRÁI: HÌNH ẢNH & NỘI DUNG SƠ LƯỢC (Chỉ hiện trên màn hình lớn) */}
-      <div className="relative hidden lg:flex lg:w-1/2 flex-col justify-between p-12 overflow-hidden">
+      <div className="relative hidden lg:flex lg:w-1/2 flex-col justify-between p-12 z-10 overflow-hidden">
 
 
         {/* Brand Header bên trái */}

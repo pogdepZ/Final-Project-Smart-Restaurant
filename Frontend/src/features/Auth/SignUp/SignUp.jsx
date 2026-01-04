@@ -1,8 +1,124 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Mail, Lock, ArrowRight, User, ShieldCheck, Star, Utensils } from 'lucide-react';
+import Input from '../../../Components/Input';
+
 const SignUp = () => {
   return (
-    <>
-        <h1>SignUp</h1>
-    </>
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans bg-neutral-950">
+
+      {/* 1. Background Image (Giống SignIn để tạo sự đồng bộ) */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1200&q=80"
+          alt="Fine Dining"
+          className="w-full h-full object-cover opacity-30 lg:opacity-50"
+        />
+        <div className="absolute inset-0 bg-neutral-950/80 lg:bg-linear-to-r lg:from-neutral-950/80 lg:via-neutral-950/40 lg:to-transparent"></div>
+      </div>
+
+      {/* 2. CỘT TRÁI: NỘI DUNG ƯU ĐÃI THÀNH VIÊN (Chỉ hiện trên Desktop) */}
+      <div className="relative hidden lg:flex lg:w-1/2 flex-col justify-between p-48 z-10 overflow-hidden">
+        <div className="flex flex-col leading-none">
+          <span className="font-display text-5xl text-orange-400">Lumière</span>
+          <span className="font-sans text-[10px] tracking-[0.4em] uppercase mt-2 text-white/60 font-black">Bistro</span>
+        </div>
+
+        <div className="max-w-md space-y-8">
+          <h2 className="text-4xl font-black text-white leading-tight">
+            Trở thành <span className="text-orange-500">Hội Viên</span> <br />
+            Nhận ngay ưu đãi đặc quyền.
+          </h2>
+
+          <div className="space-y-5 text-white/80">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400 mt-1"><Star size={20} /></div>
+              <div>
+                <p className="font-bold text-white italic">Giảm 10% cho lần đặt bàn đầu tiên</p>
+                <p className="text-xs text-white/50">Áp dụng cho toàn bộ menu tại nhà hàng.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400 mt-1"><Utensils size={20} /></div>
+              <div>
+                <p className="font-bold text-white italic">Tích điểm đổi quà</p>
+                <p className="text-xs text-white/50">Mỗi bữa ăn đều mang lại giá trị tích lũy lâu dài.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-white/30 text-[10px] tracking-widest uppercase italic">
+          Join the Elite Taste — Since 2026
+        </div>
+      </div>
+
+      {/* 3. CỘT PHẢI: FORM ĐĂNG KÝ */}
+      <div className="relative z-10 w-full lg:w-1/2 flex justify-center items-center px-4 py-10">
+        <div className="w-full max-w-md bg-white/3 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl">
+
+          {/* Mobile Header */}
+          <div className="lg:hidden text-center mb-6">
+            <p className="font-display text-4xl text-orange-400">Lumière</p>
+          </div>
+
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-black text-white leading-tight uppercase tracking-tighter">
+              Tạo Tài <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">Khoản</span>
+            </h2>
+            <p className="text-gray-500 text-xs mt-2 uppercase tracking-widest font-light">Bắt đầu hành trình ẩm thực của bạn</p>
+          </div>
+
+          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            {/* Họ và Tên */}
+            <Input label="Full Name" type="text" placeholder="Nguyễn Văn A" icon={User} />
+
+            {/* Email */}
+            <Input label="Email Address" type="email" placeholder="example@lumiere.com" icon={Mail} />
+
+            {/* Password */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="Password" type="password" placeholder="••••••••" icon={Lock} />
+              <Input label="Confirm" type="password" placeholder="••••••••" icon={ShieldCheck} />
+            </div>
+
+            <div className="flex items-center gap-2 px-1">
+              <input type="checkbox" id="terms" className="w-4 h-4 accent-orange-500 rounded border-white/10" />
+              <label htmlFor="terms" className="text-[11px] text-gray-400 leading-none">
+                Tôi đồng ý với <span className="text-white underline cursor-pointer">Điều khoản & Chính sách</span> của nhà hàng.
+              </label>
+            </div>
+
+            {/* Nút Đăng Ký */}
+            <button className="w-full py-4 bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-black rounded-xl shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all transform active:scale-95 flex items-center justify-center gap-2 uppercase text-sm tracking-widest mt-4">
+              Đăng Ký Thành Viên <ArrowRight size={18} />
+            </button>
+
+            {/* Divider */}
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
+              <div className="relative flex justify-center text-[10px] uppercase text-gray-500 tracking-[0.2em]"><span className="bg-[#080808] px-2 lg:bg-transparent">Hoặc nhanh hơn với</span></div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 text-white text-[12px] font-bold rounded-xl hover:bg-white/10 transition-all">
+                Google
+              </button>
+              <button className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 text-white text-[12px] font-bold rounded-xl hover:bg-white/10 transition-all">
+                Facebook
+              </button>
+            </div>
+          </form>
+
+          <p className="text-center text-gray-500 text-xs mt-8 uppercase tracking-wider">
+            Đã có tài khoản?
+            <Link to="/signin" className="text-white ml-2 font-black hover:text-orange-400 transition-colors border-b border-orange-500/30">
+              Đăng nhập
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 
