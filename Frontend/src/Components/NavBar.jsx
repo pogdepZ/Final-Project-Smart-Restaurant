@@ -48,7 +48,7 @@ const Navbar = () => {
           {/* 2. DESKTOP MENU (Ẩn trên Mobile) */}
           <div className="hidden md:flex items-center gap-8">
             <NavLink to="/" label="Trang chủ" />
-            <NavLink to="/menu-preview" label="Thực đơn" />
+            <NavLink to="/menu" label="Thực đơn" />
             <NavLink to="/booking" label="Sơ đồ bàn" icon={<MapPin size={16} />} />
           </div>
 
