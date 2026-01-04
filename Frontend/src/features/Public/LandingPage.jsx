@@ -1,89 +1,11 @@
-import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, QrCode, Leaf, ChefHat, Heart, Clock, Sparkles, Star, Users, Wine } from 'lucide-react';
 import WhyChooseUs from '../../Components/WhyChooseUs';
 import SignatureDishes from '../../Components/SignatureDishes';
 import HeroTitle from '../../Components/HeroTitle';
-
+import { WelcomeCurtain } from '../../Components/WelcomeCurtain';
 // --- COMPONENT CON: HIỆU ỨNG MÀN CHÀO MỪNG ---
-const WelcomeCurtain = () => {
-  const [isOpen, setIsOpen] = useState(false); // Trạng thái mở màn
-  const [isRemoved, setIsRemoved] = useState(false); // Trạng thái xóa khỏi DOM
 
-  useEffect(() => {
-    // 1. Đợi 0.8 giây để người dùng nhìn thấy màn đỏ
-    const startTimer = setTimeout(() => {
-      setIsOpen(true);
-    }, 800);
-
-    // 2. Sau khi hiệu ứng chạy xong (khoảng 2.5s tổng cộng), xóa component để không che nút bấm
-    const removeTimer = setTimeout(() => {
-      setIsRemoved(true);
-    }, 2500);
-
-    return () => {
-      clearTimeout(startTimer);
-      clearTimeout(removeTimer);
-    };
-  }, []);
-
-  // Nếu đã xong hiệu ứng, không render gì cả (để người dùng thao tác được bên dưới)
-  if (isRemoved) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex pointer-events-none">
-      
-      {/* CÁNH MÀN TRÁI */}
-      <div 
-        className={`relative w-1/2 h-full bg-red-900 flex items-center justify-end border-r-4 border-yellow-500 shadow-2xl transition-transform duration-1500m ease-in-out ${
-          isOpen ? '-translate-x-full' : 'translate-x-0'
-        }`}
-      >
-        {/* Họa tiết chìm (tùy chọn) */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle,theme(colors.yellow.500)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
-        
-        {/* Chữ bên trái */}
-        <div className={`mr-4 md:mr-10 transition-opacity duration-500 ${isOpen ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="text-right">
-            <h1 className="text-4xl md:text-7xl font-black text-yellow-400 uppercase tracking-widest drop-shadow-lg font-serif">
-              KHAI
-            </h1>
-          </div>
-        </div>
-      </div>
-
-      {/* CÁNH MÀN PHẢI */}
-      <div 
-        className={`relative w-1/2 h-full bg-red-900 flex items-center justify-start border-l-4 border-yellow-500 shadow-2xl transition-transform duration-[1500ms] ease-in-out ${
-          isOpen ? 'translate-x-full' : 'translate-x-0'
-        }`}
-      >
-         {/* Họa tiết chìm */}
-         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle,theme(colors.yellow.500)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
-
-        {/* Chữ bên phải */}
-        <div className={`ml-4 md:ml-10 transition-opacity duration-500 ${isOpen ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="text-left">
-            <h1 className="text-4xl md:text-7xl font-black text-yellow-400 uppercase tracking-widest drop-shadow-lg font-serif">
-              VỊ
-            </h1>
-          </div>
-        </div>
-      </div>
-
-      {/* LOGO TRÒN Ở GIỮA */}
-      <div 
-        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${
-          isOpen ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        <div className="w-24 h-24 md:w-40 md:h-40 bg-yellow-500 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.8)] z-50 border-4 border-white transform scale-100">
-          <ChefHat size={48} className="text-red-900 md:w-20 md:h-20" />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // --- COMPONENT CHÍNH ---
 const LandingPage = () => {
@@ -192,6 +114,7 @@ const LandingPage = () => {
       
       {/* --- HIỆU ỨNG MÀN CHÀO MỪNG --- */}
       <WelcomeCurtain />
+      
       
       {/* 1. HERO SECTION */}
       <div className="relative w-full h-[calc(100vh-64px)] overflow-hidden">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Clock, Award, Leaf } from 'lucide-react'; // Giả sử bạn dùng lucide-react
+import { Heart, Clock, Award, Leaf } from 'lucide-react';
 
 const WhyChooseUs = () => {
   const features = [
@@ -26,7 +26,6 @@ const WhyChooseUs = () => {
   ];
 
   return (
-    // Thêm class 'group' vào section cha để bắt sự kiện hover cho toàn bộ khu vực
     <section className="py-20 px-4 bg-neutral-900 group overflow-hidden">
       <div className="container mx-auto max-w-7xl">
         <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12">
@@ -49,7 +48,6 @@ const WhyChooseUs = () => {
               Rê chuột vào đây để khám phá lý do vì sao hàng ngàn thực khách đã tin tưởng và lựa chọn chúng tôi.
             </p>
 
-            {/* Nút giả lập Call to action */}
             <button className="px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors">
               Đặt Bàn Ngay
             </button>
@@ -60,20 +58,27 @@ const WhyChooseUs = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                // Logic Animation ở đây:
-                // 1. duration-700: Chuyển động chậm rãi (0.7s)
-                // 2. opacity-0 group-hover:opacity-100: Mờ đi khi chưa hover, hiện rõ khi hover
-                // 3. translate-x: Dịch chuyển vị trí
-                //    - index chẵn (0,2) -> Dịch sang TRÁI (-50px) -> Hover về 0
-                //    - index lẻ (1,3) -> Dịch sang PHẢI (50px) -> Hover về 0
+                // GIẢI THÍCH SỰ THAY ĐỔI:
+                // 1. Mặc định (Mobile): opacity-100, translate-x-0 (Hiện rõ, đứng yên)
+                // 2. Desktop (lg:): opacity-40, translate-x-[-100px] (Mờ, lệch chỗ)
+                // 3. Desktop Hover (lg:group-hover): opacity-100, translate-x-0 (Bay về)
                 className={`
                   p-8 bg-neutral-950 rounded-2xl border border-white/5 
                   transition-all duration-700 ease-out
-                  group-hover:opacity-100 group-hover:translate-x-0
-                  opacity-40 hover:!opacity-100 hover:!scale-105 hover:!border-orange-500/50 hover:bg-neutral-900
+                  
+                  /* Mobile: Luôn hiện rõ */
+                  opacity-100 translate-x-0
+                  
+                  /* Desktop: Mờ đi và dịch chuyển, chỉ hiện khi hover */
+                  lg:opacity-40 
+                  lg:group-hover:opacity-100 lg:group-hover:translate-x-0
+                  
+                  hover:!opacity-100 hover:!scale-105 hover:!border-orange-500/50 hover:bg-neutral-900
+
+                  /* Logic dịch chuyển chỉ áp dụng cho màn hình lớn (lg:) */
                   ${index % 2 === 0 
-                    ? 'translate-x-[-100px]' // Thẻ cột trái bay từ trái vào
-                    : 'translate-x-[100px]'  // Thẻ cột phải bay từ phải vào
+                    ? 'lg:translate-x-[-100px]' // Desktop: Bay từ trái
+                    : 'lg:translate-x-[100px]'  // Desktop: Bay từ phải
                   }
                 `}
               >
