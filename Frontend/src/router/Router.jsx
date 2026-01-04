@@ -1,5 +1,5 @@
-import ProtectedRoute from "../components/ProtectedRoute";
-import PublicRoute from "../components/PublicRoute";
+import ProtectedRoute from "../Components/ProtectedRoute";
+import PublicRoute from "../Components/PublicRoute";
 
 // Auth
 import SignIn from "../features/Auth/SignIn/SignIn";
