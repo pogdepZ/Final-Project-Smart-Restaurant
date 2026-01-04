@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, ShoppingBag, Star, Flame } from 'lucide-react';
-
+import FoodDetailPopup from './DetailFoodPopup'
 // --- MOCK DATA (Giữ nguyên) ---
 const mockMenuData = [
   // --- APPETIZERS (Khai vị) ---
@@ -77,9 +77,11 @@ const mockMenuData = [
   { id: 83, name: 'Margarita', category: 'Alcohol', price: 10.99, description: 'Tequila, rượu cam Cointreau và muối viền.', image: 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=400' },
   { id: 84, name: 'Old Fashioned', category: 'Alcohol', price: 12.99, description: 'Whiskey Bourbon, đường nâu và vỏ cam.', image: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?w=400' },
 ];
+
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState('Appetizers'); // Category đang được highlight
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFood, setSelectedFood] = useState(null);
 
   // Refs
   const scrollContainerRef = useRef(null); // Ref cho thanh menu ngang
@@ -93,7 +95,7 @@ const Menu = () => {
     const handleScroll = () => {
       // Logic Scroll Spy
       // Lấy vị trí scroll hiện tại + offset (để trừ hao chiều cao header)
-      const scrollPosition = window.scrollY + 200; 
+      const scrollPosition = window.scrollY + 200;
 
       // Duyệt qua từng section để xem mình đang đứng ở đâu
       for (const category of categories) {
@@ -103,7 +105,7 @@ const Menu = () => {
           const { offsetTop, offsetHeight } = element;
           if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
             setActiveCategory(category);
-            
+
             // Tự động cuộn thanh menu ngang để nút active luôn hiện ra
             const btn = document.getElementById(`btn-${category}`);
             if (btn && scrollContainerRef.current) {
@@ -129,7 +131,7 @@ const Menu = () => {
       setActiveCategory('All');
       return;
     }
-    
+
     setActiveCategory(category);
     const element = categoryRefs.current[category];
     if (element) {
@@ -145,12 +147,12 @@ const Menu = () => {
   const categorizedMenu = useMemo(() => {
     // Lấy danh sách category cần hiển thị (trừ 'All')
     const cats = categories.filter(c => c !== 'All');
-    
+
     return cats.map(cat => {
-      const items = mockMenuData.filter(item => 
-        item.category === cat && 
-        (item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-         item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      const items = mockMenuData.filter(item =>
+        item.category === cat &&
+        (item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchQuery.toLowerCase()))
       );
       return { category: cat, items };
     }).filter(group => group.items.length > 0); // Chỉ lấy nhóm nào có món
@@ -158,13 +160,13 @@ const Menu = () => {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
-      
+
       {/* --- HEADER (STICKY) --- */}
       <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/98 backdrop-blur-2xl shadow-2xl py-4">
-        
+
         {/* Search & Categories */}
         <div className="px-4 container mx-auto max-w-5xl">
-          
+
           {/* Search Bar */}
           <div className="relative group max-w-lg mx-auto mb-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
@@ -178,7 +180,7 @@ const Menu = () => {
           </div>
 
           {/* Categories Bar */}
-          <div 
+          <div
             ref={scrollContainerRef}
             className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 pt-1 select-none scroll-smooth"
           >
@@ -187,11 +189,10 @@ const Menu = () => {
                 key={category}
                 id={`btn-${category}`}
                 onClick={() => handleCategoryClick(category)}
-                className={`whitespace-nowrap rounded-full font-bold tracking-wide transition-all duration-300 ease-out border shrink-0 px-4 py-1.5 text-xs ${
-                  activeCategory === category
-                    ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-105'
-                    : 'bg-neutral-900 border-neutral-800 text-gray-400 hover:border-orange-500/50 hover:text-white hover:scale-105'
-                }`}
+                className={`whitespace-nowrap rounded-full font-bold tracking-wide transition-all duration-300 ease-out border shrink-0 px-4 py-1.5 text-xs ${activeCategory === category
+                  ? 'bg-orange-500 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-105'
+                  : 'bg-neutral-900 border-neutral-800 text-gray-400 hover:border-orange-500/50 hover:text-white hover:scale-105'
+                  }`}
               >
                 {category}
               </button>
@@ -202,11 +203,11 @@ const Menu = () => {
 
       {/* --- MENU SECTIONS (Danh sách món theo nhóm) --- */}
       <div className="container mx-auto max-w-5xl px-4 pt-4">
-        
+
         {categorizedMenu.length > 0 ? (
           categorizedMenu.map((group) => (
-            <div 
-              key={group.category} 
+            <div
+              key={group.category}
               ref={(el) => (categoryRefs.current[group.category] = el)} // Gán Ref để theo dõi
               className="mb-12 scroll-mt-32" // scroll-mt để khi cuộn tới nó không bị header che mất
             >
@@ -221,8 +222,8 @@ const Menu = () => {
               {/* Grid Món ăn */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
                 {group.items.map(item => (
-                  <div key={item.id} className="group flex gap-4 bg-transparent hover:bg-white/5 p-3 rounded-2xl transition-all duration-300 border border-transparent hover:border-white/5">
-                    
+                  <div key={item.id} onClick={() => setSelectedFood(item)} className="group flex gap-4 bg-transparent hover:bg-white/5 p-3 rounded-2xl transition-all duration-300 border border-transparent hover:border-white/5">
+
                     {/* Ảnh món (Nhỏ gọn bên trái - Kiểu List View) */}
                     <div className="w-28 h-28 shrink-0 rounded-xl overflow-hidden relative">
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
@@ -240,9 +241,9 @@ const Menu = () => {
 
                       <div className="flex justify-between items-end mt-2">
                         <span className="text-xl font-black text-white">${item.price.toFixed(2)}</span>
-                        
+
                         <button className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all shadow-lg active:scale-90">
-                           <ShoppingBag size={18} />
+                          <ShoppingBag size={18} />
                         </button>
                       </div>
                     </div>
@@ -257,6 +258,12 @@ const Menu = () => {
           </div>
         )}
       </div>
+      {selectedFood && (
+        <FoodDetailPopup
+          food={selectedFood}
+          onClose={() => setSelectedFood(null)}
+        />
+      )}
     </div>
   );
 };
