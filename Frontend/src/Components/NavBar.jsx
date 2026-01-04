@@ -93,7 +93,7 @@ const Navbar = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-neutral-900 border-t border-white/10 px-4 py-4 flex flex-col gap-4">
           <MobileLink to="/" label="Trang chủ" />
-          <MobileLink to="/menu-preview" label="Thực đơn" />
+          <MobileLink to="/menu" label="Thực đơn" />
           <MobileLink to="/booking" label="Sơ đồ bàn / Đặt chỗ" />
 
           {!isLoggedIn && (
