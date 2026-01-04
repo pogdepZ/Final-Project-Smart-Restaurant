@@ -136,7 +136,7 @@ const Navbar = () => {
         <div className="flex flex-col gap-2">
           {/* QUAN TRỌNG: Truyền hàm closeMenu vào đây */}
           <MobileLink to="/" label="Trang chủ" onClick={closeMenu} />
-          <MobileLink to="/menu-preview" label="Thực đơn" onClick={closeMenu} />
+          <MobileLink to="/menu" label="Thực đơn" onClick={closeMenu} />
           <MobileLink to="/booking" label="Sơ đồ bàn / Đặt chỗ" onClick={closeMenu} />
           <MobileLink to="/cart" label="Giỏ hàng của bạn" onClick={closeMenu} />
           {isLoggedIn && <MobileLink to="/history" label="Lịch sử đơn hàng" onClick={closeMenu} />}
