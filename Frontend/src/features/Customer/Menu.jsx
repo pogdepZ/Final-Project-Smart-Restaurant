@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, ShoppingBag, Star, Flame } from 'lucide-react';
+import { Search, ShoppingBag, Star, Flame, Check } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToCart, selectTotalItems } from '../../store/slices/cartSlice';
+import { toast } from 'react-toastify';
 
 // --- MOCK DATA (Giữ nguyên) ---
 const mockMenuData = [
@@ -78,8 +81,12 @@ const mockMenuData = [
   { id: 84, name: 'Old Fashioned', category: 'Alcohol', price: 12.99, description: 'Whiskey Bourbon, đường nâu và vỏ cam.', image: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?w=400' },
 ];
 const Menu = () => {
+  const dispatch = useDispatch();
+  const totalCartItems = useSelector(selectTotalItems);
+  
   const [activeCategory, setActiveCategory] = useState('Appetizers'); // Category đang được highlight
   const [searchQuery, setSearchQuery] = useState('');
+  const [addedItems, setAddedItems] = useState(new Set()); // Track added items for animation
 
   // Refs
   const scrollContainerRef = useRef(null); // Ref cho thanh menu ngang
@@ -156,6 +163,36 @@ const Menu = () => {
     }).filter(group => group.items.length > 0); // Chỉ lấy nhóm nào có món
   }, [categories, searchQuery]);
 
+  // --- 4. HANDLE ADD TO CART ---
+  const handleAddToCart = (item) => {
+    dispatch(addToCart(item));
+    
+    // Animation feedback
+    setAddedItems(prev => new Set(prev).add(item.id));
+    setTimeout(() => {
+      setAddedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(item.id);
+        return newSet;
+      });
+    }, 1000);
+    
+    // Toast notification
+    toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
+      position: "bottom-right",
+      autoClose: 2000,
+    });
+  };  {/* Cart Badge */}
+            {totalCartItems > 0 && (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <ShoppingBag size={18} className="text-orange-500" />
+                <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  {totalCartItems}
+                </span>
+              </div>
+            )}
+          
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
       
@@ -207,11 +244,11 @@ const Menu = () => {
           categorizedMenu.map((group) => (
             <div 
               key={group.category} 
-              ref={(el) => (categoryRefs.current[group.category] = el)} // Gán Ref để theo dõi
-              className="mb-12 scroll-mt-32" // scroll-mt để khi cuộn tới nó không bị header che mất
+              ref={(el) => (categoryRefs.current[group.category] = el)} 
+              className="mb-12 scroll-mt-32"
             >
               {/* Tên danh mục (Header của Section) */}
-              <div className="flex items-center gap-4 mb-6 sticky top-0">
+              <div className="flex items-center gap-4 mb-6">
                 <h2 className="text-2xl font-black text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500 uppercase tracking-tight">
                   {group.category}
                 </h2>
@@ -241,8 +278,19 @@ const Menu = () => {
                       <div className="flex justify-between items-end mt-2">
                         <span className="text-xl font-black text-white">${item.price.toFixed(2)}</span>
                         
-                        <button className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all shadow-lg active:scale-90">
-                           <ShoppingBag size={18} />
+                        <button 
+                          onClick={() => handleAddToCart(item)}
+                          className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg active:scale-90 relative ${
+                            addedItems.has(item.id)
+                              ? 'bg-orange-500 border-orange-500 text-white'
+                              : 'bg-neutral-800 border-white/10 text-orange-500 hover:bg-orange-500 hover:text-white hover:border-orange-500'
+                          }`}
+                        >
+                          {addedItems.has(item.id) ? (
+                            <Check size={18} className="animate-bounce" />
+                          ) : (
+                            <ShoppingBag size={18} />
+                          )}
                         </button>
                       </div>
                     </div>

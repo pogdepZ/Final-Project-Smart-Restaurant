@@ -1,27 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, User, Menu as MenuIcon, X, MapPin, LogOut } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { selectTotalItems } from '../store/slices/cartSlice';
+import { selectIsAuthenticated, selectCurrentUser } from '../store/slices/authSlice';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation(); // Hook để biết đang ở trang nào
 
-  // Giả lập trạng thái (Sau này lấy từ Redux/Context)
-  const isLoggedIn = false; 
-  const tableNumber = "T05"; 
-  const cartCount = 2;
+  // Lấy từ Redux
+  const isLoggedIn = useSelector(selectIsAuthenticated);
+  const user = useSelector(selectCurrentUser);
+  const cartCount = useSelector(selectTotalItems);
+  const tableNumber = "T05";
 
   // --- HÀM ĐÓNG MENU ---
   const closeMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
-  // Tự động đóng menu khi đường dẫn thay đổi (Phòng trường hợp navigate bằng cách khác)
+
   useEffect(() => {
     closeMenu();
   }, [location.pathname]);
 
-  // Ngăn cuộn trang khi mở menu mobile (UX tốt hơn)
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';

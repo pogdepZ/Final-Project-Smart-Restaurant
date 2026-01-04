@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { UtensilsCrossed, ShoppingBag, Receipt, User, History } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { selectTotalItems } from '../store/slices/cartSlice';
 
 const BottomNav = () => {
-  // Giả lập số lượng trong giỏ hàng (Lấy từ Redux/Zustand)
-  const cartItemCount = 3;
+  // Lấy số lượng trong giỏ hàng từ Redux
+  const cartItemCount = useSelector(selectTotalItems);
 
   const navItems = [
     { 

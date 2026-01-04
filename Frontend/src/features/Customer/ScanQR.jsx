@@ -147,7 +147,7 @@ const ScanQR = () => {
 
         {status === 'success' && (
           <div className="flex flex-col items-center animate-scale-in">
-            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 text-green-500">
+            <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mb-6 text-orange-500">
               <CheckCircle size={40} />
             </div>
             <h2 className="text-2xl font-bold mb-2">Xin Chào!</h2>
