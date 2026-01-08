@@ -1,273 +1,170 @@
-const db = require("../config/db");
-const jwt = require("jsonwebtoken");
-const QRCode = require("qrcode");
-const archiver = require("archiver");
+const db = require('../config/db');
+const jwt = require('jsonwebtoken');
+const QRCode = require('qrcode');
 
-const QR_SECRET = process.env.QR_SECRET || "secret_bi_mat";
+// Danh sách vị trí hợp lệ (Predefined options)
+const VALID_LOCATIONS = ['Indoor', 'Outdoor', 'Patio', 'VIP Room'];
 
-const generateQRToken = (table) => {
-  const payload = {
-    tableId: table.id,
-    version: table.qrVersion,
-  };
-  return jwt.sign(payload, QR_SECRET);
-};
-
-// 1. Tạo bàn
-exports.createTable = async (req, res) => {
-  const { table_number, capacity, location } = req.body;
-
-  if (!table_number || !capacity) {
-    return res.status(400).json({ message: 'Vui lòng nhập số bàn và sức chứa' });
-  }
-
+// 1. Lấy danh sách (GET) - Hỗ trợ Filter & Sort
+exports.getTables = async (req, res) => {
   try {
-    // Bước 1: Kiểm tra trùng số bàn
-    const exist = await db.query('SELECT * FROM tables WHERE table_number = $1', [table_number]);
-    if (exist.rows.length > 0) {
-      return res.status(400).json({ message: 'Số bàn này đã tồn tại' });
+    const { status, location, sort } = req.query;
+
+    let query = `SELECT * FROM tables WHERE 1=1`;
+    const params = [];
+
+    // --- FILTER ---
+    if (status) {
+      params.push(status);
+      query += ` AND status = $${params.length}`;
     }
 
-    // Bước 2: Tạo Token bí mật cho bàn (Dùng secret riêng cho QR)
-    // Payload chỉ cần chứa table_number là đủ định danh
-    const qrPayload = {
-      table_number: table_number,
-      restaurant_id: 1 // Hardcode vì làm Single Tenant
-    };
-    
-    // Token này không bao giờ hết hạn (hoặc để rất lâu)
-    const qrToken = jwt.sign(qrPayload, process.env.QR_SECRET || 'secret_qr', { expiresIn: '365d' });
+    if (location) {
+      // Filter chính xác hoặc tương đối tùy nghiệp vụ, ở đây làm tương đối
+      params.push(`%${location}%`); 
+      query += ` AND location ILIKE $${params.length}`;
+    }
 
-    // Bước 3: Tạo URL cho khách hàng (Frontend URL)
-    // Ví dụ: https://smart-restaurant.com/menu?token=...
-    // Ở local chúng ta dùng localhost:5173 (Port của Vite Frontend)
-    const clientUrl = `http://localhost:5173/menu?token=${qrToken}`;
+    // --- SORT ---
+    // Sort tables by: Table number, Capacity, Creation date
+    switch (sort) {
+      case 'capacity_asc': query += ` ORDER BY capacity ASC`; break;
+      case 'capacity_desc': query += ` ORDER BY capacity DESC`; break;
+      case 'newest': query += ` ORDER BY created_at DESC`; break;
+      case 'number_desc': query += ` ORDER BY table_number DESC`; break;
+      default: query += ` ORDER BY table_number ASC`; // Default
+    }
 
-    // Bước 4: Tạo ảnh QR Code (dạng Base64 để hiển thị luôn)
-    const qrImage = await QRCode.toDataURL(clientUrl);
-
-    // Bước 5: Lưu vào Database
-    const newTable = await db.query(
-      `INSERT INTO tables (table_number, capacity, location, qr_token, status) 
-       VALUES ($1, $2, $3, $4, 'active') RETURNING *`,
-      [table_number, capacity, location, qrToken]
-    );
-
-    // Trả về thông tin bàn + hình ảnh QR để frontend hiển thị
-    res.status(201).json({
-      ...newTable.rows[0],
-      qr_image: qrImage // Frontend sẽ dùng cái này để in ra
-    });
-
+    const result = await db.query(query, params);
+    res.json(result.rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Lỗi Server' });
   }
 };
 
-// 2. Cập nhật thông tin (Dùng cho Modal Sửa)
-exports.updateTable = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, capacity, location, status } = req.body;
+// 2. Tạo bàn (POST) - Validation chặt chẽ
+exports.createTable = async (req, res) => {
+  const { table_number, capacity, location, description } = req.body;
 
-    const updatedTable = await prisma.table.update({
-      where: { id: id },
-      data: {
-        name,
-        capacity: parseInt(capacity),
-        location,
-        status, // 'ACTIVE' hoặc 'INACTIVE'
-      },
-    });
-
-    res.json(updatedTable);
-  } catch (error) {
-    if (error.code === "P2002") {
-      return res.status(400).json({ error: "Tên bàn đã tồn tại" });
-    }
-    res.status(500).json({ error: error.message });
+  // Validation: Required fields
+  if (!table_number || !capacity || !location) {
+    return res.status(400).json({ message: 'Thiếu thông tin bắt buộc (Số bàn, Sức chứa, Vị trí)' });
   }
-};
 
-// 3. Lấy danh sách
-exports.getTables = async (req, res) => {
+  // Validation: Capacity 1-20
+  const cap = parseInt(capacity);
+  if (isNaN(cap) || cap < 1 || cap > 20) {
+    return res.status(400).json({ message: 'Sức chứa phải là số nguyên từ 1 đến 20' });
+  }
+
+  // Validation: Location predefined
+  if (!VALID_LOCATIONS.includes(location)) {
+    return res.status(400).json({ 
+        message: `Vị trí không hợp lệ. Chỉ chấp nhận: ${VALID_LOCATIONS.join(', ')}` 
+    });
+  }
+
   try {
+    // Validation: Unique table_number
+    const exist = await db.query('SELECT id FROM tables WHERE table_number = $1', [table_number]);
+    if (exist.rows.length > 0) {
+      return res.status(400).json({ message: `Số bàn '${table_number}' đã tồn tại` });
+    }
+
+    // Generate QR
+    const qrPayload = { table_number };
+    const qrToken = jwt.sign(qrPayload, process.env.QR_SECRET || 'secret', { expiresIn: '365d' });
+    // URL frontend xử lý quét
+    const clientUrl = `http://localhost:5173/menu?token=${qrToken}`; 
+    const qrImage = await QRCode.toDataURL(clientUrl);
+
     const result = await db.query(
-      "SELECT * FROM tables ORDER BY table_number ASC"
+      `INSERT INTO tables (table_number, capacity, location, description, qr_token, status) 
+       VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
+      [table_number, cap, location, description, qrToken]
     );
-    res.json(result.rows);
+
+    res.status(201).json({ ...result.rows[0], qr_image: qrImage });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi Server" });
+    res.status(500).json({ message: 'Lỗi Server' });
   }
 };
 
-// 4. Regenerate QR
-exports.regenerateQR = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const table = await prisma.table.findUnique({ where: { id } });
-
-    const newVersion = (table.qrVersion || 1) + 1;
-    const newToken = jwt.sign(
-      { tableId: table.id, version: newVersion },
-      QR_SECRET
-    );
-
-    const updatedTable = await prisma.table.update({
-      where: { id },
-      data: { qrVersion: newVersion, qrToken: newToken },
-    });
-
-    res.json(updatedTable);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// [CẦN KHỚP VỚI SCHEMA]
-// Nếu bạn muốn dùng hàm này riêng để bật tắt nhanh, hãy ánh xạ boolean sang string
-exports.updateTableStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { isActive } = req.body; // Frontend gửi true/false
-
-    const updatedTable = await prisma.table.update({
-      where: { id },
-      data: { status: isActive ? "ACTIVE" : "INACTIVE" }, // [SỬA] Chuyển sang String
-    });
-
-    res.json(updatedTable);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// 3. Xóa bàn (Soft Delete hoặc Hard Delete tùy yêu cầu)
-// Ở đây làm Hard Delete cho đơn giản, nếu bàn đang có order thì DB sẽ báo lỗi khóa ngoại
-exports.deleteTable = async (req, res) => {
+// 3. Cập nhật bàn (PUT)
+exports.updateTable = async (req, res) => {
   const { id } = req.params;
+  const { table_number, capacity, location, description } = req.body;
+
   try {
-    await db.query('DELETE FROM tables WHERE id = $1', [id]);
-    res.json({ message: 'Xóa bàn thành công' });
+    // Nếu cập nhật vị trí, validate lại
+    if (location && !VALID_LOCATIONS.includes(location)) {
+        return res.status(400).json({ message: `Vị trí không hợp lệ.` });
+    }
+
+    // Nếu cập nhật số bàn, check trùng
+    if (table_number) {
+        const exist = await db.query('SELECT id FROM tables WHERE table_number = $1 AND id != $2', [table_number, id]);
+        if (exist.rows.length > 0) {
+            return res.status(400).json({ message: `Số bàn '${table_number}' đã tồn tại` });
+        }
+    }
+
+    const result = await db.query(
+        `UPDATE tables SET 
+            table_number = COALESCE($1, table_number),
+            capacity = COALESCE($2, capacity),
+            location = COALESCE($3, location),
+            description = COALESCE($4, description)
+        WHERE id = $5 RETURNING *`,
+        [table_number, capacity, location, description, id]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ message: "Không tìm thấy bàn" });
+    res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Lỗi Server (Có thể bàn đang có đơn hàng)' });
+    res.status(500).json({ message: 'Lỗi cập nhật' });
   }
 };
 
-// 5. Verify QR (Logic quét mã)
-exports.verifyQR = async (req, res) => {
-  try {
-    const { token } = req.body;
-    const decoded = jwt.verify(token, QR_SECRET);
+// 4. Đổi trạng thái (PATCH) - Deactivate Logic
+exports.toggleStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body; // 'active' hoặc 'inactive'
 
-    const table = await prisma.table.findUnique({
-      where: { id: decoded.tableId },
-    });
-
-    if (!table) {
-      return res.status(404).json({ error: "Bàn không tồn tại" });
+    if (!['active', 'inactive'].includes(status)) {
+        return res.status(400).json({ message: "Trạng thái không hợp lệ" });
     }
 
-    // [SỬA] Kiểm tra status string thay vì isActive boolean
-    if (table.status !== "ACTIVE") {
-      return res.status(403).json({
-        error: "Bàn này đang tạm ngưng phục vụ. Vui lòng liên hệ nhân viên.",
-      });
+    try {
+        // Requirement: "Display warning if table has active orders"
+        if (status === 'inactive') {
+            const activeOrders = await db.query(
+                `SELECT id FROM orders WHERE table_id = $1 AND status NOT IN ('completed', 'cancelled')`,
+                [id]
+            );
+
+            // Nếu có tham số ?force=true thì bỏ qua check, còn không thì báo warning
+            const forceUpdate = req.query.force === 'true';
+
+            if (activeOrders.rows.length > 0 && !forceUpdate) {
+                return res.status(200).json({ // Trả về 200 nhưng kèm flag warning
+                    warning: true,
+                    message: `Bàn này đang có ${activeOrders.rows.length} đơn hàng chưa hoàn thành.`,
+                    active_orders: activeOrders.rows.length
+                });
+            }
+        }
+
+        const result = await db.query(
+            'UPDATE tables SET status = $1 WHERE id = $2 RETURNING *',
+            [status, id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi Server' });
     }
-
-    if (decoded.version < table.qrVersion) {
-      return res
-        .status(400)
-        .json({ error: "Mã QR này đã cũ. Vui lòng xin mã mới." });
-    }
-
-    res.json({
-      valid: true,
-      table: { id: table.id, name: table.name },
-    });
-  } catch (error) {
-    res.status(400).json({ error: "Mã QR không hợp lệ" });
-  }
-};
-
-// TẢI TẤT CẢ QR (ZIP)
-exports.downloadAllQRs = async (req, res) => {
-  try {
-    const tables = await prisma.table.findMany({
-      where: { status: "ACTIVE" }, // Chỉ tải bàn đang hoạt động
-    });
-
-    if (tables.length === 0)
-      return res.status(404).json({ error: "Không có bàn nào" });
-
-    // Thiết lập Header để trình duyệt hiểu đây là file zip
-    res.attachment("All_QR_Codes.zip");
-
-    const archive = archiver("zip", { zlib: { level: 9 } });
-    archive.pipe(res); // Nối luồng nén thẳng vào response
-
-    // Duyệt từng bàn, tạo ảnh QR và ném vào file zip
-    for (const table of tables) {
-      // URL khách quét (Lưu ý: Thay localhost bằng IP máy hoặc domain thật khi deploy)
-      // Tốt nhất là lấy từ biến môi trường: process.env.FRONTEND_URL
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-      const qrData = `${frontendUrl}/scan/${table.qrToken}`;
-
-      // Tạo Buffer ảnh PNG
-      const qrBuffer = await QRCode.toBuffer(qrData, {
-        width: 500,
-        margin: 2,
-      });
-
-      // Thêm file vào zip với tên: "Ban-1.png"
-      archive.append(qrBuffer, { name: `${table.name}.png` });
-    }
-
-    await archive.finalize();
-  } catch (error) {
-    console.error(error);
-    // Nếu lỗi khi đang stream file thì không gửi json được nữa
-    if (!res.headersSent) res.status(500).json({ error: error.message });
-  }
-};
-
-// 6. Làm mới TOÀN BỘ QR
-exports.regenerateAllQRs = async (req, res) => {
-  try {
-    // 1. Lấy tất cả bàn đang hoạt động
-    const tables = await prisma.table.findMany({
-      where: { status: "ACTIVE" },
-    });
-
-    if (tables.length === 0)
-      return res.json({ message: "Không có bàn nào cần làm mới", count: 0 });
-
-    // 2. Duyệt qua từng bàn và cập nhật
-    // (Dùng Promise.all để chạy song song cho nhanh)
-    const updates = tables.map((table) => {
-      const newVersion = (table.qrVersion || 1) + 1;
-      const newToken = jwt.sign(
-        { tableId: table.id, version: newVersion },
-        QR_SECRET
-      );
-
-      return prisma.table.update({
-        where: { id: table.id },
-        data: { qrVersion: newVersion, qrToken: newToken },
-      });
-    });
-
-    await Promise.all(updates);
-
-    res.json({
-      message: "Đã làm mới thành công",
-      count: tables.length,
-      tables: tables.map((t) => t.name), // Trả về danh sách tên bàn để hiển thị
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 };

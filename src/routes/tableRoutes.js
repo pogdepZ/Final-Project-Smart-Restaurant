@@ -9,15 +9,20 @@ router.get('/', protect, tableController.getTables);
 // Tạo bàn mới (Chỉ Admin)
 router.post('/', protect, adminOnly, tableController.createTable);
 
-// Xóa bàn (Chỉ Admin)
-router.delete('/:id', protect, adminOnly, tableController.deleteTable);
+router.put('/:id', protect, adminOnly, tableController.updateTable);
 
-router.post('/:id/regenerate', tableController.regenerateQR);
-router.post('/verify', tableController.verifyQR); // Thêm dòng này
-router.patch('/:id/status', tableController.updateTableStatus); // [MỚI] Dùng method PATCHnpm
-router.put('/:id', tableController.updateTable); // Thêm dòng này (PUT)
-router.get('/download-zip', tableController.downloadAllQRs);
-router.post('/regenerate-all', tableController.regenerateAllQRs);
+router.patch('/:id/status', protect, adminOnly, tableController.toggleStatus);
+
+
+
+// Xóa bàn (Chỉ Admin)
+
+// router.delete('/:id', protect, adminOnly, tableController.deleteTable);
+
+// router.post('/:id/regenerate', tableController.regenerateQR);
+// router.post('/verify', tableController.verifyQR); // Thêm dòng này
+// router.get('/download-zip', tableController.downloadAllQRs);
+// router.post('/regenerate-all', tableController.regenerateAllQRs);
 
 
 module.exports = router;
