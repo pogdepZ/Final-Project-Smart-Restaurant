@@ -118,7 +118,7 @@ const routers = [
   // ===== ADMIN =====
   {
     path: "/admin",
-    element: <ProtectedRoute roles={["ADMIN"]} />,
+    element: <ProtectedRoute roles={["admin"]} />,
     children: [
       {
         element: <AdminLayout />,
@@ -162,7 +162,7 @@ const routers = [
   // ===== WAITER =====
   {
     path: "/waiter",
-    element: <ProtectedRoute roles={["WAITER"]} />,
+    element: <ProtectedRoute roles={["waiter"]} />,
     children: [
       {
         element: <WaiterLayout />,
@@ -192,7 +192,7 @@ const routers = [
   // ===== KITCHEN =====
   {
     path: "/kitchen",
-    element: <ProtectedRoute roles={["KITCHEN"]} />,
+    element: <ProtectedRoute roles={["kitchen"]} />,
     children: [
       {
         element: <KitchenLayout />,
