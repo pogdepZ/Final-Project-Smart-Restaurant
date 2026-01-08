@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, UtensilsCrossed, Star, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import Input from '../../../Components/Input';
 import axiosClient from '../../../services/axiosClient';
@@ -46,10 +46,12 @@ const SignIn = () => {
       console.log('Login Success:', user);
 
       // Chuyển hướng dựa trên quyền (Role)
-      if (user.role === 'admin' || user.role === 'manager') {
-        navigate('/admin/dashboard'); // Nếu là quản lý
-      } else if (user.role === 'chef') {
+      if (user.role === 'admin') {
+        navigate('/admin/tables'); // Nếu là quản lý
+      } else if (user.role === 'kitchen') {
         navigate('/kitchen'); // Nếu là bếp
+      } else if(user.role === 'waiter') {
+        navigate('/waiter')
       } else {
         navigate('/'); // Nếu là khách hàng hoặc nhân viên phục vụ
       }
