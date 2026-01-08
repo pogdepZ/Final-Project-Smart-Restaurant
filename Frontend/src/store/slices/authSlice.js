@@ -1,79 +1,51 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// Lấy token từ localStorage nếu có
-const getInitialToken = () => {
-  try {
-    return localStorage.getItem('accessToken') || null;
-  } catch (error) {
-    return null;
-  }
-};
+// Kiểm tra LocalStorage khi khởi động app
+const userFromStorage = localStorage.getItem('user') 
+  ? JSON.parse(localStorage.getItem('user')) 
+  : null;
 
-const getInitialUser = () => {
-  try {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-  } catch (error) {
-    return null;
-  }
-};
+const tokenFromStorage = localStorage.getItem('token');
 
 const initialState = {
-  accessToken: getInitialToken(),
-  user: getInitialUser(),
-  isAuthenticated: !!getInitialToken(),
+  currentUser: userFromStorage,
+  isAuthenticated: !!tokenFromStorage, // true nếu có token
+  loading: false,
+  error: null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setCredentials: (state, action) => {
-      const { accessToken, user } = action.payload;
-      state.accessToken = accessToken;
-      state.user = user;
+    loginStart: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    loginSuccess: (state, action) => {
+      state.loading = false;
       state.isAuthenticated = true;
-      
-      // Lưu vào localStorage
-      if (accessToken) {
-        localStorage.setItem('accessToken', accessToken);
-      }
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
-      }
+      state.currentUser = action.payload.user;
+      state.error = null;
     },
-    
-    updateToken: (state, action) => {
-      state.accessToken = action.payload;
-      if (action.payload) {
-        localStorage.setItem('accessToken', action.payload);
-      }
+    loginFailure: (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
     },
-    
-    updateUser: (state, action) => {
-      state.user = action.payload;
-      if (action.payload) {
-        localStorage.setItem('user', JSON.stringify(action.payload));
-      }
-    },
-    
+    // --- QUAN TRỌNG: Action Logout ---
     logout: (state) => {
-      state.accessToken = null;
-      state.user = null;
       state.isAuthenticated = false;
-      
-      // Xóa khỏi localStorage
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
+      state.currentUser = null;
+      state.error = null;
     },
   },
 });
 
-export const { setCredentials, updateToken, updateUser, logout } = authSlice.actions;
+// Export Actions
+export const { loginStart, loginSuccess, loginFailure, logout } = authSlice.actions;
+
+// Export Selectors
+export const selectCurrentUser = (state) => state.auth.currentUser;
+export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 
 export default authSlice.reducer;
-
-// Selectors
-export const selectCurrentToken = (state) => state.auth.accessToken;
-export const selectCurrentUser = (state) => state.auth.user;
-export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
