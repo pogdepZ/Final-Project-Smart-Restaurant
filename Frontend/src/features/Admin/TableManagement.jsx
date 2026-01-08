@@ -162,7 +162,7 @@ const TableManagement = () => {
           </div>
           <div className="flex items-center bg-white border rounded-lg px-2 shadow-sm">
             <Search size={16} className="text-gray-400 mr-2" />
-            <input placeholder="Tìm vị trí..." className="py-2 text-sm outline-none w-32"
+            <input placeholder="Tìm vị trí..." className="py-2 text-gray-700 text-sm outline-none w-32"
               value={filters.location} onChange={e => setFilters({...filters, location: e.target.value})} />
           </div>
           <button onClick={openCreate} className="ml-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm">
@@ -226,7 +226,7 @@ const TableManagement = () => {
                   name="table_number"
                   type="text" required 
                   placeholder="VD: T-01"
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full text-gray-700 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   value={formData.table_number || ''}
                   onChange={handleChange}
                 />
@@ -238,7 +238,7 @@ const TableManagement = () => {
                   <input 
                     name="capacity"
                     type="number" required min="1" max="20"
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full text-gray-700 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     value={formData.capacity || ''}
                     onChange={handleChange}
                   />
@@ -247,7 +247,7 @@ const TableManagement = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vị trí *</label>
                   <select 
                     name="location"
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    className="w-full text-gray-700 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                     required
                     value={formData.location || ''}
                     onChange={handleChange}
@@ -266,7 +266,7 @@ const TableManagement = () => {
                 <textarea 
                   name="description"
                   rows="3"
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  className="w-full text-gray-700 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
                   value={formData.description || ''}
                   onChange={handleChange}
                 />
