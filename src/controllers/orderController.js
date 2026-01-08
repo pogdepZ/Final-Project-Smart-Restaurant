@@ -12,20 +12,23 @@ exports.createOrder = async (req, res) => {
 
   // --- [MỚI] KIỂM TRA TRẠNG THÁI BÀN TRƯỚC KHI TRANSACTION ---
   try {
-     const tableRes = await db.query('SELECT status, table_number FROM tables WHERE id = $1', [table_id]);
-     
-     if (tableRes.rows.length === 0) {
-        return res.status(404).json({ message: "Bàn không tồn tại" });
-     }
+    const tableRes = await db.query(
+      "SELECT status, table_number FROM tables WHERE id = $1",
+      [table_id]
+    );
 
-     if (tableRes.rows[0].status === 'inactive') {
-        return res.status(400).json({ 
-            message: `Bàn ${tableRes.rows[0].table_number} đang tạm ngưng phục vụ. Không thể đặt món.` 
-        });
-     }
+    if (tableRes.rows.length === 0) {
+      return res.status(404).json({ message: "Bàn không tồn tại" });
+    }
+
+    if (tableRes.rows[0].status === "inactive") {
+      return res.status(400).json({
+        message: `Bàn ${tableRes.rows[0].table_number} đang tạm ngưng phục vụ. Không thể đặt món.`,
+      });
+    }
   } catch (err) {
-     console.error(err);
-     return res.status(500).json({ message: "Lỗi kiểm tra bàn" });
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi kiểm tra bàn" });
   }
   // -------------------------------------------------------------
 
@@ -48,10 +51,10 @@ exports.createOrder = async (req, res) => {
         throw new Error(`Món ăn ID ${item.menu_item_id} không tồn tại`);
 
       const menuItemDB = menuItemRes.rows[0];
-      
+
       // [QUAN TRỌNG] Kiểm tra món có bị xóa hoặc hết hàng không
-      if (menuItemDB.is_deleted || menuItemDB.status !== 'available') {
-          throw new Error(`Món '${menuItemDB.name}' hiện không phục vụ`);
+      if (menuItemDB.is_deleted || menuItemDB.status !== "available") {
+        throw new Error(`Món '${menuItemDB.name}' hiện không phục vụ`);
       }
 
       let itemUnitPrice = Number(menuItemDB.price);
@@ -180,14 +183,18 @@ exports.getOrderDetails = async (req, res) => {
              LEFT JOIN tables t ON o.table_id = t.id WHERE o.id = $1`,
       [id]
     );
-    if (orderRes.rows.length === 0)
+
+    if (orderRes.rows.length === 0) {
       return res.status(404).json({ message: "Đơn không tồn tại" });
+    }
+
+    const order = orderRes.rows[0];
 
     // Lấy items và modifiers (Query phức tạp dùng JSON agg để gom gọn)
     const itemsRes = await db.query(
       `
             SELECT 
-                oi.*,
+                oi.id, oi.item_name, oi.price, oi.quantity, oi.subtotal, oi.note,
                 COALESCE(
                     json_agg(json_build_object('name', oim.modifier_name, 'price', oim.price)) 
                     FILTER (WHERE oim.id IS NOT NULL), '[]'
@@ -200,10 +207,11 @@ exports.getOrderDetails = async (req, res) => {
       [id]
     );
 
-    res.json({ ...orderRes.rows[0], items: itemsRes.rows });
+    order.items = itemsRes.rows;
+    res.json(order);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi server" });
+    res.status(500).json({ message: "Lỗi lấy chi tiết đơn" });
   }
 };
 

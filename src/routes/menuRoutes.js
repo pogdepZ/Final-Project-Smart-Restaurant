@@ -12,8 +12,8 @@ router.get('/categories', menuController.getCategories);
 router.post('/categories', protect, adminOnly, menuController.createCategory);
 
 // --- ROUTES MÓN ĂN ---
-// Ai cũng xem được món ăn
-router.get('/items', menuController.getMenuItems);
+router.get('/items', menuController.getMenuItems); // Public (để khách xem)
+router.get('/items/:id', menuController.getMenuItemById); // Public (xem chi tiết)
 
 // Tạo món ăn: Cần Login -> Cần là Admin -> Upload ảnh -> Xử lý logic
 router.post('/items', 
@@ -23,7 +23,9 @@ router.post('/items',
     menuController.createMenuItem
 );
 
-// Xóa món ăn
+
+router.post('/items', protect, adminOnly, upload.single('image'), menuController.createMenuItem);
+router.put('/items/:id', protect, adminOnly, upload.single('image'), menuController.updateMenuItem); // <--- MỚI
 router.delete('/items/:id', protect, adminOnly, menuController.deleteMenuItem);
 
 module.exports = router;
