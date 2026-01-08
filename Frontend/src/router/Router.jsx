@@ -33,6 +33,7 @@ import OrderManagement from "../features/Admin/OrderManagement";
 import UserManagement from "../features/Admin/UserManagement";
 import Reports from "../features/Admin/Reports";
 import Settings from "../features/Admin/Settings"; // (NEW) Cài đặt nhà hàng
+import CategoryManagement from '../features/Admin/CategoryManagement'
 
 // Waiter
 import WaiterOrders from "../features/Waiter/Orders";
@@ -130,6 +131,10 @@ const routers = [
           {
             path: "menu",
             element: <MenuManagement />,
+          },
+          {
+            path: "categories",
+            element: <CategoryManagement />,
           },
           // (Option) Thêm route con nếu muốn edit chi tiết
           // { path: "menu/edit/:id", element: <EditMenuItem /> },

@@ -14,6 +14,7 @@ const AdminLayout = () => {
 
   const navItems = [
     { path: '/admin/dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { path: '/admin/categories', label: 'Danh mục món ăn', icon: UtensilsCrossed },
     { path: '/admin/menu', label: 'Thực đơn', icon: UtensilsCrossed },
     { path: '/admin/tables', label: 'Bàn ăn', icon: Coffee },
     { path: '/admin/staff', label: 'Nhân sự', icon: Users },
