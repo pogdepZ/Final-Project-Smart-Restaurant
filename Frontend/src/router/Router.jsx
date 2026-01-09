@@ -45,6 +45,7 @@ import KitchenOrders from "../features/Kitchen/Orders";
 import KitchenHistory from "../features/Kitchen/History"; // (NEW) Lịch sử món đã nấu
 import MainLayout from "../layouts/MainLayout";
 import Booking from "../features/Customer/Booking";
+import ModifierManagement from "../features/Admin/ModifierManagement";
 
 const routers = [
   // ===== PUBLIC ROUTES (Login/Register/Scan) =====
@@ -145,6 +146,10 @@ const routers = [
           {
             path: "orders",
             element: <OrderManagement />,
+          },
+          {
+            path: "modifiers",
+            element: <ModifierManagement />,
           },
           {
             path: "users",

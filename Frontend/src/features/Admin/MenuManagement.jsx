@@ -3,6 +3,7 @@ import axiosClient from "../../services/axiosClient";
 import PhotoManager from "./PhotoManager";
 import imageCompression from "browser-image-compression"; // Import
 import { toast } from "react-toastify";
+import ModifierSelector from "./ModifierSelector";
 import {
   Plus,
   Search,
@@ -14,6 +15,7 @@ import {
   X,
   Upload,
   Loader,
+  Layers,
 } from "lucide-react";
 
 const MenuManagement = () => {
@@ -23,6 +25,7 @@ const MenuManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [activeItemForMod, setActiveItemForMod] = useState(null);
 
   // Filter State
   const [filters, setFilters] = useState({
@@ -360,6 +363,14 @@ const MenuManagement = () => {
                   >
                     <Trash2 size={18} />
                   </button>
+
+                  <button
+                    onClick={() => setActiveItemForMod(item.id)}
+                    className="p-1.5 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 transition-colors"
+                    title="Cấu hình Topping"
+                  >
+                    <Layers size={18} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -577,6 +588,13 @@ const MenuManagement = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {activeItemForMod && (
+        <ModifierSelector
+          itemId={activeItemForMod}
+          onClose={() => setActiveItemForMod(null)}
+        />
       )}
     </div>
   );
