@@ -1,0 +1,153 @@
+// server/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// 1. User
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  WAITER
+  KITCHEN
+  CUSTOMER
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+}
+
+// 2. Menu
+model Category {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  description  String?
+  displayOrder Int        @default(0)
+  status       String     @default("ACTIVE")
+  items        MenuItem[]
+}
+
+model MenuItem {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  description       String?
+  price             Float    
+  prepTimeMinutes   Int      @default(0)
+  status            String   @default("AVAILABLE") 
+  image             String?  
+  isChefRecommended Boolean  @default(false)
+  isDeleted         Boolean  @default(false)
+  
+  categoryId        String   @db.ObjectId
+  category          Category @relation(fields: [categoryId], references: [id])
+  
+  // Quan hệ (Đã fix lỗi)
+  photos            MenuItemPhoto[]
+  modifierGroupIds  String[]   @db.ObjectId
+  modifierGroups    ModifierGroup[] @relation(fields: [modifierGroupIds], references: [id])
+  orderItems        OrderItem[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// --- MODEL CÒN THIẾU CỦA BẠN ĐÂY ---
+model MenuItemPhoto {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  url        String
+  isPrimary  Boolean  @default(false)
+  menuItemId String   @db.ObjectId
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+}
+// -----------------------------------
+
+// 3. Topping
+model ModifierGroup {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String   
+  isRequired    Boolean  @default(false) 
+  selectionType String   @default("SINGLE") 
+  
+  options       ModifierOption[] 
+
+  menuItemIds   String[]   @db.ObjectId
+  menuItems     MenuItem[] @relation(fields: [menuItemIds], references: [id])
+}
+
+model ModifierOption {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  name            String        
+  priceAdjustment Float         @default(0) 
+  
+  groupId         String        @db.ObjectId
+  group           ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+// 4. Table & Order
+model Table {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique 
+  capacity  Int
+  location  String?  @default("Chung") 
+  status    String   @default("ACTIVE") 
+  qrToken   String?  
+  qrVersion Int      @default(1) 
+  createdAt DateTime? @default(now())
+
+  sessions  TableSession[]
+}
+
+enum SessionStatus {
+  OPEN
+  PAYING
+  CLOSED
+}
+
+model TableSession {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  tableId   String        @db.ObjectId
+  table     Table         @relation(fields: [tableId], references: [id])
+  status    SessionStatus @default(OPEN) 
+  orders    Order[]       
+  startTime DateTime      @default(now())
+  endTime   DateTime?
+  totalAmount Float       @default(0)
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  PREPARING
+  READY
+  SERVED
+}
+
+model Order {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String      @db.ObjectId
+  session   TableSession @relation(fields: [sessionId], references: [id])
+  status    OrderStatus @default(PENDING)
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+}
+
+model OrderItem {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId    String   @db.ObjectId
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItemId String   @db.ObjectId
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  note       String?
+}

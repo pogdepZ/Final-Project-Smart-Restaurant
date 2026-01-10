@@ -1,0 +1,13 @@
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
+
+// Định nghĩa API
+
+// Route Đăng nhập: POST /api/auth/login
+router.post('/login', authController.login);
+
+// Route Đăng ký: POST /api/auth/register
+router.post('/register', authController.register);
+
+module.exports = router;
