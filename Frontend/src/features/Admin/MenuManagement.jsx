@@ -371,7 +371,7 @@ const MenuManagement = () => {
                   >
                     <Layers size={18} />
                   </button>
-                </div>
+                </div> 
               </div>
             </div>
           ))}
