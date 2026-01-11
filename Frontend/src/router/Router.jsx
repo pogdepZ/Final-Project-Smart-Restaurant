@@ -89,7 +89,7 @@ const routers = [
       },
       {
         path: "menu",
-        element: <Menu/>
+        element: <Menu />
       },
       {
         path: "order/status",
@@ -101,7 +101,7 @@ const routers = [
       },
       {
         path: 'booking',
-        element: <Booking/>
+        element: <Booking />
       },
       // (NEW) Các trang bổ sung cho khách hàng
       {
@@ -165,11 +165,10 @@ const routers = [
     element: <ProtectedRoute roles={["WAITER"]} />,
     children: [
       {
-        element: <WaiterLayout />,
         children: [
           {
             index: true, // Mặc định vào danh sách bàn hoặc order
-            element: <WaiterTables />,
+            element: <WaiterOrders />,
           },
           {
             path: "orders",
