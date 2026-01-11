@@ -14,7 +14,7 @@ function App() {
     JSON.stringify({
       id: 1,
       name: "Waiter Test",
-      role: "waiter",
+      role: "KITCHEN",
     })
   );
 

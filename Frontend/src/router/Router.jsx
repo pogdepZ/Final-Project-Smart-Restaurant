@@ -198,7 +198,6 @@ const routers = [
     element: <ProtectedRoute roles={["KITCHEN"]} />,
     children: [
       {
-        element: <KitchenLayout />,
         children: [
           {
             index: true,
