@@ -113,7 +113,7 @@ const TableManagement = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight">
-            Quản Lý <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">Bàn Ăn</span>
+            Quản Lý <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">Bàn Ăn</span>
           </h1>
           <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -146,7 +146,7 @@ const TableManagement = () => {
 
           <button 
             onClick={openCreate}
-            className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all font-bold text-sm tracking-wide"
+            className="bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all font-bold text-sm tracking-wide"
           >
             <Plus size={18} /> Thêm Bàn Mới
           </button>
@@ -162,7 +162,7 @@ const TableManagement = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {tables.map((table) => (
-            <div key={table.id} className={`group relative bg-neutral-900/50 border border-white/5 rounded-2xl p-6 transition-all hover:border-orange-500/30 hover:shadow-[0_0_20px_rgba(0,0,0,0.5)] ${table.status === 'inactive' ? 'opacity-60 grayscale-[50%]' : ''}`}>
+            <div key={table.id} className={`group relative bg-neutral-900/50 border border-white/5 rounded-2xl p-6 transition-all hover:border-orange-500/30 hover:shadow-[0_0_20px_rgba(0,0,0,0.5)] ${table.status === 'inactive' ? 'opacity-60 grayscale-50' : ''}`}>
                 
                 {/* Header Card */}
                 <div className="flex justify-between items-start mb-4">
@@ -232,7 +232,7 @@ const TableManagement = () => {
 
       {/* --- MODAL FORM (Dark Theme) --- */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-9999">
           <div className="bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-white/5">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -304,7 +304,7 @@ const TableManagement = () => {
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-orange-500/20 transition-all"
+                  className="flex-1 px-4 py-3 bg-linear-to-r from-orange-500 to-red-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-orange-500/20 transition-all"
                 >
                   {isEditing ? 'Lưu Thay Đổi' : 'Xác Nhận Tạo'}
                 </button>
