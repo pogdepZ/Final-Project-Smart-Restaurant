@@ -15,7 +15,7 @@ exports.protect = (req, res, next) => {
       // 3. Lưu thông tin user vào req để dùng ở bước sau
       req.user = decoded;
       
-      next(); // Cho phép đi tiếp
+      return next(); // Cho phép đi tiếp
     } catch (error) {
       console.error(error);
       res.status(401).json({ message: 'Token không hợp lệ, vui lòng đăng nhập lại' });

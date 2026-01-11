@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axiosClient from "../axiosClient";
+import axiosClient, { injectStore } from "../axiosClient";
 
 const getInitialToken = () => {
   try {
@@ -30,7 +30,7 @@ export const loginThunk = createAsyncThunk(
       // server thường trả: { token/accessToken, user }
       const res = await axiosClient.post("/auth/login", userData);
 
-      const accessToken = res?.token || null;
+      const accessToken = res?.accessToken || null;
       const user = res?.user || null;
 
       return { accessToken, user };
@@ -130,6 +130,7 @@ const authSlice = createSlice({
         } else {
           localStorage.removeItem("user");
         }
+        injectStore(state)
       })
       .addCase(loginThunk.rejected, (state, action) => {
         state.isLoaading = false;
