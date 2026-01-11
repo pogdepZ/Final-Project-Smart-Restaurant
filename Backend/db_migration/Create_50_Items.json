@@ -1,0 +1,219 @@
+{
+	"info": {
+		"_postman_id": "gen-items-50",
+		"name": "Smart Restaurant - Menu Generator",
+		"description": "Tự động tạo 50 món ăn ngẫu nhiên phân bổ vào các danh mục có sẵn",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Login Admin",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"if (pm.response.code === 200) {",
+							"    pm.collectionVariables.set(\"token\", jsonData.token);",
+							"    console.log(\"Login Success\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{admin_email}}\",\n    \"password\": \"{{admin_password}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			}
+		},
+		{
+			"name": "2. Get Categories (Fetch IDs)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"if (pm.response.code === 200 && jsonData.length > 0) {",
+							"    // Lưu danh sách ID danh mục vào biến để dùng cho bước sau",
+							"    var catIds = jsonData.map(c => c.id);",
+							"    pm.collectionVariables.set(\"available_cat_ids\", JSON.stringify(catIds));",
+							"    console.log(\"Found Categories: \" + catIds.length);",
+							"} else {",
+							"    console.error(\"No categories found! Please create some categories first.\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/menu/categories",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"menu",
+						"categories"
+					]
+				}
+			}
+		},
+		{
+			"name": "3. ⚡ Script: Generate 50 Items",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// CẤU HÌNH",
+							"const TOTAL_ITEMS = 50;",
+							"const baseUrl = pm.collectionVariables.get(\"baseUrl\");",
+							"const token = pm.collectionVariables.get(\"token\");",
+							"",
+							"// Lấy danh sách ID danh mục đã lưu ở bước 2",
+							"const catIdsStr = pm.collectionVariables.get(\"available_cat_ids\");",
+							"if (!catIdsStr) {",
+							"    throw new Error(\"Chưa chạy Bước 2 hoặc chưa có Danh mục nào!\");",
+							"}",
+							"const categories = JSON.parse(catIdsStr);",
+							"",
+							"// Dữ liệu ngẫu nhiên để ghép tên món",
+							"const bases = [\"Cơm\", \"Phở\", \"Bún\", \"Mì\", \"Gà\", \"Bò\", \"Heo\", \"Cá\", \"Tôm\", \"Salad\", \"Pizza\", \"Burger\"];",
+							"const styles = [\"Xào\", \"Chiên\", \"Nướng\", \"Hấp\", \"Luộc\", \"Sốt chua ngọt\", \"Sốt tiêu\", \"Kho tộ\", \"Lắc phô mai\"];",
+							"const adjs = [\"Đặc biệt\", \"Vip\", \"Thượng hạng\", \"Cay\", \"Không cay\", \"Truyền thống\", \"Kiểu Mỹ\", \"Kiểu Thái\"];",
+							"",
+							"// VÒNG LẶP TẠO MÓN",
+							"for (let i = 1; i <= TOTAL_ITEMS; i++) {",
+							"    ",
+							"    // 1. Random Tên",
+							"    let base = bases[Math.floor(Math.random() * bases.length)];",
+							"    let style = styles[Math.floor(Math.random() * styles.length)];",
+							"    let adj = adjs[Math.floor(Math.random() * adjs.length)];",
+							"    let name = `${base} ${style} ${adj} #${i}`;",
+							"",
+							"    // 2. Random Giá (từ 30k đến 200k, tròn chục nghìn)",
+							"    let price = (Math.floor(Math.random() * 18) + 3) * 10000;",
+							"",
+							"    // 3. Random Category",
+							"    let catId = categories[Math.floor(Math.random() * categories.length)];",
+							"",
+							"    // 4. Payload",
+							"    const payload = {",
+							"        name: name,",
+							"        description: `Món ăn ngon tuyệt vời, chế biến từ nguyên liệu tươi sống. Món ${name} là best seller.`,",
+							"        price: price,",
+							"        category_id: catId,",
+							"        prep_time_minutes: Math.floor(Math.random() * 30) + 5,",
+							"        status: \"available\",",
+							"        is_chef_recommended: Math.random() < 0.2 // 20% cơ hội là món Chef Rec",
+							"    };",
+							"",
+							"    // 5. Gửi Request (Async)",
+							"    // Lưu ý: Gửi JSON body (Backend phải hỗ trợ JSON body cho createMenuItem hoặc dùng multer nhưng không có file)",
+							"    pm.sendRequest({",
+							"        url: baseUrl + '/menu/items',",
+							"        method: 'POST',",
+							"        header: {",
+							"            'Content-Type': 'application/json',",
+							"            'Authorization': 'Bearer ' + token",
+							"        },",
+							"        body: {",
+							"            mode: 'raw',",
+							"            raw: JSON.stringify(payload)",
+							"        }",
+							"    }, function (err, res) {",
+							"        if (err) {",
+							"            console.log(`❌ Lỗi tạo ${name}`);",
+							"        } else {",
+							"            if(res.code === 201) {",
+							"                console.log(`✅ Đã tạo: ${name} (${price}đ)`);",
+							"            } else {",
+							"                console.log(`⚠️ Lỗi ${name}: ${res.text()}`);",
+							"            }",
+							"        }",
+							"    });",
+							"}",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://postman-echo.com/get?msg=Trigger_Item_Script",
+					"protocol": "https",
+					"host": [
+						"postman-echo",
+						"com"
+					],
+					"path": [
+						"get"
+					],
+					"query": [
+						{
+							"key": "msg",
+							"value": "Trigger_Item_Script"
+						}
+					]
+				},
+				"description": "Dummy request để chạy script tạo món ăn."
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api",
+			"type": "string"
+		},
+		{
+			"key": "admin_email",
+			"value": "admin@gmail.com",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "123456",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "available_cat_ids",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

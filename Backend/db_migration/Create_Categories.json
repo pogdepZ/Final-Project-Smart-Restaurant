@@ -1,0 +1,161 @@
+{
+	"info": {
+		"_postman_id": "gen-categories-10",
+		"name": "Smart Restaurant - Category Generator",
+		"description": "Tự động tạo 10 danh mục món ăn mẫu",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Login Admin",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"if (pm.response.code === 200) {",
+							"    pm.collectionVariables.set(\"token\", jsonData.token);",
+							"    console.log(\"Login Success. Token Set.\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{admin_email}}\",\n    \"password\": \"{{admin_password}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			}
+		},
+		{
+			"name": "2. ⚡ Script: Generate 10 Categories",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// CẤU HÌNH",
+							"const baseUrl = pm.collectionVariables.get(\"baseUrl\");",
+							"const token = pm.collectionVariables.get(\"token\");",
+							"",
+							"// DANH SÁCH DANH MỤC MẪU",
+							"const categories = [",
+							"    { name: \"Món Khai Vị\", desc: \"Salad, Súp, Nem...\" },",
+							"    { name: \"Món Chính - Gà\", desc: \"Các món gà rán, gà luộc...\" },",
+							"    { name: \"Món Chính - Bò\", desc: \"Bò bít tết, bò lúc lắc...\" },",
+							"    { name: \"Món Chính - Heo\", desc: \"Sườn nướng, thịt kho...\" },",
+							"    { name: \"Hải Sản\", desc: \"Tôm, cua, cá, mực tươi sống\" },",
+							"    { name: \"Cơm - Mì - Cháo\", desc: \"Các món tinh bột no bụng\" },",
+							"    { name: \"Lẩu\", desc: \"Lẩu thái, lẩu hải sản...\" },",
+							"    { name: \"Đồ Uống - Cà Phê\", desc: \"Cà phê đen, sữa, bạc xỉu\" },",
+							"    { name: \"Đồ Uống - Sinh Tố\", desc: \"Trái cây tươi xay\" },",
+							"    { name: \"Tráng Miệng\", desc: \"Chè, kem, bánh ngọt\" }",
+							"];",
+							"",
+							"// VÒNG LẶP TẠO",
+							"categories.forEach((cat, index) => {",
+							"    const payload = {",
+							"        name: cat.name,",
+							"        description: cat.desc,",
+							"        display_order: index + 1,",
+							"        status: \"active\"",
+							"    };",
+							"",
+							"    // Gửi Request",
+							"    pm.sendRequest({",
+							"        url: baseUrl + '/menu/categories',",
+							"        method: 'POST',",
+							"        header: {",
+							"            'Content-Type': 'application/json',",
+							"            'Authorization': 'Bearer ' + token",
+							"        },",
+							"        body: {",
+							"            mode: 'raw',",
+							"            raw: JSON.stringify(payload)",
+							"        }",
+							"    }, function (err, res) {",
+							"        if (err) {",
+							"            console.log(`❌ Lỗi tạo ${cat.name}`);",
+							"        } else {",
+							"            if(res.code === 201) {",
+							"                console.log(`✅ Đã tạo: ${cat.name}`);",
+							"            } else {",
+							"                console.log(`⚠️ Lỗi ${cat.name}: ${res.text()}`);",
+							"            }",
+							"        }",
+							"    });",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://postman-echo.com/get?msg=Trigger_Category_Script",
+					"protocol": "https",
+					"host": [
+						"postman-echo",
+						"com"
+					],
+					"path": [
+						"get"
+					],
+					"query": [
+						{
+							"key": "msg",
+							"value": "Trigger_Category_Script"
+						}
+					]
+				},
+				"description": "Dummy request để chạy script tạo danh mục."
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api",
+			"type": "string"
+		},
+		{
+			"key": "admin_email",
+			"value": "admin@gmail.com",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "123456",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
