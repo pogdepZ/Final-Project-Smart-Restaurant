@@ -10,7 +10,7 @@ exports.protect = (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
 
       // 2. Giải mã token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
       // 3. Lưu thông tin user vào req để dùng ở bước sau
       req.user = decoded;
