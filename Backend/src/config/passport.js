@@ -4,21 +4,13 @@ const config = require("../config/index"); // file config bạn đã có (chứa
 module.exports = (passport) => {
   const opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: config.auth.accessTokenSecret, 
-    // ^ tuỳ bạn đặt tên trong config:
-    // - nếu bạn có config.auth.jwtAccessSecret -> dùng cái đó
-    // - còn không thì dùng config.auth.jwtSecret
+    secretOrKey: config.auth.accessTokenSecret,
   };
 
   passport.use(
     new JwtStrategy(opts, async (payload, done) => {
       try {
-        // payload là thứ bạn sign: { id, role, ... }
-        // Nếu muốn lấy user từ DB để chắc chắn user còn tồn tại:
-        // const user = await userRepository.findById(payload.id);
-        // if (!user) return done(null, false);
-
-        return done(null, payload); // gán payload vào req.user
+        return done(null, payload); 
       } catch (err) {
         return done(err, false);
       }
