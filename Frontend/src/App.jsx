@@ -8,16 +8,6 @@ import 'react-toastify/dist/ReactToastify.css';
 function App() {
   const element = useRoutes(routers);
 
-  localStorage.setItem("token", "mock-token");
-  localStorage.setItem(
-    "user",
-    JSON.stringify({
-      id: 1,
-      name: "Waiter Test",
-      role: "waiter",
-    })
-  );
-
   return (
     <>
       {element}
