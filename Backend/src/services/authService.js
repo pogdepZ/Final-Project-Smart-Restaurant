@@ -63,7 +63,7 @@ exports.login = async ({ email, password }) => {
 
   // Refresh token dài hạn
   const refreshToken = jwt.sign(
-    { id: user.id },
+    { id: user.id, role: user.role, name: user.name },
     config.auth.refreshTokenSecret,
     { expiresIn: "30d" }
   );
