@@ -69,6 +69,36 @@ const TableDetailModal = ({ table, onClose }) => {
     }
   };
 
+  // 3. Hàm In Ngay (Print Preview cửa sổ mới)
+  const handlePrint = () => {
+    const printWindow = window.open('', '', 'width=800,height=800');
+    printWindow.document.write(`
+      <html>
+        <head>
+            <title>QR Code - ${table.table_number}</title>
+            <style>
+                body { font-family: 'Helvetica', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                .qr-card { text-align: center; border: 4px solid #000; padding: 40px; border-radius: 30px; width: 400px; }
+                h1 { margin: 0 0 10px 0; font-size: 60px; font-weight: 800; }
+                p.loc { font-size: 24px; margin: 0 0 30px 0; color: #555; }
+                img { display: block; margin: 0 auto; width: 100%; height: auto; }
+                p.scan { margin-top: 30px; font-weight: bold; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+            </style>
+        </head>
+        <body>
+          <div class="qr-card">
+            <h1>${table.table_number}</h1>
+            <p class="loc">${table.location}</p>
+            <!-- onload quan trọng để đợi ảnh tải xong mới in -->
+            <img src="${qrSrc}" onload="setTimeout(function(){window.print();}, 500);" />
+            <p class="scan">Quét để gọi món</p>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10000] animate-in fade-in duration-200">
       <QRTemplate id={templateId} table={table} qrSrc={qrSrc} />
@@ -129,6 +159,9 @@ const TableDetailModal = ({ table, onClose }) => {
               className="py-3 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-900/20"
             >
               <FileText size={18} /> Lưu PDF
+            </button>
+            <button onClick={handlePrint} className="py-3 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-900/20">
+              <Printer size={18} /> In Ngay
             </button>
           </div>
         </div>

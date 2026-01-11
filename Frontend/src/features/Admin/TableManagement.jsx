@@ -22,6 +22,7 @@ import {
   Download,
   FileText,
   Archive,
+  Grid, Square
 } from "lucide-react";
 import TableDetailModal from "../../Components/TableDetailModal"; // (Tạo thư mục nếu chưa có)
 
@@ -143,6 +144,86 @@ const TableManagement = () => {
       }
     }
   };
+
+  const handleGeneratePDF = async (layoutType = 'grid') => {
+    toast.info(layoutType === 'grid' ? "Đang tạo PDF lưới (4 bàn/trang)..." : "Đang tạo PDF đơn (1 bàn/trang)...");
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    let x, y, size, fontSize;
+    let count = 0;
+
+    // Cấu hình Layout
+    if (layoutType === 'grid') {
+        x = 15; y = 20; size = 70; fontSize = 16;
+    } else {
+        x = 35; y = 40; size = 140; fontSize = 30; // To hơn cho trang đơn
+    }
+
+    for (const table of tables) {
+        const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
+        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(clientUrl)}`;
+
+        // Load ảnh async
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = qrApi;
+        await new Promise((r) => (img.onload = r));
+
+        // Vẽ lên canvas để lấy dataURL
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const imgData = canvas.toDataURL("image/png");
+
+        // --- VẼ VÀO PDF ---
+        doc.setFontSize(fontSize);
+        doc.setFont("helvetica", "bold");
+        
+        // Vẽ tên bàn (Căn giữa theo ảnh QR)
+        const textWidth = doc.getTextWidth(table.table_number);
+        const textX = x + (size - textWidth) / 2;
+        
+        doc.text(table.table_number, textX, y - 5); 
+        doc.addImage(imgData, "PNG", x, y, size, size);
+        
+        // Vẽ thêm vị trí
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(table.location, x + size/2, y + size + 5, { align: "center" });
+
+        // --- XỬ LÝ CHUYỂN TRANG / VỊ TRÍ ---
+        if (layoutType === 'grid') {
+            count++;
+            // Logic lưới 2x2 (4 cái 1 trang)
+            if (count % 2 !== 0) {
+                x += 100; // Dịch phải
+            } else {
+                x = 15;   // Về trái
+                y += 120; // Xuống dòng
+            }
+            // Sang trang nếu hết chỗ (4 cái)
+            if (count % 4 === 0 && count < tables.length) {
+                doc.addPage();
+                x = 15; y = 20;
+            }
+        } else {
+            // Logic 1 cái 1 trang
+            if (tables.indexOf(table) < tables.length - 1) {
+                doc.addPage();
+            }
+        }
+    }
+
+    // Mở trong tab mới (Print Preview)
+    window.open(doc.output('bloburl'), '_blank');
+    toast.success("Đã tạo PDF xong!");
+  };
+
 
   // A. Download ZIP (PNG Images)
   const handleDownloadZip = async () => {
