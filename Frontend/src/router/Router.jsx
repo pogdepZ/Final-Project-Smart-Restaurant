@@ -122,14 +122,14 @@ const routers = [
   // ===== ADMIN =====
   {
     path: "/admin",
-    element: <ProtectedRoute roles={["ADMIN"]} />,
+    element: <ProtectedRoute roles={["admin"]} />,
     children: [
       {
         element: <AdminLayout />,
         children: [
           {
             index: true,
-            element: <DashBoard />,
+            element: <TableManagement />,
           },
           {
             path: "menu",

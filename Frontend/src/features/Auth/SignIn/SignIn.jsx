@@ -33,10 +33,23 @@ const SignIn = () => {
 
   const onSubmit = async (values) => {
     try {
-      await dispatch(loginThunk(values));
-      navigate("/");
+      const result = await dispatch(loginThunk(values)).unwrap();
+
+      const role = result?.user?.role;
+
+      console.log(role)
+
+      if (role === "admin") {
+        navigate("/admin");
+      } else if (role === "waiter") {
+        navigate("/waiter");
+      } else if (role === "kitchen") {
+        navigate("/kitchen");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
-      console.log(error);
+      console.log("Login failed:", error);
     }
   };
 
