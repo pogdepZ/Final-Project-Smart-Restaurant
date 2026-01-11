@@ -102,7 +102,36 @@ exports.createTable = async (req, res) => {
     res.status(201).json({ ...finalTable, qr_image: qrImage });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi Server" });
+    res.status(500).json({ message: 'Lỗi Server' });
+  }
+};
+
+// --- REGENERATE QR ---
+exports.regenerateQR = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Tìm bàn
+    const table = await TableRepository.findById(id);
+    if (!table) return res.status(404).json({ message: "Bàn không tồn tại" });
+
+    // 2. Tạo token mới
+    const { token, qrImage } = await generateSignedQR(
+      table.id,
+      table.table_number
+    );
+
+    // 3. Update DB
+    await TableRepository.updateQRToken(id, token);
+
+    res.json({
+      message: "Đã làm mới mã QR",
+      qr_token: token,
+      qr_image: qrImage,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi làm mới QR" });
   }
 };
 
