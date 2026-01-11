@@ -1,10 +1,10 @@
 const { Strategy: JwtStrategy, ExtractJwt } = require("passport-jwt");
-const config = require("./config"); // file config bạn đã có (chứa auth.jwtSecret hoặc jwt access secret)
+const config = require("../config/index"); // file config bạn đã có (chứa auth.jwtSecret hoặc jwt access secret)
 
 module.exports = (passport) => {
   const opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: config.auth.jwtAccessSecret || config.auth.jwtSecret, 
+    secretOrKey: config.auth.accessTokenSecret, 
     // ^ tuỳ bạn đặt tên trong config:
     // - nếu bạn có config.auth.jwtAccessSecret -> dùng cái đó
     // - còn không thì dùng config.auth.jwtSecret
