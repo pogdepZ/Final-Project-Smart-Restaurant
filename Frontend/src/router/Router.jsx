@@ -129,7 +129,7 @@ const routers = [
         children: [
           {
             index: true,
-            element: <DashBoard />,
+            element: <TableManagement />,
           },
           {
             path: "menu",
