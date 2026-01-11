@@ -1,5 +1,5 @@
 const { Strategy: JwtStrategy, ExtractJwt } = require("passport-jwt");
-const config = require("./config"); // file config bạn đã có (chứa auth.jwtSecret hoặc jwt access secret)
+const config = require("../config/index"); // file config bạn đã có (chứa auth.jwtSecret hoặc jwt access secret)
 
 module.exports = (passport) => {
   const opts = {
