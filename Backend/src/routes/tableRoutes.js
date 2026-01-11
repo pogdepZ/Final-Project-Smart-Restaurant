@@ -25,4 +25,7 @@ router.patch('/:id/status', protect, adminOnly, tableController.toggleStatus);
 // router.post('/regenerate-all', tableController.regenerateAllQRs);
 
 
+router.post('/regenerate-all', protect, adminOnly, tableController.bulkRegenerateQR);
+router.post('/:id/regenerate', protect, adminOnly, tableController.regenerateQR);
+
 module.exports = router;

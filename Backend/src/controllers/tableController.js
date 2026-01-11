@@ -4,23 +4,23 @@ const QRCode = require("qrcode");
 
 const VALID_LOCATIONS = ["Indoor", "Outdoor", "Patio", "VIP Room"];
 
-
 // Helper tạo Token & Ảnh QR (Logic nghiệp vụ)
 const generateSignedQR = async (tableId, tableNumber) => {
-    const payload = {
-        table_id: tableId,
-        table_number: tableNumber,
-        type: 'table_qr'
-    };
-    
-    const token = jwt.sign(payload, process.env.QR_SECRET, { expiresIn: '2y' });
-    
-    const clientUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/menu?token=${token}`;
-    const qrImage = await QRCode.toDataURL(clientUrl);
+  const payload = {
+    table_id: tableId,
+    table_number: tableNumber,
+    type: "table_qr",
+  };
 
-    return { token, qrImage };
+  const token = jwt.sign(payload, process.env.QR_SECRET, { expiresIn: "2y" });
+
+  const clientUrl = `${
+    process.env.CLIENT_URL || "http://localhost:5173"
+  }/menu?token=${token}`;
+  const qrImage = await QRCode.toDataURL(clientUrl);
+
+  return { token, qrImage };
 };
-
 
 // 1. GET Tables
 exports.getTables = async (req, res) => {
@@ -82,12 +82,18 @@ exports.createTable = async (req, res) => {
         .json({ message: `Số bàn '${table_number}' đã tồn tại` });
 
     // 2. Tạo bàn trước (để lấy ID)
-    const newTable = await TableRepository.create({ 
-        table_number, capacity, location, description 
+    const newTable = await TableRepository.create({
+      table_number,
+      capacity,
+      location,
+      description,
     });
-    
-     // 3. Sinh QR Token dựa trên ID vừa có
-    const { token, qrImage } = await generateSignedQR(newTable.id, newTable.table_number);
+
+    // 3. Sinh QR Token dựa trên ID vừa có
+    const { token, qrImage } = await generateSignedQR(
+      newTable.id,
+      newTable.table_number
+    );
 
     // 4. Update Token vào DB
     const finalTable = await TableRepository.updateQRToken(newTable.id, token);
@@ -102,28 +108,31 @@ exports.createTable = async (req, res) => {
 
 // --- REGENERATE QR ---
 exports.regenerateQR = async (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        // 1. Tìm bàn
-        const table = await TableRepository.findById(id);
-        if (!table) return res.status(404).json({ message: "Bàn không tồn tại" });
+  try {
+    // 1. Tìm bàn
+    const table = await TableRepository.findById(id);
+    if (!table) return res.status(404).json({ message: "Bàn không tồn tại" });
 
-        // 2. Tạo token mới
-        const { token, qrImage } = await generateSignedQR(table.id, table.table_number);
+    // 2. Tạo token mới
+    const { token, qrImage } = await generateSignedQR(
+      table.id,
+      table.table_number
+    );
 
-        // 3. Update DB
-        await TableRepository.updateQRToken(id, token);
+    // 3. Update DB
+    await TableRepository.updateQRToken(id, token);
 
-        res.json({ 
-            message: "Đã làm mới mã QR", 
-            qr_token: token, 
-            qr_image: qrImage 
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Lỗi làm mới QR' });
-    }
+    res.json({
+      message: "Đã làm mới mã QR",
+      qr_token: token,
+      qr_image: qrImage,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi làm mới QR" });
+  }
 };
 
 // 3. UPDATE Table
@@ -187,5 +196,25 @@ exports.toggleStatus = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi Server" });
+  }
+};
+
+exports.bulkRegenerateQR = async (req, res) => {
+  try {
+    // Lấy tất cả bàn
+    const tables = await TableRepository.getAll({}); // {} nghĩa là không filter
+
+    let count = 0;
+    // Chạy vòng lặp (có thể tối ưu bằng Promise.all)
+    for (const table of tables) {
+      const { token } = await generateSignedQR(table.id, table.table_number);
+      await TableRepository.updateQRToken(table.id, token);
+      count++;
+    }
+    
+    res.json({ message: `Đã làm mới mã QR cho ${count} bàn.`, count });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi làm mới hàng loạt" });
   }
 };

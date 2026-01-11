@@ -17,8 +17,17 @@ class TableRepository {
             query += ` AND location ILIKE $${params.length}`;
         }
 
-        query += sortQuery; // VD: " ORDER BY table_number ASC"
+        // --- KIỂM TRA SORT QUERY ---
+        // Nếu sortQuery không có, dùng mặc định để tránh undefined nối vào chuỗi
+        if (sortQuery) {
+            query += sortQuery;
+        } else {
+            query += " ORDER BY table_number ASC";
+        }
 
+        // LƯU Ý: Hàm getAll này dùng cho cả Bulk Regenerate (không có filter/sort)
+        // và Get List (có filter/sort).
+        
         const result = await db.query(query, params);
         return result.rows;
     }
@@ -84,15 +93,18 @@ class TableRepository {
         return result.rows[0];
     }
 
-
-
-
     // 5. Update QR Token (Dùng cho cả Create và Regenerate)
     async updateQRToken(id, token) {
         const result = await db.query(
             'UPDATE tables SET qr_token = $1 WHERE id = $2 RETURNING *',
             [token, id]
         );
+        return result.rows[0];
+    }
+
+    // 6. Find By ID (Dùng cho Regenerate)
+    async findById(id) {
+        const result = await db.query('SELECT * FROM tables WHERE id = $1', [id]);
         return result.rows[0];
     }
 }

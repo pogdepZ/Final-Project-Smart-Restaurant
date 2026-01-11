@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   X,
   Printer,
@@ -9,15 +9,27 @@ import {
   Activity,
   FileText,
   Image as ImageIcon,
+  RefreshCw,
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import QRTemplate from "../Components/QRTemplate";
+import { toast } from "react-toastify";
+import axiosClient from "../store/axiosClient";
 
-const TableDetailModal = ({ table, onClose }) => {
+const TableDetailModal = ({ table: initialTable, onClose, onRefresh }) => {
+  const [table, setTable] = useState(initialTable);
+
+  useEffect(() => {
+    if (initialTable) {
+      setTable(initialTable);
+    }
+  }, [initialTable]);
+
   if (!table) return null;
 
   // Tính toán URL QR Code
+  const token = table.qr_token || "";
   const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(
     clientUrl
@@ -71,7 +83,7 @@ const TableDetailModal = ({ table, onClose }) => {
 
   // 3. Hàm In Ngay (Print Preview cửa sổ mới)
   const handlePrint = () => {
-    const printWindow = window.open('', '', 'width=800,height=800');
+    const printWindow = window.open("", "", "width=800,height=800");
     printWindow.document.write(`
       <html>
         <head>
@@ -97,6 +109,31 @@ const TableDetailModal = ({ table, onClose }) => {
       </html>
     `);
     printWindow.document.close();
+  };
+
+  const handleRegenerate = async () => {
+    if (
+      !window.confirm(
+        "CẢNH BÁO: Mã QR cũ sẽ bị vô hiệu hóa ngay lập tức. Bạn có chắc chắn muốn tạo mã mới?"
+      )
+    )
+      return;
+
+    try {
+      const res = await axiosClient.post(`/tables/${table.id}/regenerate`);
+      toast.success("Đã tạo mã QR mới!");
+
+      console.log(">>>>>>>>>>>>" + res.message);
+      toast.success("Đã tạo mã QR mới!");
+      setTable((prev) => ({
+        ...prev,
+        qr_token: res.qr_token,
+        // Nếu backend trả về qr_image base64 thì dùng luôn, còn không thì URL tự tính
+      }));
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast.error("Lỗi làm mới QR");
+    }
   };
 
   return (
@@ -147,7 +184,7 @@ const TableDetailModal = ({ table, onClose }) => {
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-4 mt-8">
+          <div className="grid grid-rows-2 grid-cols-2 gap-4 mt-8">
             <button
               onClick={handleDownloadPNG}
               className="py-3 px-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 border border-white/5"
@@ -160,8 +197,17 @@ const TableDetailModal = ({ table, onClose }) => {
             >
               <FileText size={18} /> Lưu PDF
             </button>
-            <button onClick={handlePrint} className="py-3 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-900/20">
+            <button
+              onClick={handlePrint}
+              className="py-3 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-900/20"
+            >
               <Printer size={18} /> In Ngay
+            </button>
+            <button
+              onClick={handleRegenerate}
+              className="py-2.5 bg-red-900/50 hover:bg-red-900/80 text-red-200 border border-red-500/30 rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-2"
+            >
+              <RefreshCw size={18} /> Làm Mới Mã QR
             </button>
           </div>
         </div>
