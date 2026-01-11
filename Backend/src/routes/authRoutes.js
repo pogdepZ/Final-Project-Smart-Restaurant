@@ -10,4 +10,7 @@ router.post('/login', authController.login);
 // Route Đăng ký: POST /api/auth/register
 router.post('/register', authController.register);
 
+// Route Refresh token: POST /api/auth/refresh
+router.post('/refresh', authController.refreshToken);
+
 module.exports = router;
