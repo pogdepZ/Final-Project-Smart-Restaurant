@@ -83,6 +83,16 @@ class TableRepository {
         );
         return result.rows[0];
     }
+
+
+    // 5. Update QR Token (Dùng cho cả Create và Regenerate)
+    async updateQRToken(id, token) {
+        const result = await db.query(
+            'UPDATE tables SET qr_token = $1 WHERE id = $2 RETURNING *',
+            [token, id]
+        );
+        return result.rows[0];
+    }
 }
 
 module.exports = new TableRepository();

@@ -98,11 +98,57 @@ const TableManagement = () => {
   };
 
   const handlePrintQR = (table) => {
-    // ... Logic in ấn giữ nguyên, chỉ update UI
-    const printWindow = window.open('', '', 'width=600,height=600');
+    // 1. Tính toán URL
     const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
     const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(clientUrl)}`;
-    printWindow.document.write(`<html>...</html>`); // (Copy lại phần HTML in ấn từ code cũ)
+
+    // 2. Mở cửa sổ mới
+    const printWindow = window.open('', '', 'width=600,height=600');
+
+    // 3. Viết nội dung HTML đầy đủ
+    // QUAN TRỌNG: Thêm sự kiện onload="window.print()" vào thẻ <img>
+    // Để đảm bảo ảnh tải xong mới hiện popup in.
+    printWindow.document.write(`
+      <html>
+        <head>
+            <title>QR Code - ${table.table_number}</title>
+            <style>
+                body { 
+                    font-family: 'Helvetica', sans-serif; 
+                    display: flex; 
+                    justify-content: center; 
+                    align-items: center; 
+                    height: 100vh; 
+                    margin: 0; 
+                }
+                .qr-card { 
+                    text-align: center; 
+                    border: 3px solid #000; 
+                    padding: 40px; 
+                    border-radius: 20px; 
+                    width: 350px;
+                }
+                h1 { margin: 0 0 10px 0; font-size: 48px; font-weight: 800; }
+                p.location { font-size: 24px; margin: 0 0 20px 0; color: #555; }
+                img { display: block; margin: 0 auto; width: 100%; height: auto; }
+                p.scan-me { margin-top: 20px; font-weight: bold; font-size: 20px; text-transform: uppercase; }
+            </style>
+        </head>
+        <body>
+          <div class="qr-card">
+            <h1>${table.table_number}</h1>
+            <p class="location">${table.location}</p>
+            
+            <!-- QUAN TRỌNG: onload kích hoạt in -->
+            <img src="${qrSrc}" onload="setTimeout(function(){window.print();}, 500);" />
+            
+            <p class="scan-me">Quét để gọi món</p>
+          </div>
+        </body>
+      </html>
+    `);
+
+    // 4. Đóng luồng document để trình duyệt render
     printWindow.document.close();
   };
 
