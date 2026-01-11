@@ -66,6 +66,10 @@ const routers = [
         path: "/menu/:tableCode",
         element: <Menu />,
       },
+       {
+        path: "/cart/:tableCode",
+        element: <Cart />,
+      },
       // Trang báo lỗi không có quyền truy cập
       {
         path: "/unauthorized",

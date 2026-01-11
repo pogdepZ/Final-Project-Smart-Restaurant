@@ -10,7 +10,7 @@ import {
   clearCart
 } from '../../store/slices/cartSlice';
 import { ShoppingBag, Trash2, Plus, Minus, X, ArrowRight, ShoppingCart } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams} from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const Cart = () => {
@@ -19,7 +19,7 @@ const Cart = () => {
   const cartItems = useSelector(selectCartItems);
   const totalItems = useSelector(selectTotalItems);
   const totalPrice = useSelector(selectTotalPrice);
-
+  const { tableCode } = useParams();
   const handleRemoveItem = (item) => {
     dispatch(removeFromCart(item.id));
     toast.info(`Đã xóa ${item.name} khỏi giỏ hàng`);
@@ -93,7 +93,7 @@ const Cart = () => {
             )}
           </div>
         </div>
-      </div>
+      </div>  
 
       {/* Cart Items */}
       <div className="container mx-auto max-w-4xl px-4 pt-6">
@@ -203,13 +203,13 @@ const Cart = () => {
 
           {/* Continue Shopping */}
           <Link
-            to="/"
+            to={tableCode ? `/menu/${tableCode}` : '/menu'}
             className="block text-center mt-4 text-sm text-gray-400 hover:text-orange-500 transition-colors"
           >
             ← Tiếp tục xem thực đơn
           </Link>
-        </div>
-      </div>
+              </div>
+            </div>
     </div>
   );
 };
