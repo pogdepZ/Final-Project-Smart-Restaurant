@@ -11,7 +11,8 @@ const Navbar = () => {
   const location = useLocation(); // Hook để biết đang ở trang nào
 
   // Lấy từ Redux
-  const isLoggedIn = useSelector(selectIsAuthenticated);
+  // const isLoggedIn = useSelector(selectIsAuthenticated);
+  const isLoggedIn = false;
   const user = useSelector(selectCurrentUser);
   const cartCount = useSelector(selectTotalItems);
   const tableNumber = "T05";
