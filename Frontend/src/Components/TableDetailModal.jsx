@@ -1,5 +1,18 @@
 import React from "react";
-import { X, Printer, Download, MapPin, Users, Calendar } from "lucide-react";
+import {
+  X,
+  Printer,
+  Download,
+  MapPin,
+  Users,
+  Calendar,
+  Activity,
+  FileText,
+  Image as ImageIcon,
+} from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import QRTemplate from "../Components/QRTemplate";
 
 const TableDetailModal = ({ table, onClose }) => {
   if (!table) return null;
@@ -9,6 +22,7 @@ const TableDetailModal = ({ table, onClose }) => {
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(
     clientUrl
   )}`;
+  const templateId = `qr-template-${table.id}`;
 
   const tokenDate = new Date(table.created_at).toLocaleDateString("vi-VN", {
     year: "numeric",
@@ -18,39 +32,47 @@ const TableDetailModal = ({ table, onClose }) => {
     minute: "2-digit",
   });
 
-  const handleDownload = async () => {
+  // 1. Tải PNG
+  const handleDownloadPNG = async () => {
+    const element = document.getElementById(templateId);
+    if (!element) return;
+
     try {
-      const response = await fetch(qrSrc);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `QR_Ban_${table.table_number}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (error) {
-      alert("Lỗi tải ảnh");
+      const canvas = await html2canvas(element, { scale: 2 }); // Scale 2 để nét hơn (High-res)
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = `QR_${table.table_number}.png`;
+      link.click();
+    } catch (err) {
+      alert("Lỗi tạo ảnh");
     }
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open("", "", "width=600,height=600");
-    printWindow.document.write(`
-      <html>
-        <head><title>QR ${table.table_number}</title></head>
-        <body style="text-align:center; padding: 50px;">
-          <h1>${table.table_number}</h1>
-          <img src="${qrSrc}" style="width:300px"/>
-          <script>window.onload=()=>{window.print();window.close();}</script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+  // 2. Tải PDF
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById(templateId);
+    if (!element) return;
+
+    try {
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4"); // Khổ A4
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // Căn giữa ảnh vào PDF
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`QR_${table.table_number}.pdf`);
+    } catch (err) {
+      alert("Lỗi tạo PDF");
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10000] animate-in fade-in duration-200">
+      <QRTemplate id={templateId} table={table} qrSrc={qrSrc} />
+
       <div className="bg-neutral-900 border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden relative">
         {/* Close Button */}
         <button
@@ -95,18 +117,18 @@ const TableDetailModal = ({ table, onClose }) => {
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mt-8">
             <button
-              onClick={handleDownload}
-              className="py-3 px-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-white/5"
+              onClick={handleDownloadPNG}
+              className="py-3 px-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 border border-white/5"
             >
-              <Download size={20} /> Tải Ảnh
+              <ImageIcon size={18} /> Lưu PNG
             </button>
             <button
-              onClick={handlePrint}
-              className="py-3 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-900/20"
+              onClick={handleDownloadPDF}
+              className="py-3 px-4 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-900/20"
             >
-              <Printer size={20} /> In Ngay
+              <FileText size={18} /> Lưu PDF
             </button>
           </div>
         </div>

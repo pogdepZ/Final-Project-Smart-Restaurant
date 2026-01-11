@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axiosClient from "../../store/axiosClient";
 import { toast } from "react-toastify";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   Plus,
   Search,
@@ -15,6 +19,9 @@ import {
   QrCode,
   MapPin,
   Users,
+  Download,
+  FileText,
+  Archive,
 } from "lucide-react";
 import TableDetailModal from "../../Components/TableDetailModal"; // (Tạo thư mục nếu chưa có)
 
@@ -137,16 +144,104 @@ const TableManagement = () => {
     }
   };
 
-  const handlePrintQR = (table) => {
-    // ... Logic in ấn giữ nguyên, chỉ update UI
-    const printWindow = window.open("", "", "width=600,height=600");
-    const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
-    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-      clientUrl
-    )}`;
-    printWindow.document.write(`<html>...</html>`); // (Copy lại phần HTML in ấn từ code cũ)
-    printWindow.document.close();
+  // A. Download ZIP (PNG Images)
+  const handleDownloadZip = async () => {
+    const zip = new JSZip();
+    const folder = zip.folder("SmartRestaurant_QR_Codes");
+
+    toast.info("Đang tạo file ZIP, vui lòng chờ...");
+
+    // Lặp qua tất cả bàn
+    for (const table of tables) {
+      // Tái tạo URL QR (vì backend không lưu ảnh)
+      const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
+      const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
+        clientUrl
+      )}`;
+
+      try {
+        // Fetch ảnh về dạng Blob
+        const response = await fetch(qrApi);
+        const blob = await response.blob();
+        // Thêm vào ZIP
+        folder.file(`QR_${table.table_number}.png`, blob);
+      } catch (err) {
+        console.error("Lỗi tải ảnh bàn " + table.table_number);
+      }
+    }
+
+    // Xuất file
+    zip.generateAsync({ type: "blob" }).then((content) => {
+      saveAs(content, "SmartRestaurant_QR_All.zip");
+      toast.success("Tải xuống thành công!");
+    });
   };
+
+  // B. Download PDF (Bulk Print - 4 QR/page)
+  const handleDownloadAllPdf = async () => {
+    toast.info("Đang tạo PDF tổng hợp...");
+    const doc = new jsPDF();
+    let x = 10,
+      y = 10; // Tọa độ bắt đầu
+    const size = 80; // Kích thước ảnh QR trong PDF (mm)
+    let count = 0;
+
+    for (const table of tables) {
+      const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
+      const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
+        clientUrl
+      )}`;
+
+      // Convert URL to DataUri (cần hàm helper hoặc canvas)
+      // Cách nhanh nhất: vẽ lên canvas ảo rồi lấy dataURL
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = qrApi;
+      await new Promise((r) => (img.onload = r)); // Chờ ảnh load xong
+
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const imgData = canvas.toDataURL("image/png");
+
+      // Vẽ vào PDF
+      doc.setFontSize(16);
+      doc.text(table.table_number, x + size / 2, y + 5, { align: "center" }); // Tên bàn
+      doc.addImage(imgData, "PNG", x, y + 10, size, size); // Ảnh QR
+
+      // Logic canh lề (Grid 2 cột)
+      count++;
+      if (count % 2 !== 0) {
+        x += 100; // Dịch sang phải
+      } else {
+        x = 10; // Về đầu dòng
+        y += 110; // Xuống dòng
+      }
+
+      // Logic sang trang (4 bàn / trang)
+      if (count % 4 === 0 && count < tables.length) {
+        doc.addPage();
+        x = 10;
+        y = 10;
+      }
+    }
+
+    doc.save("All_Tables_QR.pdf");
+    toast.success("Tạo PDF thành công!");
+  };
+
+  // const handlePrintQR = (table) => {
+  //   // ... Logic in ấn giữ nguyên, chỉ update UI
+  //   const printWindow = window.open("", "", "width=600,height=600");
+  //   const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
+  //   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+  //     clientUrl
+  //   )}`;
+  //   printWindow.document.write(`<html>...</html>`); // (Copy lại phần HTML in ấn từ code cũ)
+  //   printWindow.document.close();
+  // };
 
   return (
     <div className="p-6 bg-neutral-950 min-h-screen text-gray-200 font-sans">
@@ -164,6 +259,23 @@ const TableManagement = () => {
             Hệ thống đang hoạt động • Tổng số:{" "}
             <span className="text-white font-bold">{tables.length}</span> bàn
           </p>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleDownloadZip}
+            className="bg-neutral-800 text-white px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-neutral-700 border border-white/10 text-sm font-medium"
+            title="Tải tất cả ảnh (ZIP)"
+          >
+            <Archive size={16} /> ZIP
+          </button>
+          <button
+            onClick={handleDownloadAllPdf}
+            className="bg-neutral-800 text-white px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-neutral-700 border border-white/10 text-sm font-medium"
+            title="Tải PDF tổng hợp để in"
+          >
+            <FileText size={16} /> PDF Tổng
+          </button>
         </div>
 
         <div className="flex flex-wrap gap-3 w-full md:w-auto">
@@ -251,7 +363,10 @@ const TableManagement = () => {
                 {/* Quick Actions (Hover to show) */}
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={(e) => { e.stopPropagation(); openEdit(table)}}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(table);
+                    }}
                     className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg"
                   >
                     <Edit size={16} />
@@ -286,7 +401,10 @@ const TableManagement = () => {
               {/* Footer Buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleToggleStatus(table);}}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleStatus(table);
+                  }}
                   className={`py-2 rounded-xl text-xs font-bold uppercase tracking-wider border flex items-center justify-center gap-2 transition-all
                         ${
                           table.status === "active"
@@ -298,9 +416,7 @@ const TableManagement = () => {
                   {table.status === "active" ? "Tắt Bàn" : "Bật Bàn"}
                 </button>
 
-                <button
-                  className="py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 flex items-center justify-center gap-2 transition-all"
-                >
+                <button className="py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 flex items-center justify-center gap-2 transition-all">
                   <QrCode size={14} />
                   Mã QR
                 </button>
