@@ -37,7 +37,8 @@ const TableManagement = () => {
     try {
       const query = new URLSearchParams(filters).toString();
       const res = await axiosClient.get(`/tables?${query}`);
-      setTables(res.data);
+      console.log(res)
+      setTables(res);
     } catch (err) { toast.error("Lỗi tải danh sách bàn"); } 
     finally { setLoading(false); }
   };
