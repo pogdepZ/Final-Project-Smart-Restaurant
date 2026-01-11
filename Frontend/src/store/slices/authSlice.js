@@ -68,7 +68,7 @@ const initialState = {
   accessToken: getInitialToken(),
   user: getInitialUser(),
   isAuthenticated: !!getInitialToken(),
-  isLoaading: false,
+  isLoading: false,
   error: null,
 };
 
@@ -99,7 +99,7 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.user = null;
       state.isAuthenticated = false;
-      state.isLoaading = false;
+      state.isLoading = false;
       state.error = null;
 
       localStorage.removeItem("accessToken");
@@ -110,11 +110,11 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(loginThunk.pending, (state) => {
-        state.isLoaading = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(loginThunk.fulfilled, (state, action) => {
-        state.isLoaading = false;
+        state.isLoading = false;
         state.accessToken = action.payload.accessToken;
         state.user = action.payload.user;
         state.isAuthenticated = !!action.payload.accessToken;
@@ -133,7 +133,7 @@ const authSlice = createSlice({
         injectStore(state)
       })
       .addCase(loginThunk.rejected, (state, action) => {
-        state.isLoaading = false;
+        state.isLoading = false;
         state.error = action.payload || "Login failed";
         state.isAuthenticated = false;
       })

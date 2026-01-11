@@ -7,6 +7,7 @@ let store;
 
 export const injectStore = (_store) => {
   store = _store;
+  console.log("Store injected into axiosClient");
 };
 
 //setup baseURL và headers chung
@@ -21,12 +22,13 @@ const axiosClient = axios.create({
 // Thêm interceptor để tự động gắn token vào header Authorization
 axiosClient.interceptors.request.use(
   (config) => {
+    console.log("Request interceptor called");
+    console.log(store);
     if (store) {
-      const token = store.getState().auth.accessToken;
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      console.log("vai o");
+        const accessToken = store.getState().auth.accessToken; 
+        if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+        }
     }
     return config;
   },
