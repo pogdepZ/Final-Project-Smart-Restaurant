@@ -333,7 +333,7 @@ const TableManagement = () => {
 
           <button
             onClick={openCreate}
-            className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all font-bold text-sm tracking-wide"
+            className="bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all font-bold text-sm tracking-wide"
           >
             <Plus size={18} /> Thêm Bàn Mới
           </button>
@@ -452,7 +452,7 @@ const TableManagement = () => {
 
       {/* --- MODAL FORM (Dark Theme) --- */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-9999">
           <div className="bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-white/5">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">

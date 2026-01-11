@@ -138,7 +138,7 @@ const LandingPage = () => {
             alt="Restaurant Background"
             className="w-full h-full object-cover opacity-60 transition-transform duration-[10s] hover:scale-110"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/80 to-transparent"></div>
+          <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/80 to-transparent"></div>
         </div>
 
         {/* Hero Content */}
@@ -161,7 +161,7 @@ const LandingPage = () => {
 
             <Link
               to="/signup"
-              className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all hover:bg-white/30"
+              className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all "
             >
               Đăng ký thành viên
             </Link>
@@ -197,7 +197,7 @@ const LandingPage = () => {
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
               Không Gian{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
                 Nhà Hàng
               </span>
             </h2>
@@ -220,7 +220,7 @@ const LandingPage = () => {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                 <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                   <h3 className="text-2xl font-bold text-white mb-2">
