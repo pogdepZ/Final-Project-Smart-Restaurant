@@ -19,7 +19,6 @@ exports.login = async (req, res) => {
   try {
     const { accessToken, refreshToken, user } = await authService.login(req.body);
 
-    // set cookie refresh token
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -29,9 +28,11 @@ exports.login = async (req, res) => {
 
     return res.json({
       message: "Đăng nhập thành công",
-      accessToken,
+      accessToken: accessToken,
       user,
     });
+
+    
   } catch (err) {
     console.error(err);
     return res.status(err.status || 500).json({ message: err.message || "Lỗi Server" });

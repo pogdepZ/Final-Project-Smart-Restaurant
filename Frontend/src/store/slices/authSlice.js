@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axiosClient from "../axiosClient";
+import axiosClient, { injectStore } from "../axiosClient";
 
 const getInitialToken = () => {
   try {
@@ -30,7 +30,7 @@ export const loginThunk = createAsyncThunk(
       // server thường trả: { token/accessToken, user }
       const res = await axiosClient.post("/auth/login", userData);
 
-      const accessToken = res?.token || null;
+      const accessToken = res?.accessToken || null;
       const user = res?.user || null;
 
       return { accessToken, user };
@@ -68,7 +68,7 @@ const initialState = {
   accessToken: getInitialToken(),
   user: getInitialUser(),
   isAuthenticated: !!getInitialToken(),
-  isLoaading: false,
+  isLoading: false,
   error: null,
 };
 
@@ -99,7 +99,7 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.user = null;
       state.isAuthenticated = false;
-      state.isLoaading = false;
+      state.isLoading = false;
       state.error = null;
 
       localStorage.removeItem("accessToken");
@@ -110,11 +110,11 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(loginThunk.pending, (state) => {
-        state.isLoaading = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(loginThunk.fulfilled, (state, action) => {
-        state.isLoaading = false;
+        state.isLoading = false;
         state.accessToken = action.payload.accessToken;
         state.user = action.payload.user;
         state.isAuthenticated = !!action.payload.accessToken;
@@ -132,7 +132,7 @@ const authSlice = createSlice({
         }
       })
       .addCase(loginThunk.rejected, (state, action) => {
-        state.isLoaading = false;
+        state.isLoading = false;
         state.error = action.payload || "Login failed";
         state.isAuthenticated = false;
       })
