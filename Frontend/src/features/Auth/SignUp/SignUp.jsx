@@ -6,6 +6,8 @@ import Input from "../../../Components/Input";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signUpSchema } from "./schema/schemaSignUp";
+import { registerThunk } from "../../../store/slices/authSlice";
+import { useDispatch } from "react-redux";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -25,23 +27,17 @@ const SignUp = () => {
     },
   });
 
+  const dispatch = useDispatch()
   const onSubmit = async (values) => {
-    // Mock API
-    await new Promise((r) => setTimeout(r, 700));
-
-    // Bạn có thể lưu mock user luôn hoặc chỉ điều hướng
-    localStorage.setItem("token", "mock-token");
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        id: 999,
-        name: values.fullName,
-        role: "customer",
-        email: values.email,
-      })
-    );
-
-    navigate("/");
+    console.log(values);
+    const {fullName, password, email} = values;
+    const data = {
+      name: fullName,
+      password,
+      email
+    }
+    const res = await dispatch(registerThunk(data));
+    console.log(res)
   };
 
   return (

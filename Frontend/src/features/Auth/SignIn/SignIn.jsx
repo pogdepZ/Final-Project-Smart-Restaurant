@@ -6,11 +6,13 @@ import Input from "../../../Components/Input";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signInSchema } from "./schema/schemaSignIn";
+import { useDispatch } from "react-redux";
+import { loginThunk } from "../../../store/slices/authSlice";
 
 
 const SignIn = () => {
   const navigate = useNavigate();
-
+  const dispatch = useDispatch()
   const {
     register,
     handleSubmit,
@@ -23,27 +25,12 @@ const SignIn = () => {
     },
   });
 
-  // ✅ Mock login
+
   const onSubmit = async (values) => {
-    // giả lập gọi API
-    await new Promise((r) => setTimeout(r, 600));
-
-    // ví dụ mapping role theo email để test nhanh
-    const role =
-      values.email.toLowerCase().includes("kitchen")
-        ? "kitchen"
-        : values.email.toLowerCase().includes("waiter")
-          ? "waiter"
-          : "customer";
-
-    localStorage.setItem("token", "mock-token");
-    localStorage.setItem("user", JSON.stringify({ id: 1, name: "Mock User", role }));
-
-    // điều hướng theo role (tuỳ bạn)
-    if (role === "waiter") navigate("/waiter");
-    else if (role === "kitchen") navigate("/kitchen");
-    else navigate("/");
-  };
+    const res = await dispatch(loginThunk(values))
+    console.log(res)
+  }
+  
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans bg-neutral-950">

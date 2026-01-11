@@ -44,6 +44,21 @@ export const loginThunk = createAsyncThunk(
   }
 );
 
+export const registerThunk = createAsyncThunk(
+  "auth/register",
+  async (userData, { rejectWithValue }) => {
+    try {
+      const res = await axiosClient.post("/auth/register", userData);
+      return res;
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Network error";
+      return rejectWithValue(msg);
+    }
+  }
+);
 
 /** ======================
  * Slice
@@ -121,6 +136,16 @@ const authSlice = createSlice({
         state.error = action.payload || "Login failed";
         state.isAuthenticated = false;
       })
+      .addCase(registerThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerThunk.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(registerThunk.rejected, (state, action) => {
+        state.loading = false;
+      });
   },
 });
 
