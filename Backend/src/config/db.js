@@ -1,4 +1,3 @@
-// server/config/db.js
 const { Pool } = require("pg");
 require("dotenv").config();
 
@@ -10,20 +9,22 @@ if (!connectionString) {
 }
 
 const pool = new Pool({
-  connectionString: connectionString,
-  // Nếu deploy lên cloud (Render/Neon) cần bật SSL, chạy local thì không cần
-  // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  connectionString,
+  ssl: { rejectUnauthorized: false } // ⚠️ BẮT BUỘC nếu dùng Supabase
 });
 
-pool.on("connect", () => {
-  console.log("PostgreSQL Database Connected via Connection String!");
-});
-
-pool.on("error", (err) => {
-  console.error("Database connection error:", err);
-});
+(async () => {
+  try {
+    const client = await pool.connect();
+    console.log("✅ PostgreSQL connected successfully!");
+    client.release();
+  } catch (err) {
+    console.error("❌ PostgreSQL connection failed:");
+    console.error(err);
+  }
+})();
 
 module.exports = {
   query: (text, params) => pool.query(text, params),
-  pool: pool,
+  pool,
 };

@@ -1,6 +1,13 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, ArrowRight, UtensilsCrossed, Star, Clock } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  UtensilsCrossed,
+  Star,
+  Clock,
+} from "lucide-react";
 import Input from "../../../Components/Input";
 
 import { useForm } from "react-hook-form";
@@ -9,10 +16,9 @@ import { signInSchema } from "./schema/schemaSignIn";
 import { useDispatch } from "react-redux";
 import { loginThunk } from "../../../store/slices/authSlice";
 
-
 const SignIn = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const {
     register,
     handleSubmit,
@@ -25,12 +31,14 @@ const SignIn = () => {
     },
   });
 
-
   const onSubmit = async (values) => {
-    const res = await dispatch(loginThunk(values))
-    console.log(res)
-  }
-  
+    try {
+      await dispatch(loginThunk(values));
+      navigate("/");
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans bg-neutral-950">
@@ -48,7 +56,9 @@ const SignIn = () => {
       <div className="relative hidden lg:flex lg:w-1/2 flex-col justify-between p-12 z-10 overflow-hidden">
         <div className="relative z-10">
           <div className="flex flex-col leading-none">
-            <span className="font-display text-5xl text-orange-400">Lumière</span>
+            <span className="font-display text-5xl text-orange-400">
+              Lumière
+            </span>
             <span className="font-sans text-[10px] tracking-[0.4em] uppercase mt-2 text-white/60 font-black">
               Bistro
             </span>
@@ -66,13 +76,17 @@ const SignIn = () => {
               <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400">
                 <Star size={20} />
               </div>
-              <p className="text-sm">Trải nghiệm Fine Dining 5 sao với đầu bếp quốc tế.</p>
+              <p className="text-sm">
+                Trải nghiệm Fine Dining 5 sao với đầu bếp quốc tế.
+              </p>
             </div>
             <div className="flex items-center gap-4 text-white/80">
               <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400">
                 <UtensilsCrossed size={20} />
               </div>
-              <p className="text-sm">Thực đơn đa dạng từ Steak đến Pasta thủ công.</p>
+              <p className="text-sm">
+                Thực đơn đa dạng từ Steak đến Pasta thủ công.
+              </p>
             </div>
             <div className="flex items-center gap-4 text-white/80">
               <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400">
@@ -150,7 +164,9 @@ const SignIn = () => {
                 <div className="w-full border-t border-white/5"></div>
               </div>
               <div className="relative flex justify-center text-[10px] uppercase">
-                <span className="px-3 text-gray-400 tracking-[0.3em]">Hoặc đăng nhập với</span>
+                <span className="px-3 text-gray-400 tracking-[0.3em]">
+                  Hoặc đăng nhập với
+                </span>
               </div>
             </div>
 
@@ -185,7 +201,11 @@ const SignIn = () => {
                 type="button"
                 className="flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-bold rounded-xl transition-all"
               >
-                <svg className="w-5 h-5 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-5 h-5 text-[#1877F2]"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
                 Facebook
@@ -195,15 +215,20 @@ const SignIn = () => {
 
           <p className="text-center text-gray-500 text-[13px] mt-8">
             Chưa có tài khoản?
-            <Link to="/signup" className="text-white ml-2 font-bold hover:text-orange-400 transition-colors">
+            <Link
+              to="/signup"
+              className="text-white ml-2 font-bold hover:text-orange-400 transition-colors"
+            >
               Đăng ký ngay
             </Link>
           </p>
 
           {/* Tip dev để test nhanh */}
           <p className="text-center text-gray-600 text-[11px] mt-4">
-            Tip dev: dùng email chứa <span className="text-gray-300 font-bold">waiter</span> hoặc{" "}
-            <span className="text-gray-300 font-bold">kitchen</span> để auto vào trang tương ứng.
+            Tip dev: dùng email chứa{" "}
+            <span className="text-gray-300 font-bold">waiter</span> hoặc{" "}
+            <span className="text-gray-300 font-bold">kitchen</span> để auto vào
+            trang tương ứng.
           </p>
         </div>
       </div>

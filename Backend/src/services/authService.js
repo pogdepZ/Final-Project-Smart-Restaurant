@@ -1,7 +1,11 @@
 // src/services/authService.js
+require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const authRepo = require("../repositories/authRepository");
+const config = require("../config");
+
+
 
 exports.register = async ({ name, email, password, role }) => {
   // Input validation (backend)
@@ -20,7 +24,7 @@ exports.register = async ({ name, email, password, role }) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  const userRole = role || "waiter";
+  const userRole = role || "customer";
   const user = await authRepo.createUser({
     name,
     email,
@@ -52,17 +56,19 @@ exports.login = async ({ email, password }) => {
     throw err;
   }
 
+  console.log("access token secret:", config.auth.accessTokenSecret);
+  console.log("refresh token secret:", config.auth.refreshTokenSecret);
   // Access token ngắn hạn
   const accessToken = jwt.sign(
     { id: user.id, role: user.role, name: user.name },
-    process.env.JWT_ACCESS_SECRET,
+   config.auth.accessTokenSecret,
     { expiresIn: "15m" }
   );
 
   // Refresh token dài hạn
   const refreshToken = jwt.sign(
     { id: user.id },
-    process.env.JWT_REFRESH_SECRET,
+    config.auth.refreshTokenSecret,
     { expiresIn: "30d" }
   );
 

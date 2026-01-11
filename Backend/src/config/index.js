@@ -1,4 +1,5 @@
 const dotenv = require('dotenv');
+const { access } = require('fs');
 const path = require('path');
 
 // Tải biến môi trường từ file .env
@@ -15,7 +16,8 @@ const config = {
 
   // Cấu hình Bảo mật/JWT
   auth: {
-    jwtSecret: process.env.JWT_SECRET || 't5q0weiAdGEaitL5c3qYyNayONPPPNiJmmQauToR',
+    accessTokenSecret: process.env.JWT_ACCESS_SECRET,
+    refreshTokenSecret: process.env.JWT_REFRESH_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
     saltRounds: 10,
   },
