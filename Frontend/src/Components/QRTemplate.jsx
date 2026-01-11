@@ -1,6 +1,7 @@
 import React from 'react';
+import QRCode from "react-qr-code"; // Import
 
-const QRTemplate = ({ id, table, qrSrc }) => {
+const QRTemplate = ({ id, table, clientUrl  }) => {
   return (
     <div id={id} style={{
         position: 'absolute', top: '-9999px', left: '-9999px', // Ẩn khỏi màn hình
@@ -21,8 +22,15 @@ const QRTemplate = ({ id, table, qrSrc }) => {
         <p style={{ fontSize: '24px', color: '#555', marginBottom: '40px' }}>{table.location}</p>
 
         {/* QR Code Centered */}
-        <img src={qrSrc} style={{ width: '350px', height: '350px', border: '5px solid #000', borderRadius: '20px' }} />
-
+        <div style={{ background: 'white', padding: '16px' }}>
+            <QRCode 
+                value={clientUrl} 
+                size={350} 
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                viewBox={`0 0 350 350`}
+            />
+        </div>
+        
         {/* Scan Instruction */}
         <p style={{ fontSize: '30px', fontWeight: 'bold', marginTop: '40px', textTransform: 'uppercase' }}>
             Scan to Order

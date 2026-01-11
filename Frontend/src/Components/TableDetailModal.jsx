@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import QRCode from "react-qr-code";
 import {
   X,
   Printer,
@@ -29,11 +30,11 @@ const TableDetailModal = ({ table: initialTable, onClose, onRefresh }) => {
   if (!table) return null;
 
   // Tính toán URL QR Code
-  const token = table.qr_token || "";
+  // const token = table.qr_token || "";
   const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(
-    clientUrl
-  )}`;
+  // const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(
+  //   clientUrl
+  // )}`;
   const templateId = `qr-template-${table.id}`;
 
   const tokenDate = new Date(table.created_at).toLocaleDateString("vi-VN", {
@@ -47,7 +48,10 @@ const TableDetailModal = ({ table: initialTable, onClose, onRefresh }) => {
   // 1. Tải PNG
   const handleDownloadPNG = async () => {
     const element = document.getElementById(templateId);
-    if (!element) return;
+    if (!element) {
+        alert("Không tìm thấy mẫu in");
+        return;
+    }
 
     try {
       const canvas = await html2canvas(element, { scale: 2 }); // Scale 2 để nét hơn (High-res)
@@ -102,7 +106,7 @@ const TableDetailModal = ({ table: initialTable, onClose, onRefresh }) => {
             <h1>${table.table_number}</h1>
             <p class="loc">${table.location}</p>
             <!-- onload quan trọng để đợi ảnh tải xong mới in -->
-            <img src="${qrSrc}" onload="setTimeout(function(){window.print();}, 500);" />
+            <img src="${clientUrl}" onload="setTimeout(function(){window.print();}, 500);" />
             <p class="scan">Quét để gọi món</p>
           </div>
         </body>
@@ -138,8 +142,7 @@ const TableDetailModal = ({ table: initialTable, onClose, onRefresh }) => {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10000] animate-in fade-in duration-200">
-      <QRTemplate id={templateId} table={table} qrSrc={qrSrc} />
-
+      <QRTemplate id={templateId} table={table} clientUrl={clientUrl} />
       <div className="bg-neutral-900 border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden relative">
         {/* Close Button */}
         <button
@@ -152,7 +155,7 @@ const TableDetailModal = ({ table: initialTable, onClose, onRefresh }) => {
         <div className="p-8 text-center">
           <div className="inline-block bg-white p-4 rounded-2xl mb-6 shadow-[0_0_40px_rgba(255,255,255,0.1)]">
             <img
-              src={qrSrc}
+              src={clientUrl}
               alt="QR Code"
               className="w-64 h-64 object-contain"
             />
