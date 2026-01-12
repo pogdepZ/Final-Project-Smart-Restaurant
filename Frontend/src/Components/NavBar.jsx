@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, Menu as MenuIcon, X, MapPin, LogOut } from 'lucide-react';
-import { useSelector } from 'react-redux';
+// 1. Import useDispatch
+import { useSelector, useDispatch } from 'react-redux'; 
 import { selectTotalItems } from '../store/slices/cartSlice';
-import { selectIsAuthenticated, selectCurrentUser } from '../store/slices/authSlice';
+import { selectIsAuthenticated, selectCurrentUser, logout } from '../store/slices/authSlice';
 import { IoRestaurant } from "react-icons/io5";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation(); // Hook để biết đang ở trang nào
-
-  // Lấy từ Redux
+  const location = useLocation();
   
+  // 2. Khởi tạo dispatch và navigate
+  const dispatch = useDispatch();
+  const navigate = useNavigate(); // Dùng để chuyển trang sau khi logout nếu cần
+
   const isLoggedIn = useSelector(selectIsAuthenticated);
   const user = useSelector(selectCurrentUser);
   const cartCount = useSelector(selectTotalItems);
@@ -22,6 +25,12 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
   };
 
+  // --- 3. HÀM XỬ LÝ ĐĂNG XUẤT ---
+  const handleLogout = () => {
+    dispatch(logout()); // Gọi Redux action logout
+    closeMenu();
+    navigate('/'); // (Tuỳ chọn) Chuyển về trang chủ sau khi đăng xuất
+  };
 
   useEffect(() => {
     closeMenu();
@@ -69,13 +78,25 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* User Info / Login */}
+            {/* User Info / Login / Logout Desktop */}
             {isLoggedIn ? (
-              <Link to="/profile" onClick={closeMenu} className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
-                <div className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500">
-                  <User size={20} />
-                </div>
-              </Link>
+              <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
+                {/* Link Profile */}
+                <Link to="/profile" onClick={closeMenu} className="group flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500 group-hover:border-orange-500 transition-colors">
+                    <User size={20} />
+                    </div>
+                </Link>
+                
+                {/* 4. NÚT ĐĂNG XUẤT CHO DESKTOP (Mới thêm) */}
+                <button 
+                    onClick={handleLogout}
+                    title="Đăng xuất"
+                    className="p-2 text-gray-400 hover:text-red-500 transition-colors hover:bg-white/5 rounded-full"
+                >
+                    <LogOut size={20} />
+                </button>
+              </div>
             ) : (
               <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
                 <Link to="/signin" className="text-sm font-medium text-gray-300 hover:text-white">Đăng nhập</Link>
@@ -96,14 +117,12 @@ const Navbar = () => {
 
       {/* --- 4. MOBILE MENU OVERLAY & DRAWER --- */}
 
-      {/* Lớp phủ đen mờ (Bấm vào đây cũng tắt menu) */}
       <div
         className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
           }`}
         onClick={closeMenu}
       ></div>
 
-      {/* Menu trượt từ phải sang */}
       <div
         className={`fixed top-0 right-0 h-full w-70 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col md:hidden ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
@@ -137,7 +156,6 @@ const Navbar = () => {
 
         {/* Danh sách Link Mobile */}
         <div className="flex flex-col gap-2">
-          {/* QUAN TRỌNG: Truyền hàm closeMenu vào đây */}
           <MobileLink to="/" label="Trang chủ" onClick={closeMenu} />
           <MobileLink to="/menu" label="Thực đơn" onClick={closeMenu} />
           <MobileLink to="/booking" label="Sơ đồ bàn / Đặt chỗ" onClick={closeMenu} />
@@ -148,7 +166,11 @@ const Navbar = () => {
         {/* Footer Mobile Menu */}
         <div className="mt-auto mb-8">
           {isLoggedIn && (
-            <button onClick={() => { console.log('Logout'); closeMenu(); }} className="flex items-center gap-2 text-red-500 font-medium hover:text-red-400">
+            // 5. Cập nhật nút đăng xuất Mobile gọi hàm handleLogout
+            <button 
+                onClick={handleLogout} 
+                className="flex items-center gap-2 text-red-500 font-medium hover:text-red-400 w-full py-3 rounded-xl hover:bg-white/5 transition-colors"
+            >
               <LogOut size={20} /> Đăng xuất
             </button>
           )}
@@ -159,7 +181,6 @@ const Navbar = () => {
   );
 };
 
-// Component con Link Desktop
 const NavLink = ({ to, label, icon }) => (
   <Link to={to} className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-orange-500 transition-colors">
     {icon}
@@ -167,11 +188,10 @@ const NavLink = ({ to, label, icon }) => (
   </Link>
 );
 
-// Component con Link Mobile (Đã thêm onClick)
 const MobileLink = ({ to, label, onClick }) => (
   <Link
     to={to}
-    onClick={onClick} // <-- Đây là mấu chốt: Bấm xong thì gọi hàm đóng menu
+    onClick={onClick}
     className="block py-3 px-4 rounded-xl text-base font-medium text-gray-300 hover:bg-white/5 hover:text-orange-500 transition-colors active:scale-95"
   >
     {label}

@@ -317,7 +317,6 @@ export default function Menu() {
   // ===== cart =====
   const handleAddToCart = (e, item) => {
     e.stopPropagation();
-
     dispatch(
       addToCart({
         id: item.id,
