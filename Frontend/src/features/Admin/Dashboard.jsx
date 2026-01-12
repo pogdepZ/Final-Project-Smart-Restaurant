@@ -23,7 +23,7 @@ export default function AdminDashboard() {
 
           <h1 className="text-2xl md:text-3xl font-black mt-3">
             Tổng quan{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
               Lumière Bistro
             </span>
           </h1>

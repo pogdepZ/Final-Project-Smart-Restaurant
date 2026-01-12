@@ -8,7 +8,6 @@ export function useAdminDashboard() {
 
   useEffect(() => {
     let mounted = true;
-
     (async () => {
       try {
         setIsLoading(true);
