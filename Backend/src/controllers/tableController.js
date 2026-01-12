@@ -88,6 +88,7 @@ exports.createTable = async (req, res) => {
   if (!table_number || !capacity || !location) {
     return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
   }
+  
   const cap = parseInt(capacity);
   if (isNaN(cap) || cap < 1 || cap > 20) {
     return res.status(400).json({ message: "Sức chứa 1-20" });
