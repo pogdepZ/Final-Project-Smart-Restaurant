@@ -1,24 +1,7 @@
 const repo = require('../repositories/reviewRepository');
 
-exports.getItemReviews = async (menuItemId, query) => {
-  // Xử lý phân trang mặc định
-  const page = parseInt(query.page) || 1;
-  const limit = parseInt(query.limit) || 5;
-  const offset = (page - 1) * limit;
-
-  // Gọi repo lấy danh sách và tổng số lượng để tính phân trang
-  const reviews = await repo.findReviewsByMenuItemId(menuItemId, limit, offset);
-  const total = await repo.countReviewsByMenuItemId(menuItemId);
-
-  return {
-    data: reviews,
-    pagination: {
-      page,
-      limit,
-      total,
-      total_pages: Math.ceil(total / limit)
-    }
-  };
+exports.getItemReviews = async (menuItemId, page, limit) => {
+  return repo.findReviewsByMenuItemId(menuItemId, page, limit);
 };
 
 exports.createReview = async (userId, payload) => {

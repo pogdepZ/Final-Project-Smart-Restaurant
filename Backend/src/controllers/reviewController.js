@@ -2,10 +2,15 @@ const reviewService = require('../services/reviewService');
 
 // API: Xem danh sách đánh giá của một món (Có phân trang)
 exports.getItemReviews = async (req, res) => {
-  // req.params.id: ID món ăn
-  // req.query: Chứa page, limit, sortBy
-  const data = await reviewService.getItemReviews(req.params.id, req.query);
-  res.json(data);
+  try {
+    const { id } = req.params; // menu item id
+    const { page = 1, limit = 5 } = req.query;
+
+    const result = await reviewService.getItemReviews(id, page, limit);
+    return res.json(result); // { data, meta }
+  } catch (e) {
+    return res.status(500).json({ message: e.message || "Server error" });
+  }
 };
 
 // API: Thêm đánh giá mới (Cần check đã mua hàng chưa bên Service)
