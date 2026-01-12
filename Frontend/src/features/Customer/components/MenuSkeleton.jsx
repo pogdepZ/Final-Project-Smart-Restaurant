@@ -1,7 +1,6 @@
-// src/pages/Menu/components/MenuSkeleton.jsx
 import React from "react";
 
-const SkeletonCard = () => (
+const MenuSkeletonCard = () => (
   <div className="flex gap-4 p-3 rounded-2xl border border-white/5 bg-white/0">
     <div className="w-28 h-28 rounded-xl bg-white/5 animate-pulse" />
     <div className="flex-1 py-1">
@@ -16,11 +15,11 @@ const SkeletonCard = () => (
   </div>
 );
 
-export default function MenuSkeleton({ count = 8 }) {
+export default function MenuSkeleton({ count = 12 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
       {Array.from({ length: count }).map((_, i) => (
-        <SkeletonCard key={i} />
+        <MenuSkeletonCard key={i} />
       ))}
     </div>
   );
