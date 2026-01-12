@@ -4,20 +4,12 @@ import './index.css'
 import routers from "./router/Router";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import useQRScanner from "./hooks/useQRScanner";
+
 
 function App() {
   const element = useRoutes(routers);
-
-  // localStorage.setItem("token", "mock-token");
-  // localStorage.setItem(
-  //   "user",
-  //   JSON.stringify({
-  //     id: 1,
-  //     name: "Waiter Test",
-  //     role: "KITCHEN",
-  //   })
-  // );
-
+  useQRScanner();
   return (
     <>
       {element}
