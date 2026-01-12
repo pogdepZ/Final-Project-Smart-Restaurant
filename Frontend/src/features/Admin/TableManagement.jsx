@@ -61,7 +61,7 @@ const TableManagement = () => {
     setLoading(true);
     try {
       const query = new URLSearchParams(filters).toString();
-      const res = await axiosClient.get(`/tables?${query}`);
+      const res = await axiosClient.get(`/admin/tables?${query}`);
       console.log(res);
       setTables(res);
     } catch (err) {
