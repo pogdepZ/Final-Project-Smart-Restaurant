@@ -8,5 +8,5 @@ router.use('/orders', require('./orders.routes'));
 router.use('/tables', require('./tables.routes'));
 router.use('/staff', require('./staff.routes'));
 router.use('/upload', require('./upload.routes'));
-
+  
 module.exports = router;
