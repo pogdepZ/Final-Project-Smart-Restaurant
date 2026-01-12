@@ -3,6 +3,7 @@ const orderRepo = require('../repositories/orderRepository');
 const menuRepo = require('../repositories/menuRepository'); // Cần viết thêm repo này nếu chưa có hàm getById
 const modifierRepo = require('../repositories/modifierRepository'); // Cần repo này để lấy giá option
 const tableRepo = require('../repositories/tableRepository'); // Cần repo này để check bàn
+const socketService = require('./socketService'); // Import
 
 // --- 1. Tạo đơn hàng ---
 exports.createOrder = async (data, io) => {
