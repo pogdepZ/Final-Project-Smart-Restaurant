@@ -78,6 +78,19 @@ exports.getTables = async (req, res) => {
   }
 };
 
+exports.getTableById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const table = await TableRepository.findById(id);
+    if (!table)
+      return res.status(404).json({ message: "Không tìm thấy bàn" });
+    res.json(table);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi Server" });
+  }
+};
+
 // 2. CREATE Table
 exports.createTable = async (req, res) => {
   const { table_number, capacity, location, description } = req.body;
