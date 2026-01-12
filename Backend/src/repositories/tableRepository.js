@@ -93,6 +93,12 @@ class TableRepository {
         );
         return result.rows[0];
     }
+
+    // 6. Find By ID (Dùng cho Regenerate)
+    async findById(id) {
+        const result = await db.query('SELECT * FROM tables WHERE id = $1', [id]);
+        return result.rows[0];
+    }
 }
 
 module.exports = new TableRepository();
