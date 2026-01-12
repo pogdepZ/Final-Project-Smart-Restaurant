@@ -29,6 +29,12 @@ exports.getMenuItemById = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
+exports.getRelatedMenuItems = asyncHandler(async (req, res) => {
+  // Truyền ID món ăn hiện tại vào service để tìm món liên quan
+  const data = await service.getRelatedMenuItems(req.params.id);
+  res.json(data);
+});
+
 exports.createMenuItem = asyncHandler(async (req, res) => {
   const imageUrl = req.file ? req.file.path : null;
   const created = await service.createMenuItem(req.body, imageUrl);
@@ -54,4 +60,9 @@ exports.addItemPhotos = asyncHandler(async (req, res) => {
 exports.getGuestMenu = asyncHandler(async (req, res) => {
   const data = await service.getGuestMenu();
   res.json(data);
+});
+
+exports.getMenuItemsPublic = asyncHandler(async (req, res) => {
+  const result = await service.getMenuItemsPublic(req.query);
+  res.json(result);
 });
