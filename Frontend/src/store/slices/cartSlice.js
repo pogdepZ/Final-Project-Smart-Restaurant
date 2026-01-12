@@ -1,172 +1,203 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { cartApi } from "../../services/cartApi";
 
-// Lấy cart từ localStorage
+// ===== localStorage helpers =====
+const LS_KEY = "cart";
+
 const getInitialCart = () => {
   try {
-    const cart = localStorage.getItem('cart');
-    return cart ? JSON.parse(cart) : [];
-  } catch (error) {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
     return [];
   }
 };
 
-const initialState = {
-  items: getInitialCart(),
-  totalItems: getInitialCart().reduce((sum, item) => sum + item.quantity, 0),
-  totalPrice: getInitialCart().reduce((sum, item) => sum + (item.price * item.quantity), 0),
+const persist = (items) => {
+  localStorage.setItem(LS_KEY, JSON.stringify(items));
 };
 
+const calcTotals = (items) => {
+  const totalItems = items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
+  const totalPrice = items.reduce(
+    (sum, i) => sum + (Number(i.price) || 0) * (Number(i.quantity) || 0),
+    0
+  );
+  return { totalItems, totalPrice };
+};
+
+// ===== initial state =====
+const initialItems = getInitialCart();
+const totals = calcTotals(initialItems);
+
+const initialState = {
+  // ✅ local cart
+  items: initialItems,
+  totalItems: totals.totalItems,
+  totalPrice: totals.totalPrice,
+
+  // ✅ sync status
+  syncing: false,
+  syncError: null,
+
+  // ✅ if you want to keep DB info after sync
+  cartId: null,
+};
+
+// ✅ THUNK: chỉ chạy khi bấm "Đặt món ngay"
+export const syncCartToDb = createAsyncThunk(
+  "cart/syncCartToDb",
+  async ({ qrToken }, { getState, rejectWithValue }) => {
+    try {
+      const { items } = getState().cart;
+
+      // convert local item -> server payload
+      const payload = {
+        items: (items || []).map((i) => ({
+          menuItemId: i.id, // local item.id = menu_items.id
+          quantity: Number(i.quantity) || 1,
+          modifiers: i.modifiers || [],
+          note: i.note || "",
+        })),
+      };
+
+      const res = await cartApi.sync(payload, qrToken); // { cart, items }
+      return res;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data || { message: err.message });
+    }
+  }
+);
+
 const cartSlice = createSlice({
-  name: 'cart',
+  name: "cart",
   initialState,
   reducers: {
-    addToCart: (state, action) => {
+    // ✅ LOCAL add
+    addToCartLocal: (state, action) => {
       const item = action.payload;
-      // Tìm item giống với cùng modifiers
-      const existingItem = state.items.find(i => 
-        i.id === item.id && 
-        JSON.stringify(i.modifiers || {}) === JSON.stringify(item.modifiers || {})
+
+      // phân biệt theo modifiers
+      const keyA = JSON.stringify(item.modifiers || []);
+      const existing = state.items.find(
+        (i) => i.id === item.id && JSON.stringify(i.modifiers || []) === keyA
       );
-      
-      if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
-        state.items.push({ ...item, quantity: 1, modifiers: item.modifiers || {} });
+
+      if (existing) existing.quantity += 1;
+      else state.items.push({ ...item, quantity: 1, modifiers: item.modifiers || [] });
+
+      const { totalItems, totalPrice } = calcTotals(state.items);
+      state.totalItems = totalItems;
+      state.totalPrice = totalPrice;
+
+      persist(state.items);
+    },
+
+    removeFromCartLocal: (state, action) => {
+      const { id, modifiers = [] } = action.payload || {};
+      const keyA = JSON.stringify(modifiers);
+
+      state.items = state.items.filter(
+        (i) => !(i.id === id && JSON.stringify(i.modifiers || []) === keyA)
+      );
+
+      const { totalItems, totalPrice } = calcTotals(state.items);
+      state.totalItems = totalItems;
+      state.totalPrice = totalPrice;
+
+      persist(state.items);
+    },
+
+    incrementLocal: (state, action) => {
+      const { id, modifiers = [] } = action.payload || {};
+      const keyA = JSON.stringify(modifiers);
+      const item = state.items.find(
+        (i) => i.id === id && JSON.stringify(i.modifiers || []) === keyA
+      );
+      if (item) item.quantity += 1;
+
+      const { totalItems, totalPrice } = calcTotals(state.items);
+      state.totalItems = totalItems;
+      state.totalPrice = totalPrice;
+
+      persist(state.items);
+    },
+
+    decrementLocal: (state, action) => {
+      const { id, modifiers = [] } = action.payload || {};
+      const keyA = JSON.stringify(modifiers);
+
+      const item = state.items.find(
+        (i) => i.id === id && JSON.stringify(i.modifiers || []) === keyA
+      );
+      if (!item) return;
+
+      if (item.quantity > 1) item.quantity -= 1;
+      else {
+        state.items = state.items.filter(
+          (i) => !(i.id === id && JSON.stringify(i.modifiers || []) === keyA)
+        );
       }
-      
-      // Cập nhật totals
-      state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-      state.totalPrice = state.items.reduce((sum, i) => {
-        let itemPrice = i.price;
-        // Tính thêm giá của modifiers nếu có
-        if (i.modifiers) {
-          // Logic tính giá modifiers sẽ được xử lý ở component
-        }
-        return sum + (itemPrice * i.quantity);
-      }, 0);
-      
-      // Lưu vào localStorage
-      localStorage.setItem('cart', JSON.stringify(state.items));
+
+      const { totalItems, totalPrice } = calcTotals(state.items);
+      state.totalItems = totalItems;
+      state.totalPrice = totalPrice;
+
+      persist(state.items);
     },
-    
-    removeFromCart: (state, action) => {
-      const itemId = action.payload;
-      state.items = state.items.filter(item => item.id !== itemId);
-      
-      // Cập nhật totals
-      state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-      state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-      
-      // Lưu vào localStorage
-      localStorage.setItem('cart', JSON.stringify(state.items));
-    },
-    
-    updateQuantity: (state, action) => {
-      const { id, quantity } = action.payload;
-      const item = state.items.find(i => i.id === id);
-      
-      if (item) {
-        if (quantity <= 0) {
-          // Xóa item nếu quantity <= 0
-          state.items = state.items.filter(i => i.id !== id);
-        } else {
-          item.quantity = quantity;
-        }
-        
-        // Cập nhật totals
-        state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-        state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        
-        // Lưu vào localStorage
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
-    
-    incrementQuantity: (state, action) => {
-      const itemId = action.payload;
-      const item = state.items.find(i => i.id === itemId);
-      
-      if (item) {
-        item.quantity += 1;
-        
-        // Cập nhật totals
-        state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-        state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        
-        // Lưu vào localStorage
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
-    
-    decrementQuantity: (state, action) => {
-      const itemId = action.payload;
-      const item = state.items.find(i => i.id === itemId);
-      
-      if (item) {
-        if (item.quantity > 1) {
-          item.quantity -= 1;
-        } else {
-          // Xóa item nếu quantity = 1
-          state.items = state.items.filter(i => i.id !== itemId);
-        }
-        
-        // Cập nhật totals
-        state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-        state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        
-        // Lưu vào localStorage
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
-    
-    clearCart: (state) => {
+
+    clearCartLocal: (state) => {
       state.items = [];
       state.totalItems = 0;
       state.totalPrice = 0;
-      
-      // Xóa khỏi localStorage
-      localStorage.removeItem('cart');
+      localStorage.removeItem(LS_KEY);
     },
-    
-    // Load cart từ server (nếu user đã login)
-    loadCart: (state, action) => {
-      state.items = action.payload || [];
-      state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-      state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-      
-      // Lưu vào localStorage
-      localStorage.setItem('cart', JSON.stringify(state.items));
+
+    clearSyncError: (state) => {
+      state.syncError = null;
     },
-    
-    // Update modifiers cho một item trong cart
-    updateItemModifiers: (state, action) => {
-      const { itemIndex, modifiers } = action.payload;
-      if (state.items[itemIndex]) {
-        state.items[itemIndex].modifiers = modifiers;
-        
-        // Lưu vào localStorage
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(syncCartToDb.pending, (state) => {
+        state.syncing = true;
+        state.syncError = null;
+      })
+      .addCase(syncCartToDb.rejected, (state, action) => {
+        state.syncing = false;
+        state.syncError = action.payload?.message || "Sync failed";
+      })
+      .addCase(syncCartToDb.fulfilled, (state, action) => {
+        state.syncing = false;
+        state.syncError = null;
+
+        // server trả { cart, items } -> bạn có thể lưu cartId nếu cần
+        state.cartId = action.payload?.cart?.id || null;
+
+        // ✅ Option: sau khi sync thì clear local cart (khuyên làm)
+        state.items = [];
+        state.totalItems = 0;
+        state.totalPrice = 0;
+        localStorage.removeItem(LS_KEY);
+      });
   },
 });
 
 export const {
-  addToCart,
-  removeFromCart,
-  updateQuantity,
-  incrementQuantity,
-  decrementQuantity,
-  clearCart,
-  loadCart,
-  updateItemModifiers,
+  addToCartLocal,
+  removeFromCartLocal,
+  incrementLocal,
+  decrementLocal,
+  clearCartLocal,
+  clearSyncError,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
 
-// Selectors
+// selectors
 export const selectCartItems = (state) => state.cart.items;
 export const selectTotalItems = (state) => state.cart.totalItems;
 export const selectTotalPrice = (state) => state.cart.totalPrice;
-export const selectCartItemById = (id) => (state) => 
-  state.cart.items.find(item => item.id === id);
+export const selectSyncing = (state) => state.cart.syncing;
+export const selectSyncError = (state) => state.cart.syncError;
+export const selectCartId = (state) => state.cart.cartId;
