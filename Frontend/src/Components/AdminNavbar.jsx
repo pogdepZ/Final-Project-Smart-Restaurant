@@ -5,7 +5,6 @@ import {
   ClipboardList,
   UtensilsCrossed,
   Users,
-  Tags,
   Settings,
   LogOut,
   Menu as MenuIcon,
@@ -13,12 +12,14 @@ import {
   Shield,
 } from "lucide-react";
 
+import { MdOutlineTableBar } from "react-icons/md";
+
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
   { to: "/admin/menu", label: "Menu", icon: UtensilsCrossed },
   { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/promos", label: "Promos", icon: Tags },
+  { to: "/admin/tables", label: "Tables", icon: MdOutlineTableBar },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -87,17 +88,15 @@ export default function AdminNavbar() {
 
       {/* Mobile overlay */}
       <div
-        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm ${
-          open ? "opacity-100 visible" : "opacity-0 invisible"
-        }`}
+        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm ${open ? "opacity-100 visible" : "opacity-0 invisible"
+          }`}
         onClick={() => setOpen(false)}
       />
 
       {/* Mobile drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-80 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col md:hidden ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 h-full w-80 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col md:hidden ${open ? "translate-x-0" : "translate-x-full"
+          }`}
       >
         <div className="mb-6">
           <div className="text-white font-black text-lg">Admin Menu</div>

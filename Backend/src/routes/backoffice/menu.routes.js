@@ -1,64 +1,63 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const menuController = require('../../controllers/menuController');
-const photoController = require('../../controllers/photoController');
-const modifierController = require('../../controllers/modifierController');
+const menuController = require("../../controllers/menuController");
+const photoController = require("../../controllers/photoController");
+const modifierController = require("../../controllers/modifierController");
 
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
-const upload = require('../../config/cloudinary');
-
-// --- Categories (Admin) ---
-router.post('/categories', protect, adminOnly, menuController.createCategory);
-router.put('/categories/:id', protect, adminOnly, menuController.updateCategory);
-
-// --- Items (Admin) ---
-router.post(
-  '/items',
+const {
   protect,
   adminOnly,
-  upload.single('image'),
-  menuController.createMenuItem
+  staffOnly,
+} = require("../../middlewares/authMiddleware");
+const upload = require("../../config/cloudinary");
+
+const adminMenuController = require("../../controllers/adminMenuController");
+
+// Categories
+router.get(
+  "/categories",
+  protect,
+  adminOnly,
+  adminMenuController.getCategories
 );
 
-router.put(
-  '/items/:id',
+// Items (paging + filter)
+router.get("/items", protect, adminOnly, adminMenuController.getMenuItems);
+router.get(
+  "/items/:id",
   protect,
   adminOnly,
-  upload.single('image'),
-  menuController.updateMenuItem
+  adminMenuController.getMenuItemDetail
 );
 
-router.delete('/items/:id', protect, adminOnly, menuController.deleteMenuItem);
-
-// --- Photos management (Admin) ---
-router.post(
-  '/items/:id/photos',
+router.post("/items", protect, adminOnly, adminMenuController.createMenuItem);
+router.patch(
+  "/items/:id",
   protect,
   adminOnly,
-  upload.array('photos', 5),
-  photoController.addItemPhotos
+  adminMenuController.updateMenuItem
 );
-
-router.delete(
-  '/items/:id/photos/:photoId',
+router.patch(
+  "/items/:id/chef",
   protect,
-  adminOnly,
-  photoController.deletePhoto
+  staffOnly,
+  adminMenuController.toggleChefRecommended
 );
 
 router.patch(
-  '/items/:id/photos/:photoId/primary',
+  "/items/:id/delete",
   protect,
   adminOnly,
-  photoController.setPrimaryPhoto
+  adminMenuController.deleteMenuItem
 );
 
-// --- Modifiers (Admin) ---
-router.get('/modifiers', protect, adminOnly, modifierController.getGroups);
-
-router.post('/modifiers', protect, adminOnly, modifierController.createGroup);
-router.post('/modifiers/:group_id/options', protect, adminOnly, modifierController.addOption);
-router.post('/items/:item_id/modifiers', protect, adminOnly, modifierController.attachGroupToItem);
+// Categories
+router.post(
+  "/categories",
+  protect,
+  adminOnly,
+  adminMenuController.createCategory
+);
 
 module.exports = router;
