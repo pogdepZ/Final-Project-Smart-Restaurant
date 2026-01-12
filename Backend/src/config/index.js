@@ -18,6 +18,7 @@ const config = {
   auth: {
     accessTokenSecret: process.env.JWT_ACCESS_SECRET,
     refreshTokenSecret: process.env.JWT_REFRESH_SECRET,
+    qrTokenSecret: process.env.QR_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
     saltRounds: 10,
   },

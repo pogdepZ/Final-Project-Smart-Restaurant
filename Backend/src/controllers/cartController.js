@@ -77,3 +77,22 @@ exports.clearCart = async (req, res) => {
     return errorToHttp(res, err);
   }
 };
+
+
+exports.syncCart = async (req, res, next) => {
+  try {
+    const tableId = req.qr?.table_id;
+    if (!tableId) return res.status(400).json({ message: "QR_MISSING_TABLE" });
+
+    const { items } = req.body || {};
+    const result = await cartService.syncCartByTableId({
+      tableId,
+      items: items || [],
+      userId: null,
+    });
+
+    return res.json(result);
+  } catch (e) {
+    return next(e);
+  }
+};

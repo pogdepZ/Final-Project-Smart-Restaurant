@@ -8,9 +8,8 @@ import React, {
 import FoodDetailPopup from "./DetailFoodPopup";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  addCartItem,
+  addToCartLocal,
   selectTotalItems,
-  fetchActiveCart,   
   selectCartId,
 } from "../../store/slices/cartSlice";
 
@@ -29,7 +28,7 @@ const PAGE_SIZE = 12;
 export default function Menu() {
   const dispatch = useDispatch();
   const cartCount = useSelector(selectTotalItems);
-  const cartId = useSelector(selectCartId); 
+  const cartId = useSelector(selectCartId);
   const { tableCode } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -344,51 +343,39 @@ export default function Menu() {
   }, [searchInput, appliedSearch, syncUrl, activeCategoryId, sort, onlyChef]);
 
   // ===== cart =====
-  const handleAddToCart = async (e, item) => {
+  const handleAddToCart = (e, item) => {
     e.stopPropagation();
 
-    try {
-      let activeCartId = cartId;
+    dispatch(
+      addToCartLocal({
+        id: item.id, // menu_items.id
+        name: item.name,
+        price: Number(item.price) || 0,
+        image: item.image_url || item.image || null,
+        modifiers: [], // sau này lấy modifiers user chọn
+        note: "",
+      })
+    );
 
-      // Nếu chưa có cartId thì tạo / lấy cart active trước
-      if (!activeCartId && tableCode) {
-        const res = await dispatch(fetchActiveCart(tableCode)).unwrap();
-        activeCartId = res.cartId;
-      }
+    // UI animation giữ nguyên
+    setAddedItems((prev) => {
+      const next = new Set(prev);
+      next.add(item.id);
+      return next;
+    });
 
-      await dispatch(
-        addCartItem({
-          cartId: activeCartId,
-          menuItemId: item.id, // ✅ menu_items.id
-          quantity: 1,
-          modifiers: [], // hoặc modifiers user chọn
-          note: "",
-        })
-      ).unwrap();
-
-      // UI animation (OK giữ lại)
+    setTimeout(() => {
       setAddedItems((prev) => {
         const next = new Set(prev);
-        next.add(item.id);
+        next.delete(item.id);
         return next;
       });
+    }, 700);
 
-      setTimeout(() => {
-        setAddedItems((prev) => {
-          const next = new Set(prev);
-          next.delete(item.id);
-          return next;
-        });
-      }, 700);
-
-      toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
-        position: "bottom-right",
-        autoClose: 1200,
-      });
-    } catch (err) {
-      console.error(err);
-      toast.error("Thêm vào giỏ hàng thất bại");
-    }
+    toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
+      position: "bottom-right",
+      autoClose: 1200,
+    });
   };
 
   const disabledSearch = useMemo(
