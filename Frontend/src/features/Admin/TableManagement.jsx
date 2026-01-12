@@ -6,7 +6,7 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import {
   Plus, Search, Filter, Edit, Power,
-  Archive, FileText, Grid, Square, X, MapPin, Users
+  Archive, FileText, Grid, Square, X, MapPin, Users, RefreshCw 
 } from "lucide-react";
 import TableDetailPanel from "./components/TableDetailPanel"; // Đảm bảo đường dẫn đúng
 
@@ -179,6 +179,25 @@ const TableManagement = () => {
     }
   };
 
+
+  // --- BULK ACTION: RESET ALL ---
+  const handleBulkRegenerate = async () => {
+    const msg = "⚠️ CẢNH BÁO NGUY HIỂM:\n\nHành động này sẽ VÔ HIỆU HÓA TOÀN BỘ mã QR hiện tại đang dán trên bàn.\nKhách hàng sẽ không thể gọi món bằng mã cũ.\n\nBạn có chắc chắn muốn tạo mới tất cả không?";
+    
+    if (!window.confirm(msg)) return;
+
+    try {
+        toast.info("Đang xử lý làm mới hàng loạt...");
+        const res = await axiosClient.post('/tables/regenerate-all'); // API Backend đã viết
+        
+        // Backend trả về: { message: "Đã làm mới...", count: 20 }
+        toast.success(res.message || "Đã làm mới tất cả mã QR!");
+        fetchTables(); // Reload lại danh sách để lấy token mới
+    } catch (err) {
+        toast.error("Lỗi hệ thống khi làm mới QR");
+    }
+  };
+
   return (
     <div className="flex h-screen bg-neutral-950 text-gray-200 overflow-hidden font-sans">
       
@@ -195,6 +214,13 @@ const TableManagement = () => {
                 
                 {/* Bulk Action Buttons */}
                 <div className="flex gap-2">
+                    <button 
+                      onClick={handleBulkRegenerate}
+                      className="bg-red-900/80 text-red-200 px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-red-800 border border-red-500/30 text-xs font-bold transition-all"
+                      title="Vô hiệu hóa tất cả QR cũ và tạo mới">
+                        <RefreshCw size={16} /> Reset All
+                    </button>
+
                     <button onClick={handleDownloadZip} className="bg-neutral-800 text-white px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-neutral-700 border border-white/10 text-xs font-medium" title="Tải tất cả ảnh (ZIP)">
                         <Archive size={16} /> ZIP
                     </button>
