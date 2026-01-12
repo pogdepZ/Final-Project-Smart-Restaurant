@@ -36,9 +36,7 @@ export const loginThunk = createAsyncThunk(
       return { accessToken, user };
     } catch (err) {
       const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Network error";
+        err?.response?.data?.message || err?.message || "Network error";
       return rejectWithValue(msg);
     }
   }
@@ -52,9 +50,7 @@ export const registerThunk = createAsyncThunk(
       return res;
     } catch (err) {
       const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Network error";
+        err?.response?.data?.message || err?.message || "Network error";
       return rejectWithValue(msg);
     }
   }
@@ -130,7 +126,6 @@ const authSlice = createSlice({
         } else {
           localStorage.removeItem("user");
         }
-        injectStore(state)
       })
       .addCase(loginThunk.rejected, (state, action) => {
         state.isLoading = false;
