@@ -1,6 +1,8 @@
 const TableRepository = require("../repositories/tableRepository");
 const jwt = require("jsonwebtoken");
 const QRCode = require("qrcode");
+// Kiểm tra kỹ đường dẫn này trong project của bạn
+const socketService = require("./socketService"); 
 
 const VALID_LOCATIONS = ["Indoor", "Outdoor", "Patio", "VIP Room"];
 
@@ -24,7 +26,6 @@ class TableService {
   async getAllTables({ status, location, sort }) {
     let sortQuery = " ORDER BY table_number ASC";
     
-    // Logic sort mapping
     switch (sort) {
       case 'capacity_asc': sortQuery = " ORDER BY capacity ASC"; break;
       case 'capacity_desc': sortQuery = " ORDER BY capacity DESC"; break;
@@ -45,9 +46,8 @@ class TableService {
     return table;
   }
 
-  // 3. Create Table (Logic phức tạp: Check -> Create -> Gen QR -> Update)
+  // 3. Create Table
   async createTable({ table_number, capacity, location, description }) {
-    // Validation Logic
     if (!table_number || !capacity || !location) {
       throw new Error("Thiếu thông tin bắt buộc");
     }
@@ -59,11 +59,9 @@ class TableService {
       throw new Error("Vị trí không hợp lệ");
     }
 
-    // Check Duplicate
     const exist = await TableRepository.findByNumber(table_number);
     if (exist) throw new Error(`Số bàn '${table_number}' đã tồn tại`);
 
-    // Create Table
     const newTable = await TableRepository.create({
       table_number,
       capacity: cap,
@@ -71,17 +69,14 @@ class TableService {
       description,
     });
 
-    // Gen QR
     const { token, qrImage } = await this.generateSignedQR(newTable.id, newTable.table_number);
-
-    // Update Token
     const finalTable = await TableRepository.updateQRToken(newTable.id, token);
 
     return { ...finalTable, qr_image: qrImage };
   }
 
   // 4. Update Table
-  async updateTable(id, data) {
+  async updateTable(id, data, io) {
     const { table_number, location } = data;
 
     if (location && !VALID_LOCATIONS.includes(location)) {
@@ -96,20 +91,21 @@ class TableService {
     const updatedTable = await TableRepository.update(id, data);
     if (!updatedTable) throw new Error("Không tìm thấy bàn");
     
+    // Notify Socket
+    if (io) socketService.notifyTableUpdate(io, { type: 'update', table: updatedTable });
+
     return updatedTable;
   }
 
   // 5. Toggle Status
-  async toggleStatus(id, status, force = false) {
+  async toggleStatus(id, status, force = false, io) {
     if (!["active", "inactive"].includes(status)) {
       throw new Error("Trạng thái không hợp lệ");
     }
 
-    // Warning logic
     if (status === "inactive" && !force) {
       const activeCount = await TableRepository.countActiveOrders(id);
       if (activeCount > 0) {
-        // Return object đặc biệt để Controller biết là warning
         return {
           warning: true,
           message: `Bàn đang có ${activeCount} đơn chưa xong.`,
@@ -118,7 +114,14 @@ class TableService {
       }
     }
 
-    return await TableRepository.updateStatus(id, status);
+    // --- FIX LỖI TẠI ĐÂY ---
+    // Gọi Repository update trước để lấy kết quả
+    const updatedTable = await TableRepository.updateStatus(id, status);
+    
+    // Sau đó mới notify
+    if (io) socketService.notifyTableUpdate(io, { type: 'update', table: updatedTable });
+
+    return updatedTable;
   }
 
   // 6. Regenerate QR
@@ -138,4 +141,4 @@ class TableService {
   }
 }
 
-module.exports = new TableService();
+module.exports = new TableService();    

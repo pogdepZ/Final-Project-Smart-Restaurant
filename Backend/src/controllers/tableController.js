@@ -30,7 +30,7 @@ exports.createTable = async (req, res) => {
 
 exports.updateTable = async (req, res) => {
   try {
-    const result = await tableService.updateTable(req.params.id, req.body);
+    const result = await tableService.updateTable(req.params.id, req.body, req.io);
     res.json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -43,7 +43,8 @@ exports.toggleStatus = async (req, res) => {
     const result = await tableService.toggleStatus(
       req.params.id,
       req.body.status,
-      force === "true"
+      force === "true",
+      req.io
     );
 
     // Nếu service trả về warning thì status code 200 nhưng frontend phải xử lý
