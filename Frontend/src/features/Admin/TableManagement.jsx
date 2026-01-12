@@ -83,6 +83,7 @@ const TableManagement = () => {
   const fetchTables = async () => {
     setLoading(true);
     try {
+      console.log(filters)
       const query = new URLSearchParams(filters).toString();
       const res = await axiosClient.get(`/admin/tables?${query}`);
       setTables(res); // Giả sử axiosClient trả về data trực tiếp
@@ -284,7 +285,7 @@ const TableManagement = () => {
 
     try {
       toast.info("Đang xử lý làm mới hàng loạt...");
-      const res = await axiosClient.post("/tables/regenerate-all"); // API Backend đã viết
+      const res = await axiosClient.post("/admin/tables/regenerate-all"); // API Backend đã viết
 
       // Backend trả về: { message: "Đã làm mới...", count: 20 }
       toast.success(res.message || "Đã làm mới tất cả mã QR!");

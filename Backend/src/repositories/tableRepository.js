@@ -7,17 +7,23 @@ class TableRepository {
         let query = `SELECT * FROM tables WHERE 1=1`;
         const params = [];
 
-        if (status) {
+        if (status && status !== '') {
             params.push(status);
             query += ` AND status = $${params.length}`;
         }
 
-        if (location) {
+        if (location && location !== '') {
             params.push(`%${location}%`);
             query += ` AND location ILIKE $${params.length}`;
         }
 
-        query += sortQuery; // VD: " ORDER BY table_number ASC"
+        // 3. SORT
+        // sortQuery được truyền từ Controller xuống (ví dụ: " ORDER BY capacity DESC")
+        if (sortQuery) {
+            query += sortQuery;
+        } else {
+            query += " ORDER BY table_number ASC"; // Mặc định
+        }
 
         const result = await db.query(query, params);
         return result.rows;

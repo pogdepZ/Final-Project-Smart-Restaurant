@@ -109,9 +109,9 @@ const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
   const handleRegenerate = async () => {
     if (!window.confirm("CẢNH BÁO: Mã cũ sẽ bị vô hiệu hóa. Tiếp tục?")) return;
     try {
-        const res = await axiosClient.post(`/tables/${table.id}/regenerate`);
+        const res = await axiosClient.post(`/admin/tables/${table.id}/regenerate`);
         toast.success("Mã QR đã được làm mới!");
-        setTable(prev => ({ ...prev, qr_token: res.data.qr_token }));
+        setTable(prev => ({ ...prev, qr_token: res.qr_token }));
         if (onRefresh) onRefresh();
     } catch (err) {
         toast.error("Lỗi làm mới mã");
