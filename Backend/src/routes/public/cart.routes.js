@@ -6,8 +6,6 @@ const { requireQrToken } = require("../../middlewares/qrToken");
 // /api/cart/active?tableCode=TB01
 router.get("/active", cartController.getActiveCart);
 
-// /api/cart/items
-router.post("/items", cartController.addItem);
 
 // /api/cart/items/:cartItemId
 router.patch("/items/:cartItemId", cartController.updateQuantity);

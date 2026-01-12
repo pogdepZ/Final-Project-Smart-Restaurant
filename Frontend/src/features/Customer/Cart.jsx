@@ -66,7 +66,7 @@ const Cart = () => {
     try {
       await dispatch(syncCartToDb({ qrToken })).unwrap();
       toast.success("Đã gửi đơn lên hệ thống!");
-      navigate("/order/checkout");
+      navigate("/menu");
     } catch (e) {
       toast.error(e?.message || "Đặt món thất bại");
     }
