@@ -3,7 +3,7 @@ import { logout, setCredentials } from './slices/authSlice';
 
 let accessToken = null;
 
-let store; 
+let store;
 
 export const injectStore = (_store) => {
   store = _store;
@@ -12,13 +12,12 @@ export const injectStore = (_store) => {
 
 //setup baseURL và headers chung
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:5000/api/',
+  baseURL: "http://localhost:5000/api/",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-  withCredentials: true, 
+  withCredentials: true,
 });
-
 
 // Thêm interceptor để tự động gắn token vào header Authorization
 axiosClient.interceptors.request.use(
@@ -62,6 +61,5 @@ axiosClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 export default axiosClient;

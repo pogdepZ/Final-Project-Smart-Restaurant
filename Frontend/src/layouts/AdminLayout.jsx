@@ -1,12 +1,16 @@
+import React from "react";
 import { Outlet } from "react-router-dom";
+import AdminNavbar from "../Components/AdminNavbar";
 
-const AdminLayout = () => {
+export default function AdminLayout() {
   return (
-    <>
-      <h1>AdminLayout</h1>
-      <Outlet/>
-    </>
-  );
-};
+    <div className="min-h-screen bg-neutral-950 text-white">
+      <AdminNavbar />
 
-export default AdminLayout;
+      {/* chừa khoảng trống vì navbar fixed */}
+      <div className="pt-16">
+        <Outlet />
+      </div>
+    </div>
+  );
+}

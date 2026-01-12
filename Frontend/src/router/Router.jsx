@@ -66,7 +66,7 @@ const routers = [
         path: "/menu/:tableCode",
         element: <Menu />,
       },
-       {
+      {
         path: "/cart/:tableCode",
         element: <Cart />,
       },
