@@ -223,3 +223,52 @@ exports.addItemPhotos = async (id, files) => {
 exports.getGuestMenu = async () => {
   return repo.findGuestMenu();
 };
+
+
+exports.getRelatedMenuItems = async (id) => {
+  // 1. Lấy thông tin món hiện tại để biết nó thuộc danh mục nào
+  const currentItem = await repo.findMenuItemById(id);
+  
+  if (!currentItem) {
+    const err = new Error('Không tìm thấy món ăn');
+    err.status = 404;
+    throw err;
+  }
+
+  const relatedItems = await repo.findRelatedItemsByCategory(currentItem.category_id, id);
+  
+  return relatedItems;
+};
+
+
+
+exports.getMenuItemsPublic = async (query) => {
+  const page = Math.max(1, toInt(query.page, 1));
+  const limit = Math.min(50, Math.max(1, toInt(query.limit, 12)));
+  const offset = (page - 1) * limit;
+
+  const search = query.search ? String(query.search).trim() : "";
+  const category_id = query.category_id || null;
+  const sort = query.sort || "newest"; // "popularity" | "newest"
+
+  const chef = query.chef || false;
+
+  const { rows, total } = await repo.findMenuItemsPublic({
+    category_id,
+    search,
+    sort,
+    limit,
+    offset,
+    chef
+  });
+
+  return {
+    data: rows,
+    meta: {
+      page,
+      limit,
+      total,
+      hasMore: page * limit < total,
+    },
+  };
+};

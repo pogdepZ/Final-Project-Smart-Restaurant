@@ -4,6 +4,49 @@ const QRCode = require("qrcode");
 
 const VALID_LOCATIONS = ["Indoor", "Outdoor", "Patio", "VIP Room"];
 
+// Helper tạo Token & Ảnh QR (Logic nghiệp vụ)
+const generateSignedQR = async (tableId, tableNumber) => {
+  const payload = {
+    table_id: tableId,
+    table_number: tableNumber,
+    type: 'table_qr'
+  };
+  
+  const token = jwt.sign(payload, process.env.QR_SECRET, { expiresIn: '2y' });
+  
+  const clientUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/menu?token=${token}`;
+  const qrImage = await QRCode.toDataURL(clientUrl);
+
+  console.log(token)
+
+  return { token, qrImage };
+};
+
+exports.regenerateQR = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // 1. Tìm bàn
+        const table = await TableRepository.findById(id);
+        if (!table) return res.status(404).json({ message: "Bàn không tồn tại" });
+
+        // 2. Tạo token mới
+        const { token, qrImage } = await generateSignedQR(table.id, table.table_number);
+
+        // 3. Update DB
+        await TableRepository.updateQRToken(id, token);
+
+        res.json({ 
+            message: "Đã làm mới mã QR", 
+            qr_token: token, 
+            qr_image: qrImage 
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi làm mới QR' });
+    }
+};
+
 // 1. GET Tables
 exports.getTables = async (req, res) => {
   try {
@@ -12,18 +55,14 @@ exports.getTables = async (req, res) => {
     // Xử lý Sort Query tại Controller (Business Logic)
     let sortQuery = " ORDER BY table_number ASC";
     switch (sort) {
-      case "capacity_asc":
-        sortQuery = ` ORDER BY capacity ASC`;
-        break;
-      case "capacity_desc":
-        sortQuery = ` ORDER BY capacity DESC`;
-        break;
-      case "newest":
-        sortQuery = ` ORDER BY created_at DESC`;
-        break;
-      case "number_desc":
-        sortQuery = ` ORDER BY table_number DESC`;
-        break;
+      case 'capacity_asc': sortQuery = " ORDER BY capacity ASC"; break;
+      case 'capacity_desc': sortQuery = " ORDER BY capacity DESC"; break;
+      case 'name_desc': sortQuery = " ORDER BY table_number ASC"; break;
+      case 'name_asc': sortQuery = " ORDER BY table_number DESC"; break;
+      case 'newest': sortQuery = " ORDER BY created_at DESC"; break; // Creation date
+      case 'oldest': sortQuery = " ORDER BY created_at ASC"; break;
+      case 'number_desc': sortQuery = " ORDER BY table_number DESC"; break;
+      default: sortQuery = " ORDER BY table_number ASC"; // Default (Table number)
     }
 
     // Gọi Repository
@@ -39,6 +78,19 @@ exports.getTables = async (req, res) => {
   }
 };
 
+exports.getTableById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const table = await TableRepository.findById(id);
+    if (!table)
+      return res.status(404).json({ message: "Không tìm thấy bàn" });
+    res.json(table);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi Server" });
+  }
+};
+
 // 2. CREATE Table
 exports.createTable = async (req, res) => {
   const { table_number, capacity, location, description } = req.body;
@@ -47,6 +99,7 @@ exports.createTable = async (req, res) => {
   if (!table_number || !capacity || !location) {
     return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
   }
+
   const cap = parseInt(capacity);
   if (isNaN(cap) || cap < 1 || cap > 20) {
     return res.status(400).json({ message: "Sức chứa 1-20" });
@@ -63,27 +116,23 @@ exports.createTable = async (req, res) => {
         .status(400)
         .json({ message: `Số bàn '${table_number}' đã tồn tại` });
 
-    // Generate QR (Logic này vẫn nên ở Controller hoặc Service, không phải Repo)
-    const qrPayload = { table_number };
-    const qrToken = jwt.sign(qrPayload, process.env.QR_SECRET || "secret", {
-      expiresIn: "365d",
-    });
-    const clientUrl = `http://localhost:5173/menu?token=${qrToken}`;
-    const qrImage = await QRCode.toDataURL(clientUrl);
-
-    // Save to DB via Repo
-    const newTable = await TableRepository.create({
-      table_number,
-      capacity: cap,
-      location,
-      description,
-      qr_token: qrToken,
+    // 2. Tạo bàn trước (để lấy ID)
+    const newTable = await TableRepository.create({ 
+        table_number, capacity, location, description 
     });
 
-    res.status(201).json({ ...newTable, qr_image: qrImage });
+    // 3. Sinh QR Token dựa trên ID vừa có
+    const { token, qrImage } = await generateSignedQR(newTable.id, newTable.table_number);
+
+    // 4. Update Token vào DB
+    const finalTable = await TableRepository.updateQRToken(newTable.id, token);
+    
+    // Trả về kết quả kèm ảnh QR
+    res.status(201).json({ ...finalTable, qr_image: qrImage });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi Server" });
+    res.status(500).json({ message: 'Lỗi Server' });
   }
 };
 

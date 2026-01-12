@@ -11,7 +11,7 @@ if (!connectionString) {
 const pool = new Pool({
   connectionString,
   ssl: { rejectUnauthorized: false } // ⚠️ BẮT BUỘC nếu dùng Supabase
-});
+}); 
 
 (async () => {
   try {

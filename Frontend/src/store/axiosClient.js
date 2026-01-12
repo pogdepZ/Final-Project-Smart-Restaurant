@@ -1,5 +1,5 @@
-import axios from "axios";
-import { logout, setCredentials } from "./slices/authSlice";
+import axios from 'axios';
+import { logout, setCredentials } from './slices/authSlice';
 
 let accessToken = null;
 
