@@ -66,7 +66,7 @@ const routers = [
         path: "/menu/:tableCode",
         element: <Menu />,
       },
-       {
+      {
         path: "/cart/:tableCode",
         element: <Cart />,
       },
@@ -129,7 +129,7 @@ const routers = [
         children: [
           {
             index: true,
-            element: <TableManagement />,
+            element: <DashBoard />,
           },
           {
             path: "menu",
