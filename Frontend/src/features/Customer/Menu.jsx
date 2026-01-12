@@ -1,7 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import FoodDetailPopup from "./DetailFoodPopup";
 import { useDispatch, useSelector } from "react-redux";
-import { addToCart, selectTotalItems } from "../../store/slices/cartSlice";
+import {
+  addCartItem,
+  selectTotalItems,
+  fetchActiveCart,   
+  selectCartId,
+} from "../../store/slices/cartSlice";
+
 import { toast } from "react-toastify";
 import { useParams, useSearchParams } from "react-router-dom";
 import { menuApi } from "../../services/menuApi";
@@ -17,6 +29,7 @@ const PAGE_SIZE = 12;
 export default function Menu() {
   const dispatch = useDispatch();
   const cartCount = useSelector(selectTotalItems);
+  const cartId = useSelector(selectCartId); 
   const { tableCode } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -194,19 +207,27 @@ export default function Menu() {
           page: nextPage,
           limit: PAGE_SIZE,
           search: appliedSearch || undefined,
-          category_id: activeCategoryId === "all" ? undefined : activeCategoryId,
+          category_id:
+            activeCategoryId === "all" ? undefined : activeCategoryId,
           sort: sort || undefined,
           chef: onlyChef ? 1 : undefined,
         };
 
-        const res = await menuApi.getMenuItems(params, { signal: controller.signal });
+        const res = await menuApi.getMenuItems(params, {
+          signal: controller.signal,
+        });
 
         const data = res?.data ?? res?.items ?? res?.data?.data ?? [];
         const meta = res?.meta ?? res?.data?.meta;
 
-        const normalized = (data || []).map((it) => ({ ...it, image: it.image_url }));
+        const normalized = (data || []).map((it) => ({
+          ...it,
+          image: it.image_url,
+        }));
 
-        setItems((prev) => (nextPage === 1 ? normalized : prev.concat(normalized)));
+        setItems((prev) =>
+          nextPage === 1 ? normalized : prev.concat(normalized)
+        );
         setPage(nextPage);
 
         const nextHasMore =
@@ -295,7 +316,15 @@ export default function Menu() {
     if (rect.top <= window.innerHeight + 200) {
       fetchPage(page + 1, { reason: "auto" });
     }
-  }, [items.length, loadingFirst, loadingMore, hasMore, error, page, fetchPage]);
+  }, [
+    items.length,
+    loadingFirst,
+    loadingMore,
+    hasMore,
+    error,
+    page,
+    fetchPage,
+  ]);
 
   // ===== apply search (button/enter) =====
   const applySearch = useCallback(() => {
@@ -315,37 +344,51 @@ export default function Menu() {
   }, [searchInput, appliedSearch, syncUrl, activeCategoryId, sort, onlyChef]);
 
   // ===== cart =====
-  const handleAddToCart = (e, item) => {
+  const handleAddToCart = async (e, item) => {
     e.stopPropagation();
-    dispatch(
-      addToCart({
-        id: item.id,
-        name: item.name,
-        price: Number(item.price),
-        image: item.image || null,
-        category_id: item.category_id,
-        status: item.status,
-      })
-    );
 
-    setAddedItems((prev) => {
-      const next = new Set(prev);
-      next.add(item.id);
-      return next;
-    });
+    try {
+      let activeCartId = cartId;
 
-    setTimeout(() => {
+      // Nếu chưa có cartId thì tạo / lấy cart active trước
+      if (!activeCartId && tableCode) {
+        const res = await dispatch(fetchActiveCart(tableCode)).unwrap();
+        activeCartId = res.cartId;
+      }
+
+      await dispatch(
+        addCartItem({
+          cartId: activeCartId,
+          menuItemId: item.id, // ✅ menu_items.id
+          quantity: 1,
+          modifiers: [], // hoặc modifiers user chọn
+          note: "",
+        })
+      ).unwrap();
+
+      // UI animation (OK giữ lại)
       setAddedItems((prev) => {
         const next = new Set(prev);
-        next.delete(item.id);
+        next.add(item.id);
         return next;
       });
-    }, 700);
 
-    toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
-      position: "bottom-right",
-      autoClose: 1200,
-    });
+      setTimeout(() => {
+        setAddedItems((prev) => {
+          const next = new Set(prev);
+          next.delete(item.id);
+          return next;
+        });
+      }, 700);
+
+      toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
+        position: "bottom-right",
+        autoClose: 1200,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Thêm vào giỏ hàng thất bại");
+    }
   };
 
   const disabledSearch = useMemo(
@@ -377,7 +420,10 @@ export default function Menu() {
         {loadingFirst ? (
           <MenuSkeleton count={PAGE_SIZE} />
         ) : error && items.length === 0 ? (
-          <MenuErrorState error={error} onRetry={() => fetchPage(1, { reason: "user" })} />
+          <MenuErrorState
+            error={error}
+            onRetry={() => fetchPage(1, { reason: "user" })}
+          />
         ) : items.length > 0 ? (
           <MenuList
             items={items}
@@ -388,7 +434,9 @@ export default function Menu() {
             loadingMore={loadingMore}
             hasMore={hasMore}
             error={error}
-            onRetryLoadMore={() => fetchPage(pageRef.current + 1, { reason: "user" })}
+            onRetryLoadMore={() =>
+              fetchPage(pageRef.current + 1, { reason: "user" })
+            }
           />
         ) : (
           <MenuEmptyState />
@@ -396,7 +444,10 @@ export default function Menu() {
       </div>
 
       {selectedFood && (
-        <FoodDetailPopup food={selectedFood} onClose={() => setSelectedFood(null)} />
+        <FoodDetailPopup
+          food={selectedFood}
+          onClose={() => setSelectedFood(null)}
+        />
       )}
     </div>
   );

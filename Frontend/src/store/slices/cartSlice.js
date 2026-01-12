@@ -1,172 +1,211 @@
-import { createSlice } from '@reduxjs/toolkit';
-
-// Lấy cart từ localStorage
-const getInitialCart = () => {
-  try {
-    const cart = localStorage.getItem('cart');
-    return cart ? JSON.parse(cart) : [];
-  } catch (error) {
-    return [];
-  }
-};
+// src/store/slices/cartSlice.js
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { cartApi } from "../../services/cartApi"; // <-- sửa path cho đúng
 
 const initialState = {
-  items: getInitialCart(),
-  totalItems: getInitialCart().reduce((sum, item) => sum + item.quantity, 0),
-  totalPrice: getInitialCart().reduce((sum, item) => sum + (item.price * item.quantity), 0),
+  cartId: null, // carts.id
+  items: [],
+  totalItems: 0,
+  totalPrice: 0,
+
+  // optional UI state
+  loading: false,
+  error: null,
 };
 
+const calcTotals = (items) => {
+  const totalItems = items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
+  const totalPrice = items.reduce(
+    (sum, i) => sum + (Number(i.price) || 0) * (Number(i.quantity) || 0),
+    0
+  );
+  return { totalItems, totalPrice };
+};
+
+/**
+ * THUNKS
+ */
+
+// GET /cart/active?tableCode=...
+export const fetchActiveCart = createAsyncThunk(
+  "cart/fetchActiveCart",
+  async (tableCode, { rejectWithValue }) => {
+    try {
+      const res = await cartApi.getActive(tableCode); // { cart, items }
+      return { cartId: res.cart.id, items: res.items };
+    } catch (err) {
+      return rejectWithValue(err?.response?.data || { message: err.message });
+    }
+  }
+);
+
+// POST /cart/items
+export const addCartItem = createAsyncThunk(
+  "cart/addCartItem",
+  async ({ cartId, menuItemId, quantity = 1, modifiers = [], note = "" }, { rejectWithValue }) => {
+    try {
+      const res = await cartApi.addItem({ cartId, menuItemId, quantity, modifiers, note }); // { affected, items }
+      return { cartId, items: res.items };
+    } catch (err) {
+      return rejectWithValue(err?.response?.data || { message: err.message });
+    }
+  }
+);
+
+// PATCH /cart/items/:cartItemId
+export const setCartItemQty = createAsyncThunk(
+  "cart/setCartItemQty",
+  async ({ cartItemId, quantity }, { rejectWithValue }) => {
+    try {
+      const res = await cartApi.updateQty(cartItemId, quantity); // { cartId, items }
+      return { cartId: res.cartId, items: res.items };
+    } catch (err) {
+      return rejectWithValue(err?.response?.data || { message: err.message });
+    }
+  }
+);
+
+// DELETE /cart/items/:cartItemId
+export const removeCartItem = createAsyncThunk(
+  "cart/removeCartItem",
+  async (cartItemId, { rejectWithValue }) => {
+    try {
+      const res = await cartApi.removeItem(cartItemId); // { cartId, items }
+      return { cartId: res.cartId, items: res.items };
+    } catch (err) {
+      return rejectWithValue(err?.response?.data || { message: err.message });
+    }
+  }
+);
+
+// DELETE /cart/:cartId/items
+export const clearCartDb = createAsyncThunk(
+  "cart/clearCartDb",
+  async (cartId, { rejectWithValue }) => {
+    try {
+      await cartApi.clearCart(cartId);
+      return true;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data || { message: err.message });
+    }
+  }
+);
+
+/**
+ * SLICE
+ */
 const cartSlice = createSlice({
-  name: 'cart',
+  name: "cart",
   initialState,
   reducers: {
-    addToCart: (state, action) => {
-      const item = action.payload;
-      // Tìm item giống với cùng modifiers
-      const existingItem = state.items.find(i => 
-        i.id === item.id && 
-        JSON.stringify(i.modifiers || {}) === JSON.stringify(item.modifiers || {})
-      );
-      
-      if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
-        state.items.push({ ...item, quantity: 1, modifiers: item.modifiers || {} });
-      }
-      
-      // Cập nhật totals
-      state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-      state.totalPrice = state.items.reduce((sum, i) => {
-        let itemPrice = i.price;
-        // Tính thêm giá của modifiers nếu có
-        if (i.modifiers) {
-          // Logic tính giá modifiers sẽ được xử lý ở component
-        }
-        return sum + (itemPrice * i.quantity);
-      }, 0);
-      
-      // Lưu vào localStorage
-      localStorage.setItem('cart', JSON.stringify(state.items));
+    // nếu bạn muốn hydrate thủ công (ít dùng vì đã có thunks)
+    hydrateCart: (state, action) => {
+      const { cartId, items } = action.payload || {};
+      state.cartId = cartId ?? state.cartId;
+      state.items = items || [];
+      const { totalItems, totalPrice } = calcTotals(state.items);
+      state.totalItems = totalItems;
+      state.totalPrice = totalPrice;
     },
-    
-    removeFromCart: (state, action) => {
-      const itemId = action.payload;
-      state.items = state.items.filter(item => item.id !== itemId);
-      
-      // Cập nhật totals
-      state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-      state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-      
-      // Lưu vào localStorage
-      localStorage.setItem('cart', JSON.stringify(state.items));
-    },
-    
-    updateQuantity: (state, action) => {
-      const { id, quantity } = action.payload;
-      const item = state.items.find(i => i.id === id);
-      
-      if (item) {
-        if (quantity <= 0) {
-          // Xóa item nếu quantity <= 0
-          state.items = state.items.filter(i => i.id !== id);
-        } else {
-          item.quantity = quantity;
-        }
-        
-        // Cập nhật totals
-        state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-        state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        
-        // Lưu vào localStorage
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
-    
-    incrementQuantity: (state, action) => {
-      const itemId = action.payload;
-      const item = state.items.find(i => i.id === itemId);
-      
-      if (item) {
-        item.quantity += 1;
-        
-        // Cập nhật totals
-        state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-        state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        
-        // Lưu vào localStorage
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
-    
-    decrementQuantity: (state, action) => {
-      const itemId = action.payload;
-      const item = state.items.find(i => i.id === itemId);
-      
-      if (item) {
-        if (item.quantity > 1) {
-          item.quantity -= 1;
-        } else {
-          // Xóa item nếu quantity = 1
-          state.items = state.items.filter(i => i.id !== itemId);
-        }
-        
-        // Cập nhật totals
-        state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-        state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        
-        // Lưu vào localStorage
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
-    
-    clearCart: (state) => {
+
+    clearCartState: (state) => {
+      state.cartId = null;
       state.items = [];
       state.totalItems = 0;
       state.totalPrice = 0;
-      
-      // Xóa khỏi localStorage
-      localStorage.removeItem('cart');
+      state.loading = false;
+      state.error = null;
     },
-    
-    // Load cart từ server (nếu user đã login)
-    loadCart: (state, action) => {
-      state.items = action.payload || [];
-      state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-      state.totalPrice = state.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-      
-      // Lưu vào localStorage
-      localStorage.setItem('cart', JSON.stringify(state.items));
+
+    clearCartError: (state) => {
+      state.error = null;
     },
-    
-    // Update modifiers cho một item trong cart
-    updateItemModifiers: (state, action) => {
-      const { itemIndex, modifiers } = action.payload;
-      if (state.items[itemIndex]) {
-        state.items[itemIndex].modifiers = modifiers;
-        
-        // Lưu vào localStorage
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
+  },
+  extraReducers: (builder) => {
+    const pending = (state) => {
+      state.loading = true;
+      state.error = null;
+    };
+    const rejected = (state, action) => {
+      state.loading = false;
+      state.error = action.payload?.message || "Request failed";
+    };
+
+    builder
+      // fetch active
+      .addCase(fetchActiveCart.pending, pending)
+      .addCase(fetchActiveCart.rejected, rejected)
+      .addCase(fetchActiveCart.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cartId = action.payload.cartId;
+        state.items = action.payload.items || [];
+        const { totalItems, totalPrice } = calcTotals(state.items);
+        state.totalItems = totalItems;
+        state.totalPrice = totalPrice;
+      })
+
+      // add item
+      .addCase(addCartItem.pending, pending)
+      .addCase(addCartItem.rejected, rejected)
+      .addCase(addCartItem.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cartId = action.payload.cartId ?? state.cartId;
+        state.items = action.payload.items || [];
+        const { totalItems, totalPrice } = calcTotals(state.items);
+        state.totalItems = totalItems;
+        state.totalPrice = totalPrice;
+      })
+
+      // set qty
+      .addCase(setCartItemQty.pending, pending)
+      .addCase(setCartItemQty.rejected, rejected)
+      .addCase(setCartItemQty.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cartId = action.payload.cartId ?? state.cartId;
+        state.items = action.payload.items || [];
+        const { totalItems, totalPrice } = calcTotals(state.items);
+        state.totalItems = totalItems;
+        state.totalPrice = totalPrice;
+      })
+
+      // remove item
+      .addCase(removeCartItem.pending, pending)
+      .addCase(removeCartItem.rejected, rejected)
+      .addCase(removeCartItem.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cartId = action.payload.cartId ?? state.cartId;
+        state.items = action.payload.items || [];
+        const { totalItems, totalPrice } = calcTotals(state.items);
+        state.totalItems = totalItems;
+        state.totalPrice = totalPrice;
+      })
+
+      // clear cart db
+      .addCase(clearCartDb.pending, pending)
+      .addCase(clearCartDb.rejected, rejected)
+      .addCase(clearCartDb.fulfilled, (state) => {
+        state.loading = false;
+        state.cartId = null;
+        state.items = [];
+        state.totalItems = 0;
+        state.totalPrice = 0;
+      });
   },
 });
 
-export const {
-  addToCart,
-  removeFromCart,
-  updateQuantity,
-  incrementQuantity,
-  decrementQuantity,
-  clearCart,
-  loadCart,
-  updateItemModifiers,
-} = cartSlice.actions;
-
+export const { hydrateCart, clearCartState, clearCartError } = cartSlice.actions;
 export default cartSlice.reducer;
 
-// Selectors
+/**
+ * SELECTORS
+ */
+export const selectCartId = (state) => state.cart.cartId;
 export const selectCartItems = (state) => state.cart.items;
 export const selectTotalItems = (state) => state.cart.totalItems;
 export const selectTotalPrice = (state) => state.cart.totalPrice;
-export const selectCartItemById = (id) => (state) => 
-  state.cart.items.find(item => item.id === id);
+export const selectCartLoading = (state) => state.cart.loading;
+export const selectCartError = (state) => state.cart.error;
+
+// chuẩn DB: tìm theo cartItemId
+export const selectCartItemByCartItemId = (cartItemId) => (state) =>
+  state.cart.items.find((i) => i.cartItemId === cartItemId);
