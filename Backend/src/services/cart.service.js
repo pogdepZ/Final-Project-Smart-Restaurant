@@ -252,10 +252,42 @@ async function clearCartItems(cartId) {
   }
 }
 
+async function syncCartByTableId({ tableId, items = [], userId = null }) {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+
+    let cart = await getActiveCartByTableId(client, tableId);
+    if (!cart) cart = await createCart(client, { tableId, userId });
+
+    for (const it of items) {
+      // reuse logic merge modifiers
+      await addItemToCart({
+        cartId: cart.id,
+        menuItemId: it.menuItemId,
+        quantity: it.quantity,
+        modifiers: it.modifiers || [],
+        note: it.note || null,
+      });
+    }
+
+    const finalItems = await listCartItems(client, cart.id);
+
+    await client.query("commit");
+    return { cart, items: finalItems };
+  } catch (e) {
+    await client.query("rollback");
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   getOrCreateActiveCartByTableCode,
   addItemToCart,
   updateCartItemQuantity,
   removeCartItem,
   clearCartItems,
+  syncCartByTableId
 };

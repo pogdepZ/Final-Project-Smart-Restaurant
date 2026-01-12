@@ -1,16 +1,20 @@
-// src/store/slices/cartSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { cartApi } from "../../services/cartApi"; // <-- sửa path cho đúng
+import { cartApi } from "../../services/cartApi";
 
-const initialState = {
-  cartId: null, // carts.id
-  items: [],
-  totalItems: 0,
-  totalPrice: 0,
+// ===== localStorage helpers =====
+const LS_KEY = "cart";
 
-  // optional UI state
-  loading: false,
-  error: null,
+const getInitialCart = () => {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const persist = (items) => {
+  localStorage.setItem(LS_KEY, JSON.stringify(items));
 };
 
 const calcTotals = (items) => {
@@ -22,190 +26,178 @@ const calcTotals = (items) => {
   return { totalItems, totalPrice };
 };
 
-/**
- * THUNKS
- */
+// ===== initial state =====
+const initialItems = getInitialCart();
+const totals = calcTotals(initialItems);
 
-// GET /cart/active?tableCode=...
-export const fetchActiveCart = createAsyncThunk(
-  "cart/fetchActiveCart",
-  async (tableCode, { rejectWithValue }) => {
+const initialState = {
+  // ✅ local cart
+  items: initialItems,
+  totalItems: totals.totalItems,
+  totalPrice: totals.totalPrice,
+
+  // ✅ sync status
+  syncing: false,
+  syncError: null,
+
+  // ✅ if you want to keep DB info after sync
+  cartId: null,
+};
+
+// ✅ THUNK: chỉ chạy khi bấm "Đặt món ngay"
+export const syncCartToDb = createAsyncThunk(
+  "cart/syncCartToDb",
+  async ({ qrToken }, { getState, rejectWithValue }) => {
     try {
-      const res = await cartApi.getActive(tableCode); // { cart, items }
-      return { cartId: res.cart.id, items: res.items };
+      const { items } = getState().cart;
+
+      // convert local item -> server payload
+      const payload = {
+        items: (items || []).map((i) => ({
+          menuItemId: i.id, // local item.id = menu_items.id
+          quantity: Number(i.quantity) || 1,
+          modifiers: i.modifiers || [],
+          note: i.note || "",
+        })),
+      };
+
+      const res = await cartApi.sync(payload, qrToken); // { cart, items }
+      return res;
     } catch (err) {
       return rejectWithValue(err?.response?.data || { message: err.message });
     }
   }
 );
 
-// POST /cart/items
-export const addCartItem = createAsyncThunk(
-  "cart/addCartItem",
-  async ({ cartId, menuItemId, quantity = 1, modifiers = [], note = "" }, { rejectWithValue }) => {
-    try {
-      const res = await cartApi.addItem({ cartId, menuItemId, quantity, modifiers, note }); // { affected, items }
-      return { cartId, items: res.items };
-    } catch (err) {
-      return rejectWithValue(err?.response?.data || { message: err.message });
-    }
-  }
-);
-
-// PATCH /cart/items/:cartItemId
-export const setCartItemQty = createAsyncThunk(
-  "cart/setCartItemQty",
-  async ({ cartItemId, quantity }, { rejectWithValue }) => {
-    try {
-      const res = await cartApi.updateQty(cartItemId, quantity); // { cartId, items }
-      return { cartId: res.cartId, items: res.items };
-    } catch (err) {
-      return rejectWithValue(err?.response?.data || { message: err.message });
-    }
-  }
-);
-
-// DELETE /cart/items/:cartItemId
-export const removeCartItem = createAsyncThunk(
-  "cart/removeCartItem",
-  async (cartItemId, { rejectWithValue }) => {
-    try {
-      const res = await cartApi.removeItem(cartItemId); // { cartId, items }
-      return { cartId: res.cartId, items: res.items };
-    } catch (err) {
-      return rejectWithValue(err?.response?.data || { message: err.message });
-    }
-  }
-);
-
-// DELETE /cart/:cartId/items
-export const clearCartDb = createAsyncThunk(
-  "cart/clearCartDb",
-  async (cartId, { rejectWithValue }) => {
-    try {
-      await cartApi.clearCart(cartId);
-      return true;
-    } catch (err) {
-      return rejectWithValue(err?.response?.data || { message: err.message });
-    }
-  }
-);
-
-/**
- * SLICE
- */
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    // nếu bạn muốn hydrate thủ công (ít dùng vì đã có thunks)
-    hydrateCart: (state, action) => {
-      const { cartId, items } = action.payload || {};
-      state.cartId = cartId ?? state.cartId;
-      state.items = items || [];
+    // ✅ LOCAL add
+    addToCartLocal: (state, action) => {
+      const item = action.payload;
+
+      // phân biệt theo modifiers
+      const keyA = JSON.stringify(item.modifiers || []);
+      const existing = state.items.find(
+        (i) => i.id === item.id && JSON.stringify(i.modifiers || []) === keyA
+      );
+
+      if (existing) existing.quantity += 1;
+      else state.items.push({ ...item, quantity: 1, modifiers: item.modifiers || [] });
+
       const { totalItems, totalPrice } = calcTotals(state.items);
       state.totalItems = totalItems;
       state.totalPrice = totalPrice;
+
+      persist(state.items);
     },
 
-    clearCartState: (state) => {
-      state.cartId = null;
+    removeFromCartLocal: (state, action) => {
+      const { id, modifiers = [] } = action.payload || {};
+      const keyA = JSON.stringify(modifiers);
+
+      state.items = state.items.filter(
+        (i) => !(i.id === id && JSON.stringify(i.modifiers || []) === keyA)
+      );
+
+      const { totalItems, totalPrice } = calcTotals(state.items);
+      state.totalItems = totalItems;
+      state.totalPrice = totalPrice;
+
+      persist(state.items);
+    },
+
+    incrementLocal: (state, action) => {
+      const { id, modifiers = [] } = action.payload || {};
+      const keyA = JSON.stringify(modifiers);
+      const item = state.items.find(
+        (i) => i.id === id && JSON.stringify(i.modifiers || []) === keyA
+      );
+      if (item) item.quantity += 1;
+
+      const { totalItems, totalPrice } = calcTotals(state.items);
+      state.totalItems = totalItems;
+      state.totalPrice = totalPrice;
+
+      persist(state.items);
+    },
+
+    decrementLocal: (state, action) => {
+      const { id, modifiers = [] } = action.payload || {};
+      const keyA = JSON.stringify(modifiers);
+
+      const item = state.items.find(
+        (i) => i.id === id && JSON.stringify(i.modifiers || []) === keyA
+      );
+      if (!item) return;
+
+      if (item.quantity > 1) item.quantity -= 1;
+      else {
+        state.items = state.items.filter(
+          (i) => !(i.id === id && JSON.stringify(i.modifiers || []) === keyA)
+        );
+      }
+
+      const { totalItems, totalPrice } = calcTotals(state.items);
+      state.totalItems = totalItems;
+      state.totalPrice = totalPrice;
+
+      persist(state.items);
+    },
+
+    clearCartLocal: (state) => {
       state.items = [];
       state.totalItems = 0;
       state.totalPrice = 0;
-      state.loading = false;
-      state.error = null;
+      localStorage.removeItem(LS_KEY);
     },
 
-    clearCartError: (state) => {
-      state.error = null;
+    clearSyncError: (state) => {
+      state.syncError = null;
     },
   },
   extraReducers: (builder) => {
-    const pending = (state) => {
-      state.loading = true;
-      state.error = null;
-    };
-    const rejected = (state, action) => {
-      state.loading = false;
-      state.error = action.payload?.message || "Request failed";
-    };
-
     builder
-      // fetch active
-      .addCase(fetchActiveCart.pending, pending)
-      .addCase(fetchActiveCart.rejected, rejected)
-      .addCase(fetchActiveCart.fulfilled, (state, action) => {
-        state.loading = false;
-        state.cartId = action.payload.cartId;
-        state.items = action.payload.items || [];
-        const { totalItems, totalPrice } = calcTotals(state.items);
-        state.totalItems = totalItems;
-        state.totalPrice = totalPrice;
+      .addCase(syncCartToDb.pending, (state) => {
+        state.syncing = true;
+        state.syncError = null;
       })
-
-      // add item
-      .addCase(addCartItem.pending, pending)
-      .addCase(addCartItem.rejected, rejected)
-      .addCase(addCartItem.fulfilled, (state, action) => {
-        state.loading = false;
-        state.cartId = action.payload.cartId ?? state.cartId;
-        state.items = action.payload.items || [];
-        const { totalItems, totalPrice } = calcTotals(state.items);
-        state.totalItems = totalItems;
-        state.totalPrice = totalPrice;
+      .addCase(syncCartToDb.rejected, (state, action) => {
+        state.syncing = false;
+        state.syncError = action.payload?.message || "Sync failed";
       })
+      .addCase(syncCartToDb.fulfilled, (state, action) => {
+        state.syncing = false;
+        state.syncError = null;
 
-      // set qty
-      .addCase(setCartItemQty.pending, pending)
-      .addCase(setCartItemQty.rejected, rejected)
-      .addCase(setCartItemQty.fulfilled, (state, action) => {
-        state.loading = false;
-        state.cartId = action.payload.cartId ?? state.cartId;
-        state.items = action.payload.items || [];
-        const { totalItems, totalPrice } = calcTotals(state.items);
-        state.totalItems = totalItems;
-        state.totalPrice = totalPrice;
-      })
+        // server trả { cart, items } -> bạn có thể lưu cartId nếu cần
+        state.cartId = action.payload?.cart?.id || null;
 
-      // remove item
-      .addCase(removeCartItem.pending, pending)
-      .addCase(removeCartItem.rejected, rejected)
-      .addCase(removeCartItem.fulfilled, (state, action) => {
-        state.loading = false;
-        state.cartId = action.payload.cartId ?? state.cartId;
-        state.items = action.payload.items || [];
-        const { totalItems, totalPrice } = calcTotals(state.items);
-        state.totalItems = totalItems;
-        state.totalPrice = totalPrice;
-      })
-
-      // clear cart db
-      .addCase(clearCartDb.pending, pending)
-      .addCase(clearCartDb.rejected, rejected)
-      .addCase(clearCartDb.fulfilled, (state) => {
-        state.loading = false;
-        state.cartId = null;
+        // ✅ Option: sau khi sync thì clear local cart (khuyên làm)
         state.items = [];
         state.totalItems = 0;
         state.totalPrice = 0;
+        localStorage.removeItem(LS_KEY);
       });
   },
 });
 
-export const { hydrateCart, clearCartState, clearCartError } = cartSlice.actions;
+export const {
+  addToCartLocal,
+  removeFromCartLocal,
+  incrementLocal,
+  decrementLocal,
+  clearCartLocal,
+  clearSyncError,
+} = cartSlice.actions;
+
 export default cartSlice.reducer;
 
-/**
- * SELECTORS
- */
-export const selectCartId = (state) => state.cart.cartId;
+// selectors
 export const selectCartItems = (state) => state.cart.items;
 export const selectTotalItems = (state) => state.cart.totalItems;
 export const selectTotalPrice = (state) => state.cart.totalPrice;
-export const selectCartLoading = (state) => state.cart.loading;
-export const selectCartError = (state) => state.cart.error;
-
-// chuẩn DB: tìm theo cartItemId
-export const selectCartItemByCartItemId = (cartItemId) => (state) =>
-  state.cart.items.find((i) => i.cartItemId === cartItemId);
+export const selectSyncing = (state) => state.cart.syncing;
+export const selectSyncError = (state) => state.cart.syncError;
+export const selectCartId = (state) => state.cart.cartId;
