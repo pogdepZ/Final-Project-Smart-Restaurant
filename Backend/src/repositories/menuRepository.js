@@ -150,3 +150,75 @@ exports.findGuestMenu = async () => {
   const result = await db.query(sql);
   return result.rows;
 };
+
+
+exports.findRelatedItemsByCategory = async (categoryId, excludeId) => {
+  // POSTGRESQL: Dùng $1, $2 thay vì ?
+  const sql = `
+    SELECT id, name, price, image_url 
+    FROM menu_items 
+    WHERE category_id = $1 AND id != $2
+    LIMIT 5
+  `;
+  
+  // $1 sẽ nhận categoryId, $2 sẽ nhận excludeId
+  const result = await db.query(sql, [categoryId, excludeId]);
+  
+  // Lưu ý: thư viện 'pg' thường trả về object có thuộc tính .rows
+  return result.rows || result; 
+};
+
+
+
+exports.findMenuItemsPublic = async ({ category_id, search, sort, limit, offset, chef }) => {
+  const params = [];
+  let where = `WHERE i.is_deleted = false`;
+
+  if (category_id) {
+    params.push(category_id);
+    where += ` AND i.category_id = $${params.length}`;
+  }
+
+  if (search) {
+    params.push(`%${search}%`);
+    where += ` AND i.name ILIKE $${params.length}`;
+  }
+
+  // popularity: tổng quantity trong order_items
+  // NOTE: nếu bạn chỉ muốn tính đơn COMPLETED/DELIVERED thì join thêm orders và filter status
+  let orderBy = `ORDER BY i.created_at DESC`;
+  if (sort === "popularity") {
+    orderBy = `ORDER BY total_ordered DESC NULLS LAST, i.created_at DESC`;
+  }
+
+    if (chef === true || chef === '1' || chef === 1) {
+    where += ` AND i.is_chef_recommended = true`;
+  }
+
+  const listSql = `
+    SELECT 
+      i.id, i.category_id, i.name, i.description, i.price,
+      i.status, i.image_url, i.is_chef_recommended,
+      i.created_at,
+      c.name AS category_name,
+      COALESCE(SUM(oi.quantity), 0)::int AS total_ordered
+    FROM menu_items i
+    JOIN menu_categories c ON c.id = i.category_id
+    LEFT JOIN order_items oi ON oi.menu_item_id = i.id
+    ${where}
+    GROUP BY i.id, c.name
+    ${orderBy}
+    LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+  `;
+
+  const rows = (await db.query(listSql, [...params, limit, offset])).rows;
+
+  const countSql = `
+    SELECT COUNT(*)::int AS total
+    FROM menu_items i
+    ${where}
+  `;
+  const total = (await db.query(countSql, params)).rows[0]?.total ?? 0;
+
+  return { rows, total };
+};

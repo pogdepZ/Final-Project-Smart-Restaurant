@@ -1,385 +1,404 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
-import { Search, ShoppingBag, Flame, Check } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FoodDetailPopup from "./DetailFoodPopup";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart, selectTotalItems } from "../../store/slices/cartSlice";
 import { toast } from "react-toastify";
-import { Link, useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { menuApi } from "../../services/menuApi";
 
+import MenuHeader from "./components/MenuHeader";
+import MenuSkeleton from "./components/MenuSkeleton";
+import MenuErrorState from "./components/MenuErrorState";
+import MenuEmptyState from "./components/MenuEmptyState";
+import MenuList from "./components/MenuList";
 
+const PAGE_SIZE = 12;
 
-const Menu = () => {
+export default function Menu() {
   const dispatch = useDispatch();
   const cartCount = useSelector(selectTotalItems);
-
   const { tableCode } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  //filter
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
+  // ===== categories =====
+  const [categories, setCategories] = useState([{ id: "all", name: "All" }]);
 
+  // ===== filters =====
+  const [activeCategoryId, setActiveCategoryId] = useState("all");
+  const [sort, setSort] = useState("newest"); // newest | popularity
+  const [onlyChef, setOnlyChef] = useState(false);
+
+  // ✅ inputSearch: gõ không gọi API
+  // ✅ appliedSearch: bấm Search/Enter mới gọi
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+
+  // ===== list state =====
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  const [loadingFirst, setLoadingFirst] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState("");
+
+  // ===== UI =====
   const [selectedFood, setSelectedFood] = useState(null);
   const [addedItems, setAddedItems] = useState(new Set());
 
-  const [categories, setCategories] = useState([]); 
-  const [menuItems, setMenuItems] = useState([]);  
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // ===== refs =====
+  const sentinelRef = useRef(null);
+  const observerRef = useRef(null);
 
-  const scrollContainerRef = useRef(null);
-  const categoryRefs = useRef({});
+  const abortRef = useRef(null); // AbortController (chỉ abort khi đổi filter)
+  const requestKeyRef = useRef(""); // chống gọi trùng
+  const inFlightRef = useRef(false); // ✅ khóa chống spam
 
-  // 1) Load API
+  // stable refs for observer callback
+  const pageRef = useRef(1);
+  const hasMoreRef = useRef(true);
+  const loadingFirstRef = useRef(true);
+  const loadingMoreRef = useRef(false);
+
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+  useEffect(() => {
+    loadingFirstRef.current = loadingFirst;
+  }, [loadingFirst]);
+  useEffect(() => {
+    loadingMoreRef.current = loadingMore;
+  }, [loadingMore]);
+
+  // ===== URL sync (debounced) =====
+  const urlTimerRef = useRef(null);
+  const syncUrl = useCallback(
+    (next, { replace = true } = {}) => {
+      if (urlTimerRef.current) clearTimeout(urlTimerRef.current);
+
+      urlTimerRef.current = setTimeout(() => {
+        setSearchParams(
+          (prev) => {
+            const p = new URLSearchParams(prev);
+
+            const search = next.search ?? "";
+            const category_id = next.category_id ?? "all";
+            const sortV = next.sort ?? "newest";
+            const chef = next.chef ?? "0";
+            const pageV = next.page ?? "1";
+
+            if (search) p.set("search", search);
+            else p.delete("search");
+
+            if (category_id !== "all") p.set("category_id", category_id);
+            else p.delete("category_id");
+
+            if (sortV !== "newest") p.set("sort", sortV);
+            else p.delete("sort");
+
+            if (chef === "1") p.set("chef", "1");
+            else p.delete("chef");
+
+            p.set("page", String(pageV));
+            return p;
+          },
+          { replace }
+        );
+      }, 80);
+    },
+    [setSearchParams]
+  );
+
+  // ===== init from URL (1 lần) =====
+  useEffect(() => {
+    const q = searchParams.get("search") || "";
+    const cat = searchParams.get("category_id") || "all";
+    const s = searchParams.get("sort") || "newest";
+    const chef = (searchParams.get("chef") || "0") === "1";
+
+    setSearchInput(q);
+    setAppliedSearch(q);
+
+    setActiveCategoryId(cat);
+    setSort(s === "popularity" ? "popularity" : "newest");
+    setOnlyChef(chef);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ===== load categories =====
   useEffect(() => {
     let mounted = true;
 
-    const load = async () => {
+    const loadCats = async () => {
       try {
-        setLoading(true);
-        setError("");
-
-        const [catsRes, itemsRes] = await Promise.all([
-          menuApi.getMenuCategories(),
-          menuApi.getMenuItems(),
-        ]);
+        const catsRes = await menuApi.getMenuCategories();
         const cats = (catsRes || [])
           .filter((c) => (c.status || "active") === "active")
           .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
-          .map((c) => c.name);
-
-        const items = (itemsRes || [])
-          .filter((it) => it.is_deleted !== true) // nếu có field
-          .map((it) => ({
-            ...it,
-            image: it.image_url, // để UI dùng như cũ
-          }));
+          .map((c) => ({ id: c.id, name: c.name }));
 
         if (!mounted) return;
-
-        setCategories(["All", ...cats]);
-        setMenuItems(items);
-
-        // set default active category nếu có
-        if (cats.length > 0) setActiveCategory(cats[0]);
-        else setActiveCategory("All");
-      } catch (e) {
-        if (!mounted) return;
-        setError(e?.message || "Load menu failed");
-      } finally {
-        if (mounted) setLoading(false);
+        setCategories([{ id: "all", name: "All" }, ...cats]);
+      } catch {
+        // ignore
       }
     };
 
-    load();
+    loadCats();
     return () => {
       mounted = false;
     };
   }, []);
 
-  // 2) Scroll spy để highlight category
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200;
+  // ===== memo onPageSync (FIX spam request) =====
+  const onPageSync = useCallback(
+    (p) => {
+      syncUrl({
+        search: appliedSearch || "",
+        category_id: activeCategoryId,
+        sort,
+        chef: onlyChef ? "1" : "0",
+        page: String(p),
+      });
+    },
+    [syncUrl, appliedSearch, activeCategoryId, sort, onlyChef]
+  );
 
-      for (const category of categories) {
-        if (category === "All") continue;
+  // ===== fetchPage (locked) =====
+  const fetchPage = useCallback(
+    async (nextPage, { reason = "auto" } = {}) => {
+      // nếu đang lỗi và auto trigger -> chặn (tránh loop)
+      if (error && reason === "auto") return;
 
-        const element = categoryRefs.current[category];
-        if (element) {
-          const { offsetTop, offsetHeight } = element;
-          if (
-            scrollPosition >= offsetTop &&
-            scrollPosition < offsetTop + offsetHeight
-          ) {
-            setActiveCategory(category);
-            const btn = document.getElementById(`btn-${category}`);
-            if (btn && scrollContainerRef.current) {
-              scrollContainerRef.current.scrollTo({
-                left: btn.offsetLeft - 100,
-                behavior: "smooth",
-              });
-            }
-            break;
-          }
-        }
+      const key = `${appliedSearch}|${activeCategoryId}|${sort}|${onlyChef}|${nextPage}`;
+      if (requestKeyRef.current === key) return;
+
+      if (inFlightRef.current) return; // ✅ chặn spam tuyệt đối
+      inFlightRef.current = true;
+      requestKeyRef.current = key;
+
+      try {
+        if (nextPage === 1) setLoadingFirst(true);
+        else setLoadingMore(true);
+        setError("");
+
+        const controller = new AbortController();
+        // chỉ abort khi đổi filter, nên không abort ở đây
+        abortRef.current = controller;
+
+        const params = {
+          page: nextPage,
+          limit: PAGE_SIZE,
+          search: appliedSearch || undefined,
+          category_id: activeCategoryId === "all" ? undefined : activeCategoryId,
+          sort: sort || undefined,
+          chef: onlyChef ? 1 : undefined,
+        };
+
+        const res = await menuApi.getMenuItems(params, { signal: controller.signal });
+
+        const data = res?.data ?? res?.items ?? res?.data?.data ?? [];
+        const meta = res?.meta ?? res?.data?.meta;
+
+        const normalized = (data || []).map((it) => ({ ...it, image: it.image_url }));
+
+        setItems((prev) => (nextPage === 1 ? normalized : prev.concat(normalized)));
+        setPage(nextPage);
+
+        const nextHasMore =
+          meta && typeof meta.hasMore === "boolean"
+            ? meta.hasMore
+            : normalized.length === PAGE_SIZE;
+
+        setHasMore(nextHasMore);
+
+        onPageSync(nextPage);
+      } catch (e) {
+        if (e?.name === "CanceledError" || e?.name === "AbortError") return;
+        setError(e?.message || "Load menu failed");
+        setHasMore(false);
+      } finally {
+        if (nextPage === 1) setLoadingFirst(false);
+        else setLoadingMore(false);
+        inFlightRef.current = false;
       }
-    };
+    },
+    [appliedSearch, activeCategoryId, sort, onlyChef, onPageSync, error]
+  );
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [categories]);
+  // ===== reset list when appliedSearch/category/sort/chef changes =====
+  useEffect(() => {
+    // abort in-flight request
+    if (abortRef.current) abortRef.current.abort();
 
-  const handleCategoryClick = (category) => {
-    if (category === "All") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      setActiveCategory("All");
-      return;
+    // reset
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+    setError("");
+    requestKeyRef.current = "";
+    inFlightRef.current = false;
+
+    // sync url page=1
+    syncUrl({
+      search: appliedSearch || "",
+      category_id: activeCategoryId,
+      sort,
+      chef: onlyChef ? "1" : "0",
+      page: "1",
+    });
+
+    // load page 1
+    fetchPage(1, { reason: "user" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedSearch, activeCategoryId, sort, onlyChef]);
+
+  // ===== observer =====
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    observerRef.current?.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (!first?.isIntersecting) return;
+
+        if (inFlightRef.current) return;
+        if (loadingFirstRef.current || loadingMoreRef.current) return;
+        if (!hasMoreRef.current) return;
+
+        fetchPage(pageRef.current + 1, { reason: "auto" });
+      },
+      { root: null, rootMargin: "650px", threshold: 0 }
+    );
+
+    observerRef.current.observe(el);
+    return () => observerRef.current?.disconnect();
+  }, [fetchPage, loadingFirst]);
+
+  // ✅ auto-load if list short and sentinel is already in viewport
+  useEffect(() => {
+    if (loadingFirst || loadingMore) return;
+    if (!hasMore) return;
+    if (error) return; // ✅ lỗi thì không auto gọi nữa
+
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    if (rect.top <= window.innerHeight + 200) {
+      fetchPage(page + 1, { reason: "auto" });
     }
+  }, [items.length, loadingFirst, loadingMore, hasMore, error, page, fetchPage]);
 
-    setActiveCategory(category);
-    const element = categoryRefs.current[category];
-    if (element) {
-      const y = element.getBoundingClientRect().top + window.scrollY - 120;
-      window.scrollTo({ top: y, behavior: "smooth" });
-    }
-  };
+  // ===== apply search (button/enter) =====
+  const applySearch = useCallback(() => {
+    const q = searchInput.trim();
+    // nếu không đổi thì thôi
+    if (q === appliedSearch) return;
 
-  // 3) Group items theo category name
-  // Nếu API items chỉ có category_id, bạn cần API trả kèm category_name
-  // hoặc map bằng categories list có id->name.
-  // TẠM GIẢ SỬ API trả `category_name` cho mỗi item.
-  const categorizedMenu = useMemo(() => {
-    const cats = categories.filter((c) => c !== "All");
-    const q = searchQuery.trim().toLowerCase();
+    setAppliedSearch(q);
+    // reset page url (effect reset sẽ fetch)
+    syncUrl({
+      search: q || "",
+      category_id: activeCategoryId,
+      sort,
+      chef: onlyChef ? "1" : "0",
+      page: "1",
+    });
+  }, [searchInput, appliedSearch, syncUrl, activeCategoryId, sort, onlyChef]);
 
-    return cats
-      .map((cat) => {
-        const items = menuItems.filter((item) => {
-          const sameCat =
-            item.category === cat || item.category_name === cat; // hỗ trợ cả 2 kiểu
-          if (!sameCat) return false;
-
-          // filter status nếu cần: chỉ show available
-          // if (item.status !== "available") return false;
-
-          if (!q) return true;
-          const nameOk = (item.name || "").toLowerCase().includes(q);
-          const descOk = (item.description || "").toLowerCase().includes(q);
-          return nameOk || descOk;
-        });
-
-        return { category: cat, items };
-      })
-      .filter((group) => group.items.length > 0);
-  }, [categories, menuItems, searchQuery]);
-
+  // ===== cart =====
   const handleAddToCart = (e, item) => {
     e.stopPropagation();
 
-    // bạn nên chuẩn hoá item gửi vào cart
     dispatch(
       addToCart({
         id: item.id,
         name: item.name,
         price: Number(item.price),
         image: item.image || null,
-        // thêm field DB bạn cần
         category_id: item.category_id,
         status: item.status,
       })
     );
 
-    setAddedItems((prev) => new Set(prev).add(item.id));
+    setAddedItems((prev) => {
+      const next = new Set(prev);
+      next.add(item.id);
+      return next;
+    });
+
     setTimeout(() => {
       setAddedItems((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(item.id);
-        return newSet;
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
       });
-    }, 1000);
+    }, 700);
 
     toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
       position: "bottom-right",
-      autoClose: 2000,
+      autoClose: 1200,
     });
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center">
-        Đang tải menu...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center flex-col gap-3">
-        <div className="opacity-80">Lỗi: {error}</div>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 rounded-lg bg-orange-500 text-white font-bold"
-        >
-          Tải lại
-        </button>
-      </div>
-    );
-  }
+  const disabledSearch = useMemo(
+    () => searchInput.trim() === appliedSearch.trim(),
+    [searchInput, appliedSearch]
+  );
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
       {/* HEADER */}
-      <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/98 backdrop-blur-2xl shadow-2xl py-4">
-        <div className="px-4 container mx-auto max-w-5xl">
-          {/* Search */}
-          <div className="relative group max-w-lg mx-auto mb-4">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Bạn muốn ăn gì hôm nay?..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-12 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/50 transition-all duration-300 shadow-lg"
-            />
-          </div>
+      <MenuHeader
+        tableCode={tableCode}
+        cartCount={cartCount}
+        searchInput={searchInput}
+        setSearchInput={setSearchInput}
+        applySearch={applySearch}
+        disabledSearch={disabledSearch}
+        sort={sort}
+        setSort={setSort}
+        onlyChef={onlyChef}
+        setOnlyChef={setOnlyChef}
+        categories={categories}
+        activeCategoryId={activeCategoryId}
+        setActiveCategoryId={setActiveCategoryId}
+      />
 
-          {/* Categories */}
-          <div className="relative">
-            <div
-              ref={scrollContainerRef}
-              className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 pt-1 select-none scroll-smooth pr-16"
-            >
-              {categories
-                .filter((c) => c !== "All")
-                .map((category) => (
-                  <button
-                    key={category}
-                    id={`btn-${category}`}
-                    onClick={() => handleCategoryClick(category)}
-                    className={`whitespace-nowrap rounded-full font-bold tracking-wide transition-all duration-300 ease-out border shrink-0 px-4 py-1.5 text-xs ${
-                      activeCategory === category
-                        ? "bg-orange-500 border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.5)] scale-105"
-                        : "bg-neutral-900 border-neutral-800 text-gray-400 hover:border-orange-500/50 hover:text-white hover:scale-105"
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-            </div>
-
-            <Link
-              to={tableCode ? `/cart/${tableCode}` : "/cart"}
-              onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 top-1/2 -translate-y-1/2
-               h-10 w-10 rounded-full border border-white/10
-               bg-neutral-900/90 backdrop-blur
-               flex items-center justify-center
-               text-gray-200 hover:text-orange-500
-               hover:border-orange-500/40 hover:shadow-[0_0_24px_rgba(249,115,22,0.25)]
-               transition-all active:scale-95"
-              aria-label="Giỏ hàng"
-              title="Giỏ hàng"
-            >
-              <ShoppingBag size={20} />
-              {cartCount > 0 && (
-                <span
-                  className="absolute -top-1 -right-1 min-w-5 h-5 px-1
-                       bg-orange-500 text-white text-[11px] font-black
-                       rounded-full flex items-center justify-center
-                       shadow-[0_0_0_3px_rgba(10,10,10,0.9)]"
-                >
-                  {cartCount > 99 ? "99+" : cartCount}
-                </span>
-              )}
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* MENU SECTIONS */}
+      {/* LIST */}
       <div className="container mx-auto max-w-5xl px-4 pt-4">
-        {categorizedMenu.length > 0 ? (
-          categorizedMenu.map((group) => (
-            <div
-              key={group.category}
-              ref={(el) => (categoryRefs.current[group.category] = el)}
-              className="mb-12 scroll-mt-36"
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <h2 className="text-2xl font-black text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500 uppercase tracking-tight">
-                  {group.category}
-                </h2>
-                <div className="h-px flex-1 bg-linear-to-r from-orange-500/50 to-transparent"></div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
-                {group.items.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedFood(item)}
-                    className="group flex gap-4 bg-transparent hover:bg-white/5 p-3 rounded-2xl transition-all duration-300 border border-transparent hover:border-white/5 cursor-pointer"
-                  >
-                    <div className="w-28 h-28 shrink-0 rounded-xl overflow-hidden relative">
-                      <img
-                        src={item.image || "https://via.placeholder.com/400x400?text=No+Image"}
-                        alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                      {item.status && item.status !== "available" && (
-                        <div className="absolute inset-0 bg-black/55 flex items-center justify-center text-xs font-bold">
-                          {item.status}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex-1 flex flex-col justify-between py-1">
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <h3 className="text-lg font-bold text-white group-hover:text-orange-500 transition-colors line-clamp-1">
-                            {item.name}
-                          </h3>
-                          {/* demo icon */}
-                          {String(item.id).endsWith("0") && (
-                            <Flame
-                              size={14}
-                              className="text-orange-500 fill-orange-500 ml-2 shrink-0"
-                            />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 line-clamp-2 mt-1">
-                          {item.description}
-                        </p>
-                      </div>
-
-                      <div className="flex justify-between items-end mt-2">
-                        <span className="text-xl font-black text-white">
-                          ${Number(item.price).toFixed(2)}
-                        </span>
-
-                        <button
-                          disabled={item.status && item.status !== "available"}
-                          onClick={(e) => handleAddToCart(e, item)}
-                          className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg active:scale-90 relative ${
-                            item.status && item.status !== "available"
-                              ? "bg-neutral-800 border-white/10 text-gray-600 cursor-not-allowed"
-                              : addedItems.has(item.id)
-                              ? "bg-green-500 border-green-500 text-white"
-                              : "bg-neutral-800 border-white/10 text-orange-500 hover:bg-orange-500 hover:text-white hover:border-orange-500"
-                          }`}
-                        >
-                          {addedItems.has(item.id) ? (
-                            <Check size={18} className="animate-bounce" />
-                          ) : (
-                            <ShoppingBag size={18} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))
+        {loadingFirst ? (
+          <MenuSkeleton count={PAGE_SIZE} />
+        ) : error && items.length === 0 ? (
+          <MenuErrorState error={error} onRetry={() => fetchPage(1, { reason: "user" })} />
+        ) : items.length > 0 ? (
+          <MenuList
+            items={items}
+            addedItems={addedItems}
+            onSelectFood={(item) => setSelectedFood(item)}
+            onAddToCart={handleAddToCart}
+            sentinelRef={sentinelRef}
+            loadingMore={loadingMore}
+            hasMore={hasMore}
+            error={error}
+            onRetryLoadMore={() => fetchPage(pageRef.current + 1, { reason: "user" })}
+          />
         ) : (
-          <div className="text-center py-20 opacity-50">
-            <p>Không tìm thấy món nào phù hợp.</p>
-          </div>
+          <MenuEmptyState />
         )}
       </div>
 
       {selectedFood && (
-        <FoodDetailPopup
-          food={selectedFood}
-          onClose={() => setSelectedFood(null)}
-        />
+        <FoodDetailPopup food={selectedFood} onClose={() => setSelectedFood(null)} />
       )}
     </div>
   );
-};
-
-export default Menu;
+}
