@@ -23,7 +23,7 @@ const SignatureDishes = ({ signatureDishes }) => {
             <span className="text-orange-500 font-bold text-sm uppercase tracking-wider">Signature Dishes</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
-            Món Ăn <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">Đặc Trưng</span>
+            Món Ăn <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">Đặc Trưng</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
             Những món ăn được yêu thích nhất, được chế biến từ nguyên liệu cao cấp bởi đầu bếp chuyên nghiệp

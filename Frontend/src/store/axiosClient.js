@@ -43,26 +43,21 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     if (!store) return Promise.reject(error);
-    if (error.response?.status === 403 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
       originalRequest._retry = true;
       try {
-        const result = await axiosClient.post("/user/refresh");
+        const result = await axiosClient.post('/auth/refresh');
         const newAccessToken = result.accessToken;
         const user = result.user;
-        store.dispatch(
-          setCredentials({ accessToken: newAccessToken, user: user })
-        );
-        axios.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${newAccessToken}`;
-        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+        store.dispatch(setCredentials({ accessToken: newAccessToken, user: user }));
+        axiosClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
         return axiosClient(originalRequest);
       } catch (refreshError) {
         store.dispatch(logout());
         return Promise.reject(refreshError);
       }
     }
-
     return Promise.reject(error);
   }
 );
