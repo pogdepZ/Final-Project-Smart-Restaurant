@@ -130,7 +130,6 @@ const authSlice = createSlice({
         } else {
           localStorage.removeItem("user");
         }
-        injectStore(state)
       })
       .addCase(loginThunk.rejected, (state, action) => {
         state.isLoading = false;
