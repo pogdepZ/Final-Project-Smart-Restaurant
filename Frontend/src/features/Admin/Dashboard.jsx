@@ -9,6 +9,8 @@ import { formatInt, formatVND } from "../../utils/adminFormat";
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
 
+  const today = new Date().toLocaleDateString("vi-VN");
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
       {/* Header */}
@@ -33,15 +35,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm">
-          Dữ liệu hiện tại: <span className="text-white font-bold">API</span>
+          Dữ liệu ngày: <span className="text-white font-bold">{today}</span>
         </div>
       </div>
-
-      {error ? (
-        <div className="mt-6 p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-          {error}
-        </div>
-      ) : null}
 
       {/* Stats */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">

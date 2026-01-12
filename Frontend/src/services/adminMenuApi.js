@@ -30,4 +30,13 @@ export const adminMenuApi = {
 
   deleteMenuItem: (id) =>
     axiosClient.patch(`/admin/menu/items/${id}/delete`).then((r) => r),
+
+  uploadMenuImage(imageFile) {
+    const form = new FormData();
+    form.append("image", imageFile); // key này phải trùng với BE (multer.single("file") chẳng hạn)
+
+    return axiosClient.post("/admin/upload", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };

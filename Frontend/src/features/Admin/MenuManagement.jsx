@@ -175,12 +175,6 @@ export default function MenuManagement() {
 
       </div>
 
-      {error ? (
-        <div className="mt-6 p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-          {typeof error === "string" ? error : "Có lỗi khi tải menu."}
-        </div>
-      ) : null}
-
       {/* Filters */}
       <div className="mt-6 rounded-2xl bg-neutral-900/60 border border-white/10 p-4">
         <div className="flex items-start gap-3">

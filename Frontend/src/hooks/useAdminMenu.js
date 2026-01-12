@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminMenuApi } from "../services/adminMenuApi";
+import { toast } from "react-toastify";
 
 export function useAdminMenu() {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
-
+  const [errors, setErrors] = useState({});
   const [isLoading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      setError("");
-
+      setCategories("");
       const [catRes, itemRes] = await Promise.all([
         adminMenuApi.getCategories(),
         adminMenuApi.getMenuItems(),
@@ -22,7 +21,10 @@ export function useAdminMenu() {
       setItems(itemRes?.items || []);
     } catch (e) {
       console.error("useAdminMenuManagement error:", e);
-      setError(e?.message || "Không tải được menu.");
+      const message =
+        e?.message || e?.response?.data?.message || "Không tải được menu.";
+      setErrors(message);
+      toast.error(`${message}`);
     } finally {
       setLoading(false);
     }
@@ -35,7 +37,7 @@ export function useAdminMenu() {
   return {
     data: { items, categories },
     isLoading,
-    error,
+    errors,
     refetch: fetchAll,
   };
 }

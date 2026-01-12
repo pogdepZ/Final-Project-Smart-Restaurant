@@ -9,7 +9,7 @@ import {
   Clock,
 } from "lucide-react";
 import Input from "../../../Components/Input";
-
+import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signInSchema } from "./schema/schemaSignIn";
@@ -35,6 +35,8 @@ const SignIn = () => {
     try {
       const result = await dispatch(loginThunk(values)).unwrap();
 
+      toast.success("Đăng nhập thành công")
+
       const role = result?.user?.role;
 
       if (role === "admin") {
@@ -48,6 +50,12 @@ const SignIn = () => {
       }
     } catch (error) {
       console.log("Login failed:", error);
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Đăng nhập thất bại. Vui lòng thử lại!";
+
+      toast.error(`${message}`);
     }
   };
 

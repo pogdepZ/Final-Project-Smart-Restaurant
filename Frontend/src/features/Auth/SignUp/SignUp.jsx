@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, ArrowRight, User, ShieldCheck, Star, Utensils } from "lucide-react";
 import Input from "../../../Components/Input";
 
+import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signUpSchema } from "./schema/schemaSignUp";
@@ -29,15 +30,32 @@ const SignUp = () => {
 
   const dispatch = useDispatch()
   const onSubmit = async (values) => {
-    console.log(values);
-    const {fullName, password, email} = values;
-    const data = {
-      name: fullName,
-      password,
-      email
+    try {
+      const { fullName, password, email } = values;
+
+      const payload = {
+        name: fullName,
+        password,
+        email,
+      };
+
+      // unwrap để: success trả data, fail nhảy vào catch
+      const result = await dispatch(registerThunk(payload)).unwrap();
+
+      toast.success("Đăng ký thành công!");
+
+      // tuỳ flow: chuyển sang login hoặc vào thẳng trang chủ
+      navigate("/signin"); // hoặc "/"
+    } catch (error) {
+      console.log("Register failed:", error);
+
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Đăng ký thất bại. Vui lòng thử lại!";
+
+      toast.error(`${message}`);
     }
-    const res = await dispatch(registerThunk(data));
-    console.log(res)
   };
 
   return (
