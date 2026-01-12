@@ -296,7 +296,7 @@ export default function Menu() {
 
     observerRef.current.observe(el);
     return () => observerRef.current?.disconnect();
-  }, [fetchPage]);
+  }, [fetchPage, loadingFirst]);
 
   // ✅ auto-load if list short and sentinel is already in viewport
   useEffect(() => {
