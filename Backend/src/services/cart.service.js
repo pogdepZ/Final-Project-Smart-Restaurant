@@ -84,72 +84,87 @@ async function getOrCreateActiveCartByTableCode(tableCode, userId = null) {
 }
 
 // Add item: nếu cùng menuItemId + modifiers trùng -> update quantity
-async function addItemToCart({ cartId, menuItemId, quantity = 1, modifiers = [], note = null }) {
-  const client = await pool.connect();
-  try {
-    await client.query("begin");
+// ✅ Add item using SAME transaction client
+async function addItemToCartTx(client, input) {
+  if (!input || typeof input !== "object") {
+    const err = new Error("INVALID_ITEM_PAYLOAD");
+    err.status = 400;
+    throw err;
+  }
 
-    // validate cart exists + active (optional chặt chẽ)
-    const cartRes = await client.query(`select * from carts where id = $1 limit 1`, [cartId]);
-    if (!cartRes.rows[0]) {
-      const err = new Error("CART_NOT_FOUND");
-      err.status = 404;
-      throw err;
+  const {
+    cartId,
+    menuItemId,
+    quantity = 1,
+    modifiers = [],
+    note = null,
+  } = input;
+
+  if (!cartId) {
+    const err = new Error("MISSING_CART_ID");
+    err.status = 400;
+    throw err;
+  }
+  if (!menuItemId) {
+    const err = new Error("MISSING_MENU_ITEM_ID");
+    err.status = 400;
+    throw err;
+  }
+
+  // cart must exist (same tx can see uncommitted insert)
+  const cartRes = await client.query(`select id from carts where id = $1 limit 1`, [cartId]);
+  if (!cartRes.rows[0]) {
+    const err = new Error("CART_NOT_FOUND");
+    err.status = 404;
+    throw err;
+  }
+
+  const normalized = normalizeModifiers(modifiers);
+  const targetKey = modifiersKey(normalized);
+
+  // find same menu item rows in this cart to compare modifiers
+  const sameItems = await client.query(
+    `select id, modifiers, quantity
+     from cart_items
+     where cart_id = $1 and menu_item_id = $2`,
+    [cartId, menuItemId]
+  );
+
+  let matchedRow = null;
+  for (const row of sameItems.rows) {
+    const rowKey = modifiersKey(row.modifiers ?? []);
+    if (rowKey === targetKey) {
+      matchedRow = row;
+      break;
     }
+  }
 
-    const normalized = normalizeModifiers(modifiers);
-    const targetKey = modifiersKey(normalized);
+  const qtyToAdd = Math.max(1, Number(quantity || 1));
 
-    // Lấy các dòng cùng menuItemId trong cart để so modifiers
-    const sameItems = await client.query(
-      `select id, modifiers, quantity
-       from cart_items
-       where cart_id = $1 and menu_item_id = $2`,
-      [cartId, menuItemId]
+  if (matchedRow) {
+    const newQty = (Number(matchedRow.quantity) || 0) + qtyToAdd;
+
+    const up = await client.query(
+      `update cart_items
+       set quantity = $2, note = coalesce($3, note), updated_at = now()
+       where id = $1
+       returning id as "cartItemId"`,
+      [matchedRow.id, newQty, note]
     );
 
-    let matchedRow = null;
-    for (const row of sameItems.rows) {
-      const rowKey = modifiersKey(row.modifiers ?? []);
-      if (rowKey === targetKey) {
-        matchedRow = row;
-        break;
-      }
-    }
+    return { affected: up.rows[0] };
+  } else {
+    const ins = await client.query(
+      `insert into cart_items (cart_id, menu_item_id, quantity, note, modifiers)
+       values ($1, $2, $3, $4, $5::jsonb)
+       returning id as "cartItemId"`,
+      [cartId, menuItemId, qtyToAdd, note, JSON.stringify(normalized)]
+    );
 
-    let affected;
-    if (matchedRow) {
-      const newQty = matchedRow.quantity + Math.max(1, Number(quantity || 1));
-      const up = await client.query(
-        `update cart_items
-         set quantity = $2, note = coalesce($3, note), updated_at = now()
-         where id = $1
-         returning id as "cartItemId"`,
-        [matchedRow.id, newQty, note]
-      );
-      affected = up.rows[0];
-    } else {
-      const ins = await client.query(
-        `insert into cart_items (cart_id, menu_item_id, quantity, note, modifiers)
-         values ($1, $2, $3, $4, $5::jsonb)
-         returning id as "cartItemId"`,
-        [cartId, menuItemId, Math.max(1, Number(quantity || 1)), note, JSON.stringify(normalized)]
-      );
-      affected = ins.rows[0];
-    }
-
-    // trả cart full để FE chỉ cần loadCart 1 lần
-    const items = await listCartItems(client, cartId);
-
-    await client.query("commit");
-    return { affected, items };
-  } catch (e) {
-    await client.query("rollback");
-    throw e;
-  } finally {
-    client.release();
+    return { affected: ins.rows[0] };
   }
 }
+
 
 async function updateCartItemQuantity(cartItemId, quantity) {
   const client = await pool.connect();
@@ -257,20 +272,31 @@ async function syncCartByTableId({ tableId, items = [], userId = null }) {
   try {
     await client.query("begin");
 
+    // 1) get/create active cart
     let cart = await getActiveCartByTableId(client, tableId);
     if (!cart) cart = await createCart(client, { tableId, userId });
 
-    for (const it of items) {
-      // reuse logic merge modifiers
-      await addItemToCart({
+    // 2) upsert each item INSIDE SAME TX
+    for (const it of items || []) {
+      if (!it) continue;
+
+      const menuItemId = it.menuItemId;
+      if (!menuItemId) {
+        const err = new Error("MISSING_MENU_ITEM_ID");
+        err.status = 400;
+        throw err;
+      }
+
+      await addItemToCartTx(client, {
         cartId: cart.id,
-        menuItemId: it.menuItemId,
-        quantity: it.quantity,
+        menuItemId,
+        quantity: it.quantity ?? 1,
         modifiers: it.modifiers || [],
         note: it.note || null,
       });
     }
 
+    // 3) return latest rows
     const finalItems = await listCartItems(client, cart.id);
 
     await client.query("commit");
@@ -285,7 +311,7 @@ async function syncCartByTableId({ tableId, items = [], userId = null }) {
 
 module.exports = {
   getOrCreateActiveCartByTableCode,
-  addItemToCart,
+  addItemToCartTx,
   updateCartItemQuantity,
   removeCartItem,
   clearCartItems,

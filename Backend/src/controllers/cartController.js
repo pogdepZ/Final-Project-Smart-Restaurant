@@ -26,26 +26,7 @@ exports.getActiveCart = async (req, res) => {
   }
 };
 
-exports.addItem = async (req, res) => {
-  try {
-    const { cartId, menuItemId, quantity, modifiers, note } = req.body || {};
-    if (!cartId || !menuItemId) {
-      return res.status(400).json({ message: "Thiếu cartId hoặc menuItemId" });
-    }
 
-    const data = await cartService.addItemToCart({
-      cartId,
-      menuItemId,
-      quantity,
-      modifiers,
-      note,
-    });
-
-    res.json(data); // { affected, items }
-  } catch (err) {
-    return errorToHttp(res, err);
-  }
-};
 
 exports.updateQuantity = async (req, res) => {
   try {
@@ -81,6 +62,8 @@ exports.clearCart = async (req, res) => {
 
 exports.syncCart = async (req, res, next) => {
   try {
+    console.log(req.qr);
+    console.log(req.body);
     const tableId = req.qr?.table_id;
     if (!tableId) return res.status(400).json({ message: "QR_MISSING_TABLE" });
 
