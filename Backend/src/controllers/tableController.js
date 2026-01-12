@@ -6,18 +6,20 @@ const VALID_LOCATIONS = ["Indoor", "Outdoor", "Patio", "VIP Room"];
 
 // Helper tạo Token & Ảnh QR (Logic nghiệp vụ)
 const generateSignedQR = async (tableId, tableNumber) => {
-    const payload = {
-        table_id: tableId,
-        table_number: tableNumber,
-        type: 'table_qr'
-    };
-    
-    const token = jwt.sign(payload, process.env.QR_SECRET, { expiresIn: '2y' });
-    
-    const clientUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/menu?token=${token}`;
-    const qrImage = await QRCode.toDataURL(clientUrl);
+  const payload = {
+    table_id: tableId,
+    table_number: tableNumber,
+    type: 'table_qr'
+  };
+  
+  const token = jwt.sign(payload, process.env.QR_SECRET, { expiresIn: '2y' });
+  
+  const clientUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/menu?token=${token}`;
+  const qrImage = await QRCode.toDataURL(clientUrl);
 
-    return { token, qrImage };
+  console.log(token)
+
+  return { token, qrImage };
 };
 
 exports.regenerateQR = async (req, res) => {
@@ -53,18 +55,14 @@ exports.getTables = async (req, res) => {
     // Xử lý Sort Query tại Controller (Business Logic)
     let sortQuery = " ORDER BY table_number ASC";
     switch (sort) {
-      case "capacity_asc":
-        sortQuery = ` ORDER BY capacity ASC`;
-        break;
-      case "capacity_desc":
-        sortQuery = ` ORDER BY capacity DESC`;
-        break;
-      case "newest":
-        sortQuery = ` ORDER BY created_at DESC`;
-        break;
-      case "number_desc":
-        sortQuery = ` ORDER BY table_number DESC`;
-        break;
+      case 'capacity_asc': sortQuery = " ORDER BY capacity ASC"; break;
+      case 'capacity_desc': sortQuery = " ORDER BY capacity DESC"; break;
+      case 'name_desc': sortQuery = " ORDER BY table_number ASC"; break;
+      case 'name_asc': sortQuery = " ORDER BY table_number DESC"; break;
+      case 'newest': sortQuery = " ORDER BY created_at DESC"; break; // Creation date
+      case 'oldest': sortQuery = " ORDER BY created_at ASC"; break;
+      case 'number_desc': sortQuery = " ORDER BY table_number DESC"; break;
+      default: sortQuery = " ORDER BY table_number ASC"; // Default (Table number)
     }
 
     // Gọi Repository
@@ -101,6 +99,7 @@ exports.createTable = async (req, res) => {
   if (!table_number || !capacity || !location) {
     return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
   }
+
   const cap = parseInt(capacity);
   if (isNaN(cap) || cap < 1 || cap > 20) {
     return res.status(400).json({ message: "Sức chứa 1-20" });

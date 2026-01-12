@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import QRCode from "react-qr-code"; // Thư viện QR Code Frontend
+import QRCode from "react-qr-code";
 import {
   X, Printer, Image as ImageIcon, FileText,
   RefreshCw, Users, MapPin, Calendar, Activity
@@ -11,7 +11,7 @@ import axiosClient from "../../../store/axiosClient";
 
 const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
   const [table, setTable] = useState(initialTable);
-  const qrRef = useRef(null); // Ref để chụp ảnh QR cho PNG/PDF
+  const qrRef = useRef(null); // Ref để chụp ảnh
 
   useEffect(() => {
     setTable(initialTable);
@@ -19,41 +19,54 @@ const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
 
   if (!table) return null;
 
-  // URL mà khách hàng sẽ quét
   const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
-
+  
   const tokenDate = new Date(table.created_at).toLocaleDateString("vi-VN", {
     year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  // --- HÀM XỬ LÝ (Handlers) ---
+  // --- HANDLERS ---
 
-  // 1. Tải PNG (Chụp từ Component)
+  // 1. Tải PNG
   const handleDownloadPNG = async () => {
-    if (!qrRef.current) return;
+    console.log("1. Bắt đầu tải PNG..."); // Log debug
+
+    if (!qrRef.current) {
+        console.error("2. Lỗi: Không tìm thấy Element mẫu để chụp ảnh!");
+        toast.error("Lỗi giao diện, vui lòng thử lại");
+        return;
+    }
+
     try {
-        const canvas = await html2canvas(qrRef.current, { scale: 3 }); // Scale cao để nét
+        console.log("3. Đang xử lý html2canvas...");
+        // useCORS: true để load ảnh từ domain khác nếu có
+        const canvas = await html2canvas(qrRef.current, { scale: 3, useCORS: true });
+        
+        console.log("4. Đã tạo Canvas xong, bắt đầu tải...");
         const link = document.createElement("a");
         link.href = canvas.toDataURL("image/png");
-        link.download = `QR_${table.table_number}.png`;
+        link.download = `QR_Ban_${table.table_number}.png`;
+        document.body.appendChild(link); // Append vào body để chắc chắn click được trên Firefox
         link.click();
+        document.body.removeChild(link);
+        
         toast.success("Đã tải ảnh PNG");
     } catch (err) {
-        toast.error("Lỗi tải ảnh");
+        console.error("Lỗi html2canvas:", err);
+        toast.error("Lỗi tạo ảnh");
     }
   };
 
-  // 2. Tải PDF (Chụp từ Component -> PDF)
+  // 2. Tải PDF
   const handleDownloadPDF = async () => {
     if (!qrRef.current) return;
     try {
-        const canvas = await html2canvas(qrRef.current, { scale: 3 });
+        const canvas = await html2canvas(qrRef.current, { scale: 3, useCORS: true });
         const imgData = canvas.toDataURL("image/png");
         
         const pdf = new jsPDF("p", "mm", "a4");
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        
-        // Căn giữa ảnh vào PDF
+        // Tính tỷ lệ chiều cao ảnh
         const imgProps = pdf.getImageProperties(imgData);
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         
@@ -65,45 +78,40 @@ const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
     }
   };
 
-  // 3. In (Mở cửa sổ mới)
+  // 3. In
   const handlePrint = () => {
     const printWindow = window.open('', '', 'width=800,height=800');
-    // Lấy SVG string từ react-qr-code
-    const svg = document.getElementById("qr-svg-container").innerHTML;
+    // Lấy SVG từ QRCode để in cho nét
+    const svg = document.getElementById("qr-svg-container")?.innerHTML || '';
 
     printWindow.document.write(`
       <html>
         <head>
-            <title>In Mã QR - ${table.table_number}</title>
+            <title>QR ${table.table_number}</title>
             <style>
-                body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-                .card { border: 2px solid #000; padding: 40px; border-radius: 20px; text-align: center; width: 300px; }
-                h1 { margin: 0 0 10px; font-size: 48px; }
-                p { font-size: 18px; margin: 5px 0; }
-                .qr-box { margin: 20px 0; }
+                body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin-top: 50px; }
+                h1 { font-size: 40px; margin-bottom: 10px; }
+                .qr { margin: 20px 0; border: 2px solid #000; padding: 20px; border-radius: 10px; }
             </style>
         </head>
         <body>
-          <div class="card">
             <h1>${table.table_number}</h1>
             <p>${table.location}</p>
-            <div class="qr-box">${svg}</div>
-            <p style="font-weight: bold; text-transform: uppercase; margin-top: 20px;">Quét Để Gọi Món</p>
-          </div>
-          <script>window.onload = () => { window.print(); window.close(); }</script>
+            <div class="qr">${svg}</div>
+            <p>QUÉT ĐỂ GỌI MÓN</p>
+            <script>window.onload = () => { window.print(); window.close(); }</script>
         </body>
       </html>
     `);
     printWindow.document.close();
   };
 
-  // 4. Làm mới Token
   const handleRegenerate = async () => {
     if (!window.confirm("CẢNH BÁO: Mã cũ sẽ bị vô hiệu hóa. Tiếp tục?")) return;
     try {
         const res = await axiosClient.post(`/admin/tables/${table.id}/regenerate`);
         toast.success("Mã QR đã được làm mới!");
-        setTable(prev => ({ ...prev, qr_token: res.qr_token })); // Update state
+        setTable(prev => ({ ...prev, qr_token: res.qr_token }));
         if (onRefresh) onRefresh();
     } catch (err) {
         toast.error("Lỗi làm mới mã");
@@ -113,17 +121,37 @@ const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
   return (
     <div className="w-full h-full bg-neutral-900 border-l border-white/10 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
       
-      {/* --- TEMPLATE ẨN ĐỂ CHỤP ẢNH (Dùng cho PNG/PDF) --- */}
-      <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
-        <div ref={qrRef} style={{ width: '600px', padding: '40px', background: 'white', textAlign: 'center', fontFamily: 'Arial' }}>
-            <h1 style={{ fontSize: '60px', fontWeight: 'bold', margin: '0' }}>{table.table_number}</h1>
-            <p style={{ fontSize: '24px', color: '#555', margin: '10px 0 30px' }}>{table.location}</p>
-            <QRCode value={clientUrl} size={400} />
-            <p style={{ fontSize: '30px', fontWeight: 'bold', marginTop: '30px', textTransform: 'uppercase' }}>Scan to Order</p>
+      {/* --- PHẦN ẨN ĐỂ CHỤP ẢNH (QUAN TRỌNG) --- */}
+      {/* Đặt fixed và z-index thấp để ẩn khỏi mắt người dùng nhưng vẫn hiển thị trong DOM để chụp */}
+      <div style={{ position: 'fixed', left: '-9999px', top: '0' }}>
+        <div 
+            ref={qrRef} 
+            style={{ 
+                width: '600px', 
+                padding: '40px', 
+                backgroundColor: 'white', // Phải có màu nền trắng
+                textAlign: 'center', 
+                fontFamily: 'Arial, sans-serif',
+                color: 'black' 
+            }}
+        >
+            <h1 style={{ fontSize: '60px', fontWeight: 'bold', margin: '0 0 10px 0' }}>{table.table_number}</h1>
+            <p style={{ fontSize: '24px', color: '#555', marginBottom: '30px' }}>{table.location}</p>
+            
+            {/* QR Code cho phần chụp ảnh */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <QRCode value={clientUrl} size={400} />
+            </div>
+
+            <p style={{ fontSize: '30px', fontWeight: 'bold', marginTop: '30px', textTransform: 'uppercase' }}>
+                Scan to Order
+            </p>
+            <p style={{ fontSize: '18px', marginTop: '10px' }}>Pass Wifi: 12345678</p>
         </div>
       </div>
+      {/* ------------------------------------------ */}
 
-      {/* --- HEADER --- */}
+      {/* Header Panel */}
       <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
         <h3 className="text-lg font-bold text-white">Chi Tiết Bàn</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors">
@@ -131,11 +159,11 @@ const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
         </button>
       </div>
 
-      {/* --- BODY --- */}
+      {/* Body Panel */}
       <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
         <div className="text-center">
           
-          {/* QR Code Preview (Dùng react-qr-code) */}
+          {/* QR Preview trên màn hình (UI) */}
           <div className="inline-block bg-white p-4 rounded-2xl mb-6 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
              <div id="qr-svg-container">
                 <QRCode 
@@ -162,22 +190,11 @@ const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
                 <span className="text-gray-400 flex gap-2"><Calendar size={16}/> Ngày tạo:</span>
                 <span className="text-white text-xs">{tokenDate}</span>
             </div>
-            <div className="flex justify-between text-sm">
-                <span className="text-gray-400 flex gap-2"><Activity size={16}/> Trạng thái:</span>
-                <span className={`text-xs font-bold uppercase ${table.status==='active' ? 'text-green-400' : 'text-red-400'}`}>{table.status}</span>
-            </div>
           </div>
-
-          {table.description && (
-            <div className="mt-4 text-left">
-                <label className="text-xs font-bold text-gray-500 uppercase">Ghi chú</label>
-                <p className="text-gray-300 text-sm italic mt-1 bg-black/20 p-3 rounded-lg border border-white/5">"{table.description}"</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* --- FOOTER ACTIONS --- */}
+      {/* Footer Actions */}
       <div className="p-6 border-t border-white/10 bg-black/20 space-y-3">
         <div className="grid grid-cols-2 gap-3">
             <button onClick={handleDownloadPNG} className="py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-white/10">
