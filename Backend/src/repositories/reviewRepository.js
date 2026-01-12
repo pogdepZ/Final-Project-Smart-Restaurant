@@ -1,17 +1,37 @@
 // repositories/reviewRepository.js
 const db = require("../config/db");
 
-exports.findReviewsByMenuItemId = async (menuItemId, limit, offset) => {
-  const sql = `
-    SELECT r.*, u.full_name, u.avatar
-    FROM reviews r
-    JOIN users u ON r.user_id = u.id
-    WHERE r.menu_item_id = $1
-    ORDER BY r.created_at DESC
-    LIMIT $2 OFFSET $3
-  `;
-  const result = await db.query(sql, [menuItemId, limit, offset]);
-  return result.rows;
+exports.findReviewsByMenuItemId = async (menuItemId, page = 1, limit = 5) => {
+  const p = Math.max(Number(page) || 1, 1);
+  const l = Math.min(Math.max(Number(limit) || 5, 1), 50);
+  const offset = (p - 1) * l;
+
+  // 1) total
+  const totalRes = await db.query(
+    `select count(*)::int as total
+     from public.menu_item_reviews
+     where menu_item_id = $1`,
+    [menuItemId]
+  );
+  const total = totalRes.rows[0]?.total || 0;
+
+  // 2) data (order mới nhất trước)
+  const dataRes = await db.query(
+    `select id, user_id, menu_item_id, rating, comment, created_at
+     from public.menu_item_reviews
+     where menu_item_id = $1
+     order by created_at desc
+     limit $2 offset $3`,
+    [menuItemId, l, offset]
+  );
+
+  const totalPages = Math.ceil(total / l);
+  const hasMore = p < totalPages;
+
+  return {
+    data: dataRes.rows,
+    meta: { page: p, limit: l, total, totalPages, hasMore },
+  };
 };
 
 exports.countReviewsByMenuItemId = async (menuItemId) => {

@@ -32,7 +32,9 @@ export const menuApi = {
 
   // GET /api/menu/items/:id/related
   async getRelatedMenuItems(id) {
-    return axiosClient.get(`/menu/items/${id}/related`);
+    const response =  axiosClient.get(`/menu/items/${id}/related`);
+    console.log('Related items response:', response);
+    return response;
   },
 
   // GET /api/menu/items/:id/reviews?page=&limit=
