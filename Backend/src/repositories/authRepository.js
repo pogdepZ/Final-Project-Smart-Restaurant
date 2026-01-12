@@ -6,6 +6,15 @@ exports.findUserByEmail = async (email) => {
   return rs.rows[0] || null;
 };
 
+exports.findUserById = async (id) => {
+  const rs = await db.query(
+    "SELECT id, name, email, role FROM users WHERE id = $1",
+    [id]
+  );
+  return rs.rows[0] || null;
+};
+
+
 exports.findUserPublicByEmail = async (email) => {
   const rs = await db.query("SELECT id, name, email, role FROM users WHERE email = $1", [email]);
   return rs.rows[0] || null;

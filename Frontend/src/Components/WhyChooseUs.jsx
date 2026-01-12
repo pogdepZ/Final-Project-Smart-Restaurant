@@ -58,7 +58,7 @@ const FeatureCard = ({ feature, index }) => {
         
         /* Chỗ này giữ logic cũ của bạn cho Desktop */
         ${
-          index % 2 === 0 ? "lg:translate-x-[-100px]" : "lg:translate-x-[100px]"
+          index % 2 === 0 ? "lg:translate-x-25" : "lg:translate-x-25"
         }
 
         /* Khi Hover chuột vào vùng cha (group) trên PC */
@@ -66,7 +66,7 @@ const FeatureCard = ({ feature, index }) => {
         lg:group-hover:translate-x-0
         
         /* Hover vào chính thẻ đó */
-        hover:!opacity-100 hover:!scale-105 hover:!border-orange-500/50 hover:bg-neutral-900
+        hover:opacity-100 hover:scale-105 hover:border-orange-500/50 hover:bg-neutral-900
       `}
     >
       <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-orange-500/10 text-orange-500 mb-4">
@@ -123,7 +123,7 @@ const WhyChooseUs = () => {
             {/* Heading: Giảm font size mobile (text-3xl) và giảm margin bottom (mb-4) */}
             <h2 className="text-3xl md:text-5xl font-black text-white  lg:mb-6 leading-tight">
               Đẳng cấp <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
                 Ẩm Thực
               </span>
             </h2>

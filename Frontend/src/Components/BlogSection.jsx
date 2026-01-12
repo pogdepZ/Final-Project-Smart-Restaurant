@@ -69,7 +69,7 @@ const BlogSection = () => {
             <span className="text-orange-500 font-bold text-sm uppercase tracking-wider">Our Stories</span>
           </div>
           <h2 className="text-3xl md:text-5xl font-black text-white mb-4">
-            Góc <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">Ẩm Thực</span>
+            Góc <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">Ẩm Thực</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
             Những câu chuyện đằng sau mỗi món ăn và bí quyết ẩm thực từ các đầu bếp hàng đầu.
