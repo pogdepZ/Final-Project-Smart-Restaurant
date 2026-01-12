@@ -5,6 +5,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import { MdOutlineTableBar } from "react-icons/md";
+import { useSocket } from "../../context/SocketContext";
 import {
   Plus,
   Search,
@@ -24,6 +25,11 @@ import {
 import TableDetailPanel from "./components/TableDetailPanel"; // Đảm bảo đường dẫn đúng
 
 const TableManagement = () => {
+  const socket = useSocket();
+  // --- DEBUG 1: Kiểm tra socket có tồn tại không ---
+  console.log("DEBUG: Socket instance:", socket);
+  console.log("DEBUG: Socket connected?", socket?.connected);
+
   // --- STATE ---
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,8 +85,25 @@ const TableManagement = () => {
 
   // --- 1. FETCH DATA ---
   useEffect(() => {
-    fetchTables();
-  }, [filters]);
+    if (!socket) return;
+
+    socket.on("table_update", (payload) => {
+      console.log("Socket nhận tin:", payload); // <--- Thêm log này
+
+      const { type, table } = payload;
+
+      if (type === "update") {
+        // Tìm và thay thế bàn cũ bằng bàn mới trong state
+        setTables((prev) => prev.map((t) => (t.id === table.id ? table : t)));
+        toast.info(`Bàn ${table.table_number} vừa cập nhật!`);
+      } else if (type === "create") {
+        setTables((prev) => [...prev, table]);
+        toast.success(`Bàn mới ${table.table_number} vừa được tạo!`);
+      }
+    });
+
+    return () => socket.off("table_update");
+  }, [socket]);
 
   const fetchTables = async () => {
     setLoading(true);
@@ -95,6 +118,10 @@ const TableManagement = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTables();
+  }, [filters]);
 
   // --- 2. BULK ACTIONS (Xử lý hàng loạt) ---
 
