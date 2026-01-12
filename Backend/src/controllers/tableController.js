@@ -32,7 +32,7 @@ exports.updateTable = async (req, res) => {
   try {
     const result = await tableService.updateTable(req.params.id, req.body, req.io);
     res.json(result);
-  } catch (err) {
+  } catch (err) { 
     res.status(400).json({ message: err.message });
   }
 };
