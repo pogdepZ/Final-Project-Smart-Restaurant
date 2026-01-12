@@ -5,7 +5,11 @@ const menuController = require("../../controllers/menuController");
 const photoController = require("../../controllers/photoController");
 const modifierController = require("../../controllers/modifierController");
 
-const { protect, adminOnly } = require("../../middlewares/authMiddleware");
+const {
+  protect,
+  adminOnly,
+  staffOnly,
+} = require("../../middlewares/authMiddleware");
 const upload = require("../../config/cloudinary");
 
 const adminMenuController = require("../../controllers/adminMenuController");
@@ -37,7 +41,7 @@ router.patch(
 router.patch(
   "/items/:id/chef",
   protect,
-  adminOnly,
+  staffOnly,
   adminMenuController.toggleChefRecommended
 );
 
