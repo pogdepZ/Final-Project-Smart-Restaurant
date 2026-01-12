@@ -1,19 +1,29 @@
-const db = require('../config/db');
+const db = require("../config/db");
 
 // ===== CATEGORIES =====
 exports.findAllCategories = async () => {
-  const sql = 'SELECT * FROM menu_categories ORDER BY display_order ASC';
+  const sql = "SELECT * FROM menu_categories ORDER BY display_order ASC";
   const result = await db.query(sql);
   return result.rows;
 };
 
-exports.insertCategory = async ({ name, description, display_order, status }) => {
+exports.insertCategory = async ({
+  name,
+  description,
+  display_order,
+  status,
+}) => {
   const sql = `
     INSERT INTO menu_categories (name, description, display_order, status)
     VALUES ($1, $2, $3, $4)
     RETURNING *
   `;
-  const result = await db.query(sql, [name, description, display_order, status]);
+  const result = await db.query(sql, [
+    name,
+    description,
+    display_order,
+    status,
+  ]);
   return result.rows[0];
 };
 
@@ -39,12 +49,22 @@ exports.updateCategoryById = async (id, patch) => {
 };
 
 exports.findCategoryId = async (id) => {
-  const result = await db.query('SELECT id FROM menu_categories WHERE id = $1', [id]);
+  const result = await db.query(
+    "SELECT id FROM menu_categories WHERE id = $1",
+    [id]
+  );
   return result.rows[0] || null;
 };
 
 // ===== MENU ITEMS =====
-exports.findMenuItemsAdmin = async ({ category_id, status, search, sort, limit, offset }) => {
+exports.findMenuItemsAdmin = async ({
+  category_id,
+  status,
+  search,
+  sort,
+  limit,
+  offset,
+}) => {
   const params = [];
   let sql = `
     SELECT i.*, c.name AS category_name
@@ -53,15 +73,31 @@ exports.findMenuItemsAdmin = async ({ category_id, status, search, sort, limit, 
     WHERE i.is_deleted = false
   `;
 
-  if (category_id) { params.push(category_id); sql += ` AND i.category_id = $${params.length}`; }
-  if (status) { params.push(status); sql += ` AND i.status = $${params.length}`; }
-  if (search) { params.push(`%${search}%`); sql += ` AND i.name ILIKE $${params.length}`; }
+  if (category_id) {
+    params.push(category_id);
+    sql += ` AND i.category_id = $${params.length}`;
+  }
+  if (status) {
+    params.push(status);
+    sql += ` AND i.status = $${params.length}`;
+  }
+  if (search) {
+    params.push(`%${search}%`);
+    sql += ` AND i.name ILIKE $${params.length}`;
+  }
 
   switch (sort) {
-    case 'price_asc': sql += ' ORDER BY i.price ASC'; break;
-    case 'price_desc': sql += ' ORDER BY i.price DESC'; break;
-    case 'name_asc': sql += ' ORDER BY i.name ASC'; break;
-    default: sql += ' ORDER BY i.created_at DESC';
+    case "price_asc":
+      sql += " ORDER BY i.price ASC";
+      break;
+    case "price_desc":
+      sql += " ORDER BY i.price DESC";
+      break;
+    case "name_asc":
+      sql += " ORDER BY i.name ASC";
+      break;
+    default:
+      sql += " ORDER BY i.created_at DESC";
   }
 
   const limitIdx = params.length + 1;
@@ -74,7 +110,7 @@ exports.findMenuItemsAdmin = async ({ category_id, status, search, sort, limit, 
 };
 
 exports.findMenuItemById = async (id) => {
-  const result = await db.query('SELECT * FROM menu_items WHERE id = $1', [id]);
+  const result = await db.query("SELECT * FROM menu_items WHERE id = $1", [id]);
   return result.rows[0] || null;
 };
 
@@ -121,18 +157,20 @@ exports.insertMenuItem = async (data) => {
 exports.updateMenuItemById = async (id, fields, values) => {
   // fields: ["name = $1", "price = $2", ... , "updated_at = NOW()"]
   // values: [.., id]
-  const sql = `UPDATE menu_items SET ${fields.join(', ')} WHERE id = $${values.length} RETURNING *`;
+  const sql = `UPDATE menu_items SET ${fields.join(", ")} WHERE id = $${
+    values.length
+  } RETURNING *`;
   const result = await db.query(sql, values);
   return result.rows[0] || null;
 };
 
 exports.softDeleteMenuItem = async (id) => {
-  await db.query('UPDATE menu_items SET is_deleted = true WHERE id = $1', [id]);
+  await db.query("UPDATE menu_items SET is_deleted = true WHERE id = $1", [id]);
 };
 
 exports.insertMenuItemPhoto = async (menuItemId, url) => {
   await db.query(
-    'INSERT INTO menu_item_photos (menu_item_id, url) VALUES ($1, $2)',
+    "INSERT INTO menu_item_photos (menu_item_id, url) VALUES ($1, $2)",
     [menuItemId, url]
   );
 };
@@ -151,7 +189,6 @@ exports.findGuestMenu = async () => {
   return result.rows;
 };
 
-
 exports.findRelatedItemsByCategory = async (categoryId, excludeId) => {
   // POSTGRESQL: Dùng $1, $2 thay vì ?
   const sql = `
@@ -160,17 +197,22 @@ exports.findRelatedItemsByCategory = async (categoryId, excludeId) => {
     WHERE category_id = $1 AND id != $2
     LIMIT 5
   `;
-  
+
   // $1 sẽ nhận categoryId, $2 sẽ nhận excludeId
   const result = await db.query(sql, [categoryId, excludeId]);
-  
+
   // Lưu ý: thư viện 'pg' thường trả về object có thuộc tính .rows
-  return result.rows || result; 
+  return result.rows || result;
 };
 
-
-
-exports.findMenuItemsPublic = async ({ category_id, search, sort, limit, offset, chef }) => {
+exports.findMenuItemsPublic = async ({
+  category_id,
+  search,
+  sort,
+  limit,
+  offset,
+  chef,
+}) => {
   const params = [];
   let where = `WHERE i.is_deleted = false`;
 
@@ -191,7 +233,7 @@ exports.findMenuItemsPublic = async ({ category_id, search, sort, limit, offset,
     orderBy = `ORDER BY total_ordered DESC NULLS LAST, i.created_at DESC`;
   }
 
-    if (chef === true || chef === '1' || chef === 1) {
+  if (chef === true || chef === "1" || chef === 1) {
     where += ` AND i.is_chef_recommended = true`;
   }
 
@@ -221,4 +263,10 @@ exports.findMenuItemsPublic = async ({ category_id, search, sort, limit, offset,
   const total = (await db.query(countSql, params)).rows[0]?.total ?? 0;
 
   return { rows, total };
+};
+
+exports.getItemById = async (id) => {
+  // Lấy thông tin món ăn theo ID
+  const result = await db.query("SELECT * FROM menu_items WHERE id = $1", [id]);
+  return result.rows[0];
 };
