@@ -17,14 +17,24 @@ exports.findReviewsByMenuItemId = async (menuItemId, page = 1, limit = 5) => {
 
   // 2) data (order mới nhất trước)
   const dataRes = await db.query(
-    `select id, user_id, menu_item_id, rating, comment, created_at
-     from public.menu_item_reviews
-     where menu_item_id = $1
-     order by created_at desc
-     limit $2 offset $3`,
+    `
+  select
+    r.id,
+    r.user_id,
+    u.name as user_name,
+    r.menu_item_id,
+    r.rating,
+    r.comment,
+    r.created_at
+  from public.menu_item_reviews r
+  left join public.users u
+    on u.id = r.user_id
+  where r.menu_item_id = $1
+  order by r.created_at desc
+  limit $2 offset $3
+  `,
     [menuItemId, l, offset]
   );
-
   const totalPages = Math.ceil(total / l);
   const hasMore = p < totalPages;
 

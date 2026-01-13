@@ -1,18 +1,8 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+// src/pages/Menu/Menu.jsx
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FoodDetailPopup from "./DetailFoodPopup";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  addToCartLocal,
-  selectTotalItems,
-  selectCartId,
-} from "../../store/slices/cartSlice";
-
+import { addToCartLocal, selectTotalItems } from "../../store/slices/cartSlice";
 import { toast } from "react-toastify";
 import { useParams, useSearchParams } from "react-router-dom";
 import { menuApi } from "../../services/menuApi";
@@ -28,7 +18,6 @@ const PAGE_SIZE = 12;
 export default function Menu() {
   const dispatch = useDispatch();
   const cartCount = useSelector(selectTotalItems);
-  const cartId = useSelector(selectCartId);
   const { tableCode } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -55,16 +44,16 @@ export default function Menu() {
   const [error, setError] = useState("");
 
   // ===== UI =====
-  const [selectedFood, setSelectedFood] = useState(null);
+  const [selectedFoodId, setSelectedFoodId] = useState(null); // ✅ quan trọng
   const [addedItems, setAddedItems] = useState(new Set());
 
   // ===== refs =====
   const sentinelRef = useRef(null);
   const observerRef = useRef(null);
 
-  const abortRef = useRef(null); // AbortController (chỉ abort khi đổi filter)
-  const requestKeyRef = useRef(""); // chống gọi trùng
-  const inFlightRef = useRef(false); // ✅ khóa chống spam
+  const abortRef = useRef(null);
+  const requestKeyRef = useRef("");
+  const inFlightRef = useRef(false);
 
   // stable refs for observer callback
   const pageRef = useRef(1);
@@ -137,7 +126,6 @@ export default function Menu() {
     setActiveCategoryId(cat);
     setSort(s === "popularity" ? "popularity" : "newest");
     setOnlyChef(chef);
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -166,7 +154,6 @@ export default function Menu() {
     };
   }, []);
 
-  // ===== memo onPageSync (FIX spam request) =====
   const onPageSync = useCallback(
     (p) => {
       syncUrl({
@@ -183,13 +170,12 @@ export default function Menu() {
   // ===== fetchPage (locked) =====
   const fetchPage = useCallback(
     async (nextPage, { reason = "auto" } = {}) => {
-      // nếu đang lỗi và auto trigger -> chặn (tránh loop)
       if (error && reason === "auto") return;
 
       const key = `${appliedSearch}|${activeCategoryId}|${sort}|${onlyChef}|${nextPage}`;
       if (requestKeyRef.current === key) return;
 
-      if (inFlightRef.current) return; // ✅ chặn spam tuyệt đối
+      if (inFlightRef.current) return;
       inFlightRef.current = true;
       requestKeyRef.current = key;
 
@@ -199,19 +185,18 @@ export default function Menu() {
         setError("");
 
         const controller = new AbortController();
-        // chỉ abort khi đổi filter, nên không abort ở đây
         abortRef.current = controller;
 
         const params = {
           page: nextPage,
           limit: PAGE_SIZE,
           search: appliedSearch || undefined,
-          category_id:
-            activeCategoryId === "all" ? undefined : activeCategoryId,
+          category_id: activeCategoryId === "all" ? undefined : activeCategoryId,
           sort: sort || undefined,
           chef: onlyChef ? 1 : undefined,
         };
 
+        // menuApi.getMenuItems(params, { signal }) phải support (axios >= 1)
         const res = await menuApi.getMenuItems(params, {
           signal: controller.signal,
         });
@@ -224,9 +209,7 @@ export default function Menu() {
           image: it.image_url,
         }));
 
-        setItems((prev) =>
-          nextPage === 1 ? normalized : prev.concat(normalized)
-        );
+        setItems((prev) => (nextPage === 1 ? normalized : prev.concat(normalized)));
         setPage(nextPage);
 
         const nextHasMore =
@@ -252,10 +235,8 @@ export default function Menu() {
 
   // ===== reset list when appliedSearch/category/sort/chef changes =====
   useEffect(() => {
-    // abort in-flight request
     if (abortRef.current) abortRef.current.abort();
 
-    // reset
     setItems([]);
     setPage(1);
     setHasMore(true);
@@ -263,7 +244,6 @@ export default function Menu() {
     requestKeyRef.current = "";
     inFlightRef.current = false;
 
-    // sync url page=1
     syncUrl({
       search: appliedSearch || "",
       category_id: activeCategoryId,
@@ -272,7 +252,6 @@ export default function Menu() {
       page: "1",
     });
 
-    // load page 1
     fetchPage(1, { reason: "user" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedSearch, activeCategoryId, sort, onlyChef]);
@@ -300,13 +279,13 @@ export default function Menu() {
 
     observerRef.current.observe(el);
     return () => observerRef.current?.disconnect();
-  }, [fetchPage, loadingFirst]);
+  }, [fetchPage]);
 
-  // ✅ auto-load if list short and sentinel is already in viewport
+  // ✅ auto-load if list short and sentinel already in viewport
   useEffect(() => {
     if (loadingFirst || loadingMore) return;
     if (!hasMore) return;
-    if (error) return; // ✅ lỗi thì không auto gọi nữa
+    if (error) return;
 
     const el = sentinelRef.current;
     if (!el) return;
@@ -315,24 +294,15 @@ export default function Menu() {
     if (rect.top <= window.innerHeight + 200) {
       fetchPage(page + 1, { reason: "auto" });
     }
-  }, [
-    items.length,
-    loadingFirst,
-    loadingMore,
-    hasMore,
-    error,
-    page,
-    fetchPage,
-  ]);
+  }, [items.length, loadingFirst, loadingMore, hasMore, error, page, fetchPage]);
 
   // ===== apply search (button/enter) =====
   const applySearch = useCallback(() => {
     const q = searchInput.trim();
-    // nếu không đổi thì thôi
     if (q === appliedSearch) return;
 
     setAppliedSearch(q);
-    // reset page url (effect reset sẽ fetch)
+
     syncUrl({
       search: q || "",
       category_id: activeCategoryId,
@@ -342,22 +312,21 @@ export default function Menu() {
     });
   }, [searchInput, appliedSearch, syncUrl, activeCategoryId, sort, onlyChef]);
 
-  // ===== cart =====
+  // ===== cart: chỉ dùng nếu MenuList còn icon add =====
   const handleAddToCart = (e, item) => {
     e.stopPropagation();
 
     dispatch(
       addToCartLocal({
-        id: item.id, // menu_items.id
+        id: item.id,
         name: item.name,
         price: Number(item.price) || 0,
         image: item.image_url || item.image || null,
-        modifiers: [], // sau này lấy modifiers user chọn
+        modifiers: [],
         note: "",
       })
     );
 
-    // UI animation giữ nguyên
     setAddedItems((prev) => {
       const next = new Set(prev);
       next.add(item.id);
@@ -383,9 +352,14 @@ export default function Menu() {
     [searchInput, appliedSearch]
   );
 
+  // ✅ derive selectedFood object từ selectedFoodId
+  const selectedFood = useMemo(() => {
+    if (!selectedFoodId) return null;
+    return items.find((it) => it.id === selectedFoodId) || { id: selectedFoodId };
+  }, [selectedFoodId, items]);
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
-      {/* HEADER */}
       <MenuHeader
         tableCode={tableCode}
         cartCount={cartCount}
@@ -402,38 +376,38 @@ export default function Menu() {
         setActiveCategoryId={setActiveCategoryId}
       />
 
-      {/* LIST */}
       <div className="container mx-auto max-w-5xl px-4 pt-4">
         {loadingFirst ? (
           <MenuSkeleton count={PAGE_SIZE} />
         ) : error && items.length === 0 ? (
-          <MenuErrorState
-            error={error}
-            onRetry={() => fetchPage(1, { reason: "user" })}
-          />
+          <MenuErrorState error={error} onRetry={() => fetchPage(1, { reason: "user" })} />
         ) : items.length > 0 ? (
           <MenuList
             items={items}
             addedItems={addedItems}
-            onSelectFood={(item) => setSelectedFood(item)}
-            onAddToCart={handleAddToCart}
+            onSelectFood={(item) => setSelectedFoodId(item.id)} // ✅ luôn set ID
+            onAddToCart={handleAddToCart} // nếu bạn muốn bỏ icon add thì bỏ prop này + sửa MenuList
             sentinelRef={sentinelRef}
             loadingMore={loadingMore}
             hasMore={hasMore}
             error={error}
-            onRetryLoadMore={() =>
-              fetchPage(pageRef.current + 1, { reason: "user" })
-            }
+            onRetryLoadMore={() => fetchPage(pageRef.current + 1, { reason: "user" })}
           />
         ) : (
           <MenuEmptyState />
         )}
       </div>
 
-      {selectedFood && (
+      {selectedFoodId && (
         <FoodDetailPopup
-          food={selectedFood}
-          onClose={() => setSelectedFood(null)}
+          food={selectedFood} // ✅ luôn là object (ít nhất có id)
+          onClose={() => setSelectedFoodId(null)}
+          onSelectFood={(id) => setSelectedFoodId(id)} // ✅ click related -> đổi món
+          onConfirm={(payload) => {
+            dispatch(addToCartLocal(payload));
+            setSelectedFoodId(null);
+            toast.success(`Đã thêm ${payload.name} vào giỏ!`);
+          }}
         />
       )}
     </div>
