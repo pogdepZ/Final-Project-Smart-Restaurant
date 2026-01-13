@@ -1,13 +1,23 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, ArrowRight, User, ShieldCheck, Star, Utensils } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  User,
+  ShieldCheck,
+  Star,
+  Utensils,
+} from "lucide-react";
 import Input from "../../../Components/Input";
 
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signUpSchema } from "./schema/schemaSignUp";
-import { registerThunk } from "../../../store/slices/authSlice";
+import { registerThunk, setCredentials } from "../../../store/slices/authSlice";
 import { useDispatch } from "react-redux";
+import { authApi } from "../../../services/authApi";
+import axiosClient from "../../../store/axiosClient";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -15,6 +25,9 @@ const SignUp = () => {
   const {
     register,
     handleSubmit,
+    watch,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(signUpSchema),
@@ -27,18 +40,85 @@ const SignUp = () => {
     },
   });
 
-  const dispatch = useDispatch()
+  const debounceRef = useRef(null);
+
+  const checkEmailRealtime = (rawEmail) => {
+    const email = String(rawEmail || "")
+      .trim()
+      .toLowerCase();
+
+    // nếu đang lỗi format email thì không check server
+    const okFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!email || !okFormat) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await authApi.checkEmail(email);
+
+        if (res?.exists) {
+          setError("email", {
+            type: "manual",
+            message: "Email này đã được sử dụng.",
+          });
+        } else {
+          // chỉ clear nếu lỗi hiện tại là do exists
+          if (errors.email?.message === "Email này đã được sử dụng.") {
+            clearErrors("email");
+          }
+        }
+      } catch (e) {
+        // không block user nếu API lỗi
+      }
+    }, 500); // 400-700ms tuỳ bạn
+  };
+
+  const dispatch = useDispatch();
   const onSubmit = async (values) => {
-    console.log(values);
-    const {fullName, password, email} = values;
+    const { fullName, password, email } = values;
     const data = {
       name: fullName,
       password,
-      email
-    }
+      email,
+    };
     const res = await dispatch(registerThunk(data));
-    console.log(res)
   };
+
+  const googleBtnRef = useRef(null);
+  useEffect(() => {
+    if (!window.google || !googleBtnRef.current) return;
+
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        try {
+          const res = await axiosClient.post("/auth/google", {
+            credential: response.credential,
+          });
+
+          dispatch(
+            setCredentials({ accessToken: res.accessToken, user: res.user })
+          );
+
+          const role = res?.user?.role;
+          if (role === "admin") navigate("/admin");
+          else if (role === "waiter") navigate("/waiter");
+          else if (role === "kitchen") navigate("/kitchen");
+          else navigate("/");
+        } catch (e) {
+          console.log("Google signup/signin failed:", e);
+        }
+      },
+    });
+
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      theme: "outline",
+      size: "large",
+      width: "100%",
+      text: "signup_with",
+    });
+  }, []);
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans bg-neutral-950">
@@ -73,8 +153,12 @@ const SignUp = () => {
                 <Star size={20} />
               </div>
               <div>
-                <p className="font-bold text-white italic">Giảm 10% cho lần đặt bàn đầu tiên</p>
-                <p className="text-xs text-white/50">Áp dụng cho toàn bộ menu tại nhà hàng.</p>
+                <p className="font-bold text-white italic">
+                  Giảm 10% cho lần đặt bàn đầu tiên
+                </p>
+                <p className="text-xs text-white/50">
+                  Áp dụng cho toàn bộ menu tại nhà hàng.
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -134,7 +218,9 @@ const SignUp = () => {
               placeholder="example@lumiere.com"
               icon={Mail}
               error={errors.email?.message}
-              {...register("email")}
+              {...register("email", {
+                onChange: (e) => checkEmailRealtime(e.target.value),
+              })}
             />
 
             {/* Password + Confirm */}
@@ -165,7 +251,10 @@ const SignUp = () => {
                 className="mt-0.5 w-4 h-4 accent-orange-500 rounded border-white/10"
                 {...register("terms")}
               />
-              <label htmlFor="terms" className="text-[11px] text-gray-400 leading-snug">
+              <label
+                htmlFor="terms"
+                className="text-[11px] text-gray-400 leading-snug"
+              >
                 Tôi đồng ý với{" "}
                 <span className="text-white underline cursor-pointer">
                   Điều khoản & Chính sách
@@ -174,7 +263,9 @@ const SignUp = () => {
               </label>
             </div>
             {errors.terms?.message ? (
-              <p className="text-xs text-red-300 px-1">{errors.terms.message}</p>
+              <p className="text-xs text-red-300 px-1">
+                {errors.terms.message}
+              </p>
             ) : null}
 
             {/* Submit */}
@@ -187,7 +278,8 @@ const SignUp = () => {
                 isSubmitting ? "opacity-70 cursor-not-allowed" : "",
               ].join(" ")}
             >
-              {isSubmitting ? "Đang tạo..." : "Đăng Ký Thành Viên"} <ArrowRight size={18} />
+              {isSubmitting ? "Đang tạo..." : "Đăng Ký Thành Viên"}{" "}
+              <ArrowRight size={18} />
             </button>
 
             {/* Divider */}
@@ -196,24 +288,20 @@ const SignUp = () => {
                 <div className="w-full border-t border-white/5"></div>
               </div>
               <div className="relative flex justify-center text-[10px] uppercase text-gray-500 tracking-[0.2em]">
-                <span className="bg-[#080808] px-2 lg:bg-transparent">Hoặc nhanh hơn với</span>
+                <span className="bg-[#080808] px-2 lg:bg-transparent">
+                  Hoặc nhanh hơn với
+                </span>
               </div>
             </div>
 
             {/* Social */}
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 text-white text-[12px] font-bold rounded-xl hover:bg-white/10 transition-all"
-              >
-                Google
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 text-white text-[12px] font-bold rounded-xl hover:bg-white/10 transition-all"
-              >
-                Facebook
-              </button>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="w-full">
+                <div
+                  ref={googleBtnRef}
+                  className="w-full flex justify-center"
+                />
+              </div>
             </div>
           </form>
 

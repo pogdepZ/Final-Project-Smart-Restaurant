@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosClient, { injectStore } from "../axiosClient";
+import { toast } from "react-toastify";
 
 const getInitialToken = () => {
   try {
@@ -133,14 +134,16 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       })
       .addCase(registerThunk.pending, (state) => {
-        state.loading = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(registerThunk.fulfilled, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
+        toast.success(action.payload?.message || "Register successful and please verify your email");
       })
       .addCase(registerThunk.rejected, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
+        state.error = action.payload || "Register failed";
       });
   },
 });

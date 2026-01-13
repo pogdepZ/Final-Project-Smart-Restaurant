@@ -23,7 +23,8 @@ import Cart from "../features/Customer/Cart";
 import OrderStatus from "../features/Customer/OrderStatus";
 import Bill from "../features/Customer/Bill";
 import OrderHistory from "../features/Customer/OrderHistory"; // (NEW) Xem lịch sử ăn uống
-import UserProfile from "../features/Customer/UserProfile";   // (NEW) Cập nhật thông tin khách
+import UserProfile from "../features/Customer/UserProfile"; // (NEW) Cập nhật thông tin khách
+
 
 // Admin
 import DashBoard from "../features/Admin/Dashboard";
@@ -44,6 +45,7 @@ import KitchenOrders from "../features/Kitchen/Orders";
 import KitchenHistory from "../features/Kitchen/History"; // (NEW) Lịch sử món đã nấu
 import MainLayout from "../layouts/MainLayout";
 import Booking from "../features/Customer/Booking";
+import VerifyEmail from "../features/Auth/VerifyEmail/VerifyEmail";
 
 const routers = [
   // ===== PUBLIC ROUTES (Login/Register/Scan) =====
@@ -61,6 +63,10 @@ const routers = [
       {
         path: "/scan/:tableCode",
         element: <ScanQR />,
+      },
+      {
+        path: "/verify-email",
+        element: <VerifyEmail />,
       },
       {
         path: "/menu/:tableCode",
@@ -93,7 +99,7 @@ const routers = [
       },
       {
         path: "menu",
-        element: <Menu />
+        element: <Menu />,
       },
       {
         path: "order/status",
@@ -104,8 +110,8 @@ const routers = [
         element: <Bill />,
       },
       {
-        path: 'booking',
-        element: <Booking />
+        path: "booking",
+        element: <Booking />,
       },
       // (NEW) Các trang bổ sung cho khách hàng
       {
