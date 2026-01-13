@@ -81,7 +81,11 @@ export default function MenuHeader({
           >
             <Flame
               size={14}
-              className={onlyChef ? "text-white fill-white" : "text-orange-500 fill-orange-500"}
+              className={
+                onlyChef
+                  ? "text-white fill-white"
+                  : "text-orange-500 fill-orange-500"
+              }
             />
             Chef’s picks
           </button>
@@ -89,7 +93,10 @@ export default function MenuHeader({
 
         {/* Categories + cart */}
         <div className="relative">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 pt-1 select-none scroll-smooth pr-16">
+          <div
+            className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 pt-1 select-none scroll-smooth pr-16 touch-pan-x"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
             {categories.map((c) => (
               <button
                 key={c.id}
@@ -105,31 +112,34 @@ export default function MenuHeader({
             ))}
           </div>
 
-          <Link
-            to={tableCode ? `/cart/${tableCode}` : "/cart"}
-            onClick={(e) => e.stopPropagation()}
-            className="absolute right-0 top-1/2 -translate-y-1/2
-              h-10 w-10 rounded-full border border-white/10
-              bg-neutral-900/90 backdrop-blur
-              flex items-center justify-center
-              text-gray-200 hover:text-orange-500
-              hover:border-orange-500/40 hover:shadow-[0_0_24px_rgba(249,115,22,0.25)]
-              transition-all active:scale-95"
-            aria-label="Giỏ hàng"
-            title="Giỏ hàng"
-          >
-            <ShoppingBag size={20} />
-            {cartCount > 0 && (
-              <span
-                className="absolute -top-1 -right-1 min-w-5 h-5 px-1
-                  bg-orange-500 text-white text-[11px] font-black
-                  rounded-full flex items-center justify-center
-                  shadow-[0_0_0_3px_rgba(10,10,10,0.9)]"
-              >
-                {cartCount > 99 ? "99+" : cartCount}
-              </span>
-            )}
-          </Link>
+          {/* ✅ wrapper không ăn gesture kéo ngang */}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+            <Link
+              to={tableCode ? `/cart/${tableCode}` : "/cart"}
+              onClick={(e) => e.stopPropagation()}
+              className="pointer-events-auto
+                  h-10 w-10 rounded-full border border-white/10
+                  bg-neutral-900/90 backdrop-blur
+                  flex items-center justify-center
+                  text-gray-200 hover:text-orange-500
+                  hover:border-orange-500/40 hover:shadow-[0_0_24px_rgba(249,115,22,0.25)]
+                  transition-all active:scale-95"
+              aria-label="Giỏ hàng"
+              title="Giỏ hàng"
+            >
+              <ShoppingBag size={20} />
+              {cartCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 min-w-5 h-5 px-1
+            bg-orange-500 text-white text-[11px] font-black
+            rounded-full flex items-center justify-center
+            shadow-[0_0_0_3px_rgba(10,10,10,0.9)]"
+                >
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
       </div>
     </div>
