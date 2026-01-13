@@ -27,3 +27,7 @@ exports.createUser = async ({ name, email, hashedPassword, role }) => {
   );
   return rs.rows[0];
 };
+
+exports.markUserVerified = async (userId) => {
+  await db.query("UPDATE users SET is_verified = TRUE WHERE id = $1", [userId]);
+};
