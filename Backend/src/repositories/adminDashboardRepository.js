@@ -57,7 +57,6 @@ exports.topOrderedDishes = async (limit = 5) => {
   return rows;
 };
 
-
 exports.topRatedDishes = async (limit = 5) => {
   const { rows } = await db.query(
     `
@@ -83,4 +82,109 @@ exports.topRatedDishes = async (limit = 5) => {
     rating: r.is_chef_recommended ? 4.8 : 4.5,
     reviews: r.is_chef_recommended ? 120 : 60,
   }));
+};
+
+// tuỳ bạn: chỉ tính completed/paid
+const ORDER_OK = ["completed", "COMPLETED"];
+
+exports.revenueAndOrders = async ({ from, to }) => {
+  const { rows } = await db.query(
+    `
+    select 
+      coalesce(sum(total_amount),0)::numeric as revenue,
+      count(*)::int as orders
+    from orders
+    where created_at >= $1 and created_at < $2
+      and lower(status) = any($3)
+    `,
+    [from, to, ORDER_OK.map((s) => s.toLowerCase())]
+  );
+  return rows[0];
+};
+
+exports.ordersDaily = async ({ from, to }) => {
+  const { rows } = await db.query(
+    `
+    select
+      to_char(date_trunc('day', created_at), 'YYYY-MM-DD') as date,
+      count(*)::int as orders,
+      coalesce(sum(total_amount),0)::numeric as revenue
+    from orders
+    where created_at >= $1 and created_at < $2
+      and lower(status) = any($3)
+    group by 1
+    order by 1 asc
+    `,
+    [from, to, ORDER_OK.map((s) => s.toLowerCase())]
+  );
+
+  return rows.map((r) => ({
+    date: r.date,
+    orders: Number(r.orders) || 0,
+    revenue: Number(r.revenue) || 0,
+  }));
+};
+
+exports.peakHours = async ({ from, to }) => {
+  const { rows } = await db.query(
+    `
+    select
+      extract(hour from created_at)::int as hour,
+      count(*)::int as orders
+    from orders
+    where created_at >= $1 and created_at < $2
+      and lower(status) = any($3)
+    group by 1
+    order by 1 asc
+    `,
+    [from, to, ORDER_OK.map((s) => s.toLowerCase())]
+  );
+
+  // fill 0..23
+  const map = new Map(rows.map((r) => [Number(r.hour), Number(r.orders)]));
+  return Array.from({ length: 24 }).map((_, h) => ({
+    hour: h,
+    orders: map.get(h) || 0,
+  }));
+};
+
+exports.popularItems = async ({ from, to, limit }) => {
+  const { rows } = await db.query(
+    `
+    select
+      oi.item_name as name,
+      sum(oi.quantity)::int as quantity
+    from order_items oi
+    join orders o on o.id = oi.order_id
+    where o.created_at >= $1 and o.created_at < $2
+      and lower(o.status) = any($3)
+    group by 1
+    order by 2 desc
+    limit $4
+    `,
+    [from, to, ORDER_OK.map((s) => s.toLowerCase()), limit]
+  );
+
+  return rows.map((r) => ({ name: r.name, quantity: Number(r.quantity) || 0 }));
+};
+
+exports.getRevenue = async ({ fromISO, toISO, statuses = ["completed"], paymentStatus = "paid" }) => {
+  const sql = `
+    SELECT COALESCE(SUM(o.total_amount), 0) AS total
+    FROM orders o
+    WHERE o.payment_status = $3
+      AND o.status = ANY($4::text[])
+      AND o.created_at >= $1
+      AND o.created_at <  $2
+  `;
+
+  const values = [
+    typeof fromISO === "string" ? fromISO : new Date(fromISO).toISOString(),
+    typeof toISO === "string" ? toISO : new Date(toISO).toISOString(),
+    paymentStatus,
+    statuses,
+  ];
+
+  const { rows } = await db.query(sql, values);
+  return Number(rows?.[0]?.total || 0);
 };
