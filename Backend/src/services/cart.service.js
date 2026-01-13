@@ -378,7 +378,7 @@ async function recalcOrderTotalTx(client, orderId) {
  * - update orders.total_amount
  * - return order + items + modifiers
  */
-async function syncCartByTableId({ tableId, items = [], userId = null, note = null }) {
+async function syncCartByTableId({ tableId, items = [], userId = null, note = null }, io) {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -448,6 +448,11 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
     );
 
     await client.query("commit");
+
+    if (io) {
+      io.to("kitchen_room").emit("new_order", order);
+    }
+
     return {
       order: { ...order, total_amount: total },
       items: itemsRes.rows,

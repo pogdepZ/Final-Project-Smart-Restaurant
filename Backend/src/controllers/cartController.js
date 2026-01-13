@@ -71,7 +71,9 @@ exports.syncCart = async (req, res, next) => {
       items: items || [],
       userId: null,
       note: null,
-    });
+    }, req.io);
+
+
 
     return res.json(result);
   } catch (e) {

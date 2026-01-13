@@ -13,6 +13,8 @@ router.delete("/items/:cartItemId", cartController.removeItem);
 
 // /api/cart/:cartId/items
 router.delete("/:cartId/items", cartController.clearCart);
+
+
 router.post("/sync", requireQrToken, cartController.syncCart);
 
 module.exports = router;
