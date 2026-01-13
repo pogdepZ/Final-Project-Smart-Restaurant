@@ -73,8 +73,6 @@ exports.syncCart = async (req, res, next) => {
       note: null,
     }, req.io);
 
-
-
     return res.json(result);
   } catch (e) {
     return next(e);

@@ -19,7 +19,7 @@ const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
 
   if (!table) return null;
 
-  const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
+  const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
   
   const tokenDate = new Date(table.created_at).toLocaleDateString("vi-VN", {
     year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit",

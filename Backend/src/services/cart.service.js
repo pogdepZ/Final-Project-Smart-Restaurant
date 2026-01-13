@@ -1,11 +1,18 @@
 // src/services/cart.service.js
 const { pool } = require("../config/db");
-const { normalizeModifiers, modifiersKey } = require("../utils/normalizeModifiers");
+const {
+  normalizeModifiers,
+  modifiersKey,
+} = require("../utils/normalizeModifiers");
 
 // Lưu ý: bạn cần bảng `tables` có cột `code` (tableCode) như bạn đang dùng useParams tableCode ở FE.
 function isUuid(v) {
-  return typeof v === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+  return (
+    typeof v === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      v
+    )
+  );
 }
 
 // tableCode FE đang truyền thực chất là tables.id (uuid)
@@ -112,7 +119,10 @@ async function addItemToCartTx(client, input) {
   }
 
   // cart must exist (same tx can see uncommitted insert)
-  const cartRes = await client.query(`select id from carts where id = $1 limit 1`, [cartId]);
+  const cartRes = await client.query(
+    `select id from carts where id = $1 limit 1`,
+    [cartId]
+  );
   if (!cartRes.rows[0]) {
     const err = new Error("CART_NOT_FOUND");
     err.status = 404;
@@ -164,7 +174,6 @@ async function addItemToCartTx(client, input) {
     return { affected: ins.rows[0] };
   }
 }
-
 
 async function updateCartItemQuantity(cartItemId, quantity) {
   const client = await pool.connect();
@@ -248,7 +257,10 @@ async function clearCartItems(cartId) {
   try {
     await client.query("begin");
 
-    const cartRes = await client.query(`select id from carts where id = $1 limit 1`, [cartId]);
+    const cartRes = await client.query(
+      `select id from carts where id = $1 limit 1`,
+      [cartId]
+    );
     if (!cartRes.rows[0]) {
       const err = new Error("CART_NOT_FOUND");
       err.status = 404;
@@ -293,7 +305,10 @@ async function createOrderTx(client, { tableId, userId = null, note = null }) {
   return res.rows[0];
 }
 
-async function insertOrderItemTx(client, { orderId, menuItem, quantity, note }) {
+async function insertOrderItemTx(
+  client,
+  { orderId, menuItem, quantity, note }
+) {
   const qty = Math.max(1, n(quantity, 1));
 
   // base price từ menu_items
@@ -307,13 +322,24 @@ async function insertOrderItemTx(client, { orderId, menuItem, quantity, note }) 
      values
       ($1, $2, $3, $4, $5, $6, $7)
      returning *`,
-    [orderId, menuItem.id, menuItem.name, basePrice, qty, subtotal, note || null]
+    [
+      orderId,
+      menuItem.id,
+      menuItem.name,
+      basePrice,
+      qty,
+      subtotal,
+      note || null,
+    ]
   );
 
   return res.rows[0];
 }
 
-async function insertOrderItemModifiersTx(client, { orderItemId, modifiers = [] }) {
+async function insertOrderItemModifiersTx(
+  client,
+  { orderItemId, modifiers = [] }
+) {
   if (!modifiers.length) return;
 
   const values = [];
@@ -324,9 +350,9 @@ async function insertOrderItemModifiersTx(client, { orderItemId, modifiers = [] 
     values.push(`($${k++}, $${k++}, $${k++}, $${k++})`);
     params.push(
       orderItemId,
-      m.option_id,           // modifier_option_id (nullable ok)
-      m.modifier_name,       // modifier_name
-      n(m.price, 0)          // price
+      m.option_id, // modifier_option_id (nullable ok)
+      m.modifier_name, // modifier_name
+      n(m.price, 0) // price
     );
   }
 
@@ -378,7 +404,10 @@ async function recalcOrderTotalTx(client, orderId) {
  * - update orders.total_amount
  * - return order + items + modifiers
  */
-async function syncCartByTableId({ tableId, items = [], userId = null, note = null }, io) {
+async function syncCartByTableId(
+  { tableId, items = [], userId = null, note = null },
+  io
+) {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -389,28 +418,24 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
       throw err;
     }
 
-    // 1) tạo order
+    // 1) Tạo order
     const order = await createOrderTx(client, { tableId, userId, note });
 
-    // 2) insert từng item
+    // 2) Insert từng item
     for (const it of items || []) {
+      // ... (Phần logic insert item và modifiers giữ nguyên như cũ) ...
+      // (Giả sử đoạn code insert item của bạn ở đây không đổi)
       if (!it?.menuItemId) {
         const err = new Error("MISSING_MENU_ITEM_ID");
         err.status = 400;
         throw err;
       }
-
-      // lấy menu item để copy name + price
       const menuRes = await client.query(
         `select id, name, price from public.menu_items where id = $1 limit 1`,
         [it.menuItemId]
       );
       const menuItem = menuRes.rows[0];
-      if (!menuItem) {
-        const err = new Error("MENU_ITEM_NOT_FOUND");
-        err.status = 404;
-        throw err;
-      }
+      if (!menuItem) throw new Error("MENU_ITEM_NOT_FOUND");
 
       const orderItem = await insertOrderItemTx(client, {
         orderId: order.id,
@@ -419,7 +444,6 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
         note: it.note || null,
       });
 
-      // 3) insert modifiers theo order_item_id
       const mods = normalizeModifiers2(it.modifiers || []);
       await insertOrderItemModifiersTx(client, {
         orderItemId: orderItem.id,
@@ -427,30 +451,54 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
       });
     }
 
-    // 4) tính total và update orders.total_amount
+    // 4) Tính total
     const total = await recalcOrderTotalTx(client, order.id);
 
-    // 5) trả về data đầy đủ (order + items + modifiers)
+    // 5) Lấy data trả về cho HTTP response (giữ nguyên logic cũ của bạn)
     const itemsRes = await client.query(
       `select * from public.order_items where order_id = $1 order by id asc`,
       [order.id]
     );
-
     const modsRes = await client.query(
-      `
-      select m.*
-      from public.order_item_modifiers m
-      join public.order_items i on i.id = m.order_item_id
-      where i.order_id = $1
-      order by m.id asc
-      `,
+      `select m.* from public.order_item_modifiers m join public.order_items i on i.id = m.order_item_id where i.order_id = $1 order by m.id asc`,
       [order.id]
     );
 
+    // --- QUAN TRỌNG: COMMIT TRƯỚC KHI QUERY SOCKET ---
     await client.query("commit");
 
-    if (io) {
-      io.to("kitchen_room").emit("new_order", order);
+    // --- PHẦN SỬA LẠI ĐỂ BẮN SOCKET ---
+    // Query này gom nhóm items thành mảng để Frontend Waiter/Kitchen hiển thị đúng
+    const fullOrderRes = await client.query(
+      `
+      SELECT 
+        o.*, 
+        t.table_number,
+        COALESCE(
+            json_agg(
+                json_build_object(
+                    'name', oi.item_name,   -- Đổi key thành 'name' cho khớp Frontend
+                    'qty', oi.quantity,     -- Đổi key thành 'qty' cho khớp Frontend
+                    'price', oi.price,
+                    'subtotal', oi.subtotal,
+                    'note', oi.note
+                )
+            ) FILTER (WHERE oi.id IS NOT NULL), '[]'
+        ) as items
+      FROM orders o
+      LEFT JOIN tables t ON o.table_id = t.id
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.id = $1
+      GROUP BY o.id, t.table_number
+      `,
+      [order.id] // <--- SỬA LỖI: Dùng order.id (biến ở bước 1) thay vì newOrder.id
+    );
+
+    const orderToSend = fullOrderRes.rows[0];
+
+    if (io && orderToSend) {
+      // Gửi event new_order
+      io.to("kitchen_room").emit("new_order", orderToSend);
     }
 
     return {
@@ -466,12 +514,11 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
   }
 }
 
-
 module.exports = {
   getOrCreateActiveCartByTableCode,
   addItemToCartTx,
   updateCartItemQuantity,
   removeCartItem,
   clearCartItems,
-  syncCartByTableId
+  syncCartByTableId,
 };

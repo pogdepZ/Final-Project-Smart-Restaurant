@@ -40,30 +40,55 @@ exports.createOrderItemModifier = async (
 
 // 4. Lấy danh sách đơn (Kèm thông tin bàn và Items gom nhóm)
 exports.getAll = async ({ status }) => {
+  // Query phức tạp sử dụng JSON_AGG để gom nhóm dữ liệu ngay từ Database
   let query = `
-            SELECT o.*, t.table_number,
-            COALESCE(
-                json_agg(
-                    json_build_object(
-                        'item_name', oi.item_name,
-                        'quantity', oi.quantity,
-                        'subtotal', oi.subtotal,
-                        'note', oi.note
-                    )
-                ) FILTER (WHERE oi.id IS NOT NULL), '[]'
-            ) as items
-            FROM orders o
-            LEFT JOIN tables t ON o.table_id = t.id
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-        `;
+    SELECT 
+      o.id, 
+      o.status, 
+      o.total_amount, 
+      o.created_at, 
+      o.guest_name, 
+      o.note, 
+      o.table_id,
+      t.table_number,
+      COALESCE(
+          json_agg(
+              json_build_object(
+                  'id', oi.id,
+                  'name', oi.item_name,   -- Map thành 'name' cho Frontend OrderCard
+                  'qty', oi.quantity,     -- Map thành 'qty' cho Frontend
+                  'price', oi.price,
+                  'subtotal', oi.subtotal,
+                  'note', oi.note,
+                  'modifiers', (
+                      -- Sub-query lấy modifiers của từng item
+                      SELECT COALESCE(
+                          json_agg(json_build_object(
+                              'name', oim.modifier_name, 
+                              'price', oim.price
+                          )), '[]'
+                      )
+                      FROM order_item_modifiers oim 
+                      WHERE oim.order_item_id = oi.id
+                  )
+              )
+          ) FILTER (WHERE oi.id IS NOT NULL), '[]'
+      ) as items
+    FROM orders o
+    LEFT JOIN tables t ON o.table_id = t.id
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+  `;
+
   const params = [];
 
+  // Filter theo status nếu có (Ví dụ: ?status=received)
   if (status) {
     query += ` WHERE o.status = $1`;
     params.push(status);
   }
 
-  query += ` GROUP BY o.id, t.table_number ORDER BY o.created_at DESC`;
+  // Group by bắt buộc khi dùng hàm aggregate
+  query += ` GROUP BY o.id, t.id, t.table_number ORDER BY o.created_at DESC`;
 
   const result = await db.query(query, params);
   return result.rows;

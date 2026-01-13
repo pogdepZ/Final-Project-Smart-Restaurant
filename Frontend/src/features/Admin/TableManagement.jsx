@@ -132,7 +132,7 @@ const TableManagement = () => {
     toast.info("Đang nén file ZIP...");
 
     for (const table of tables) {
-      const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
+      const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
         clientUrl
       )}`;
@@ -169,7 +169,7 @@ const TableManagement = () => {
     }
 
     for (const table of tables) {
-      const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?token=${table.qr_token}`;
+      const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
         clientUrl
       )}`;
