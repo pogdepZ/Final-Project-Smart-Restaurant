@@ -62,8 +62,6 @@ exports.clearCart = async (req, res) => {
 
 exports.syncCart = async (req, res, next) => {
   try {
-    console.log(req.qr);
-    console.log(req.body);
     const tableId = req.qr?.table_id;
     if (!tableId) return res.status(400).json({ message: "QR_MISSING_TABLE" });
 
@@ -72,6 +70,7 @@ exports.syncCart = async (req, res, next) => {
       tableId,
       items: items || [],
       userId: null,
+      note: null,
     });
 
     return res.json(result);
