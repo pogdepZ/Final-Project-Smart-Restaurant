@@ -1,14 +1,15 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectCartItems,
   selectTotalItems,
-  selectTotalPrice,
+  clearCartLocal,
   removeFromCartLocal,
   incrementLocal,
   decrementLocal,
-  clearCartLocal,
   syncCartToDb,
+  buildLineKey,
+  updateCartLineLocal,
 } from "../../store/slices/cartSlice";
 
 import {
@@ -22,6 +23,16 @@ import {
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import FoodDetailPopup from "./DetailFoodPopup";
+
+
+const money = (n) => `$${Number(n || 0).toFixed(2)}`;
+
+const calcModifierExtra = (modifiers = []) =>
+  (modifiers || []).reduce(
+    (sum, m) => sum + Number(m.price || m.price_adjustment || 0),
+    0
+  );
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -30,19 +41,27 @@ const Cart = () => {
 
   const cartItems = useSelector(selectCartItems);
   const totalItems = useSelector(selectTotalItems);
-  const totalPrice = useSelector(selectTotalPrice);
 
-  const handleRemoveItem = (item) => {
-    dispatch(removeFromCartLocal({ id: item.id, modifiers: item.modifiers || [] }));
+  // ✅ state mở popup edit
+  const [editingItem, setEditingItem] = useState(null);
+
+  const handleRemoveItem = (e, item) => {
+    e.stopPropagation();
+    const lineKey = item.lineKey || buildLineKey(item.id, item.modifiers);
+    dispatch(removeFromCartLocal({ lineKey }));
     toast.info(`Đã xóa ${item.name} khỏi giỏ hàng`);
   };
 
-  const handleIncrement = (item) => {
-    dispatch(incrementLocal({ id: item.id, modifiers: item.modifiers || [] }));
+  const handleIncrement = (e, item) => {
+    e.stopPropagation();
+    const lineKey = item.lineKey || buildLineKey(item.id, item.modifiers);
+    dispatch(incrementLocal({ lineKey }));
   };
 
-  const handleDecrement = (item) => {
-    dispatch(decrementLocal({ id: item.id, modifiers: item.modifiers || [] }));
+  const handleDecrement = (e, item) => {
+    e.stopPropagation();
+    const lineKey = item.lineKey || buildLineKey(item.id, item.modifiers);
+    dispatch(decrementLocal({ lineKey }));
   };
 
   const handleClearCart = () => {
@@ -52,13 +71,10 @@ const Cart = () => {
     }
   };
 
-  // ✅ CHECK QR TOKEN + SYNC DB
   const handleCheckout = async () => {
-    const qrToken = localStorage.getItem("qrToken"); // ✅ bạn lưu đúng key này nhé
-
+    const qrToken = localStorage.getItem("qrToken");
     if (!qrToken) {
       toast.warning("Bạn cần quét QR của bàn trước khi đặt món!");
-      // bạn có thể điều hướng tới trang scan riêng nếu có
       navigate(tableCode ? `/menu/${tableCode}` : "/scan");
       return;
     }
@@ -71,6 +87,25 @@ const Cart = () => {
       toast.error(e?.message || "Đặt món thất bại");
     }
   };
+
+  const computed = useMemo(() => {
+    const items = (cartItems || []).map((it) => {
+      const base = Number(it.price || 0);
+      const extra = calcModifierExtra(it.modifiers);
+      const unit = base + extra;
+      const qty = Number(it.quantity || 0);
+      return {
+        ...it,
+        extra,
+        unit,
+        lineTotal: unit * qty,
+        lineKey: it.lineKey || buildLineKey(it.id, it.modifiers),
+      };
+    });
+
+    const subtotal = items.reduce((s, it) => s + it.lineTotal, 0);
+    return { items, subtotal };
+  }, [cartItems]);
 
   if (!cartItems || cartItems.length === 0) {
     return (
@@ -95,9 +130,12 @@ const Cart = () => {
     );
   }
 
+  const subtotal = computed.subtotal;
+  const serviceFee = subtotal * 0.1;
+  const grandTotal = subtotal + serviceFee;
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-32">
-      {/* Header */}
       <div className="sticky top-0 z-20 bg-neutral-950/98 backdrop-blur-2xl border-b border-white/10 py-6">
         <div className="container mx-auto max-w-4xl px-4">
           <div className="flex items-center justify-between">
@@ -108,29 +146,27 @@ const Cart = () => {
               <p className="text-sm text-gray-400 mt-1">{totalItems} món</p>
             </div>
 
-            {cartItems.length > 0 && (
-              <button
-                onClick={handleClearCart}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-              >
-                <Trash2 size={16} />
-                Xóa tất cả
-              </button>
-            )}
+            <button
+              onClick={handleClearCart}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+            >
+              <Trash2 size={16} />
+              Xóa tất cả
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Cart Items */}
       <div className="container mx-auto max-w-4xl px-4 pt-6">
         <div className="space-y-4">
-          {cartItems.map((item, idx) => (
+          {computed.items.map((item) => (
             <div
-              key={`${item.id}-${idx}`} // local cart nên có thể trùng id khi khác modifiers
-              className="group bg-neutral-900 hover:bg-neutral-800 rounded-2xl p-4 transition-all duration-300 border border-white/5 hover:border-white/10"
+              key={item.lineKey}
+              onClick={() => setEditingItem(item)} // ✅ click mở popup sửa
+              className="cursor-pointer group bg-neutral-900 hover:bg-neutral-800 rounded-2xl p-4 transition-all duration-300 border border-white/5 hover:border-orange-500/20"
+              title="Nhấn để sửa tuỳ chọn"
             >
               <div className="flex gap-4">
-                {/* Image */}
                 <div className="w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-neutral-800">
                   <img
                     src={item.image || "/placeholder.png"}
@@ -140,64 +176,75 @@ const Cart = () => {
                   />
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-1">
                       <h3 className="text-lg font-bold text-white group-hover:text-orange-500 transition-colors">
                         {item.name}
                       </h3>
+
                       <button
-                        onClick={() => handleRemoveItem(item)}
+                        onClick={(e) => handleRemoveItem(e, item)}
                         className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                       >
                         <X size={18} />
                       </button>
                     </div>
 
-                    {item.modifiers && Array.isArray(item.modifiers) && item.modifiers.length > 0 && (
-                      <div className="mt-2 text-xs text-gray-400">
-                        {item.modifiers.map((m, mIdx) => (
-                          <span key={mIdx} className="mr-2">
-                            • {m.name || JSON.stringify(m)}
-                          </span>
+                    {Array.isArray(item.modifiers) && item.modifiers.length > 0 ? (
+                      <div className="mt-2 text-xs text-gray-300 space-y-1">
+                        {item.modifiers.map((m, i) => (
+                          <div
+                            key={`${item.lineKey}-m-${i}`}
+                            className="flex justify-between gap-2"
+                          >
+                            <span className="text-gray-400">
+                              • {m.group_name ? `${m.group_name}: ` : ""}
+                              <span className="text-gray-200 font-semibold">{m.name}</span>
+                            </span>
+                            <span className="text-orange-300 font-bold">
+                              {Number(m.price || 0) > 0 ? `+${money(m.price)}` : "+$0.00"}
+                            </span>
+                          </div>
                         ))}
                       </div>
+                    ) : (
+                      <div className="mt-2 text-xs text-gray-500 italic">
+                        (Nhấn để chọn tuỳ chọn)
+                      </div>
                     )}
+
+                    {item.note ? (
+                      <div className="mt-2 text-[11px] text-gray-500 italic">
+                        Ghi chú: {item.note}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex justify-between items-center mt-3">
-                    {/* Price */}
                     <div className="flex flex-col">
-                      {(() => {
-                        const price = Number(item.price) || 0;
-                        const qty = Number(item.quantity) || 0;
-                        return (
-                          <>
-                            <span className="text-xl font-black text-orange-500">
-                              ${(price * qty).toFixed(2)}
-                            </span>
-                            <span className="text-xs text-gray-600">
-                              ${price.toFixed(2)} × {qty}
-                            </span>
-                          </>
-                        );
-                      })()}
+                      <span className="text-xl font-black text-orange-500">
+                        {money(item.lineTotal)}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {money(item.unit)} × {item.quantity}
+                      </span>
                     </div>
 
-                    {/* Quantity Controls */}
                     <div className="flex items-center gap-3 bg-neutral-800 rounded-full p-1">
                       <button
-                        onClick={() => handleDecrement(item)}
+                        onClick={(e) => handleDecrement(e, item)}
                         className="w-8 h-8 rounded-full bg-neutral-700 hover:bg-orange-500 text-white flex items-center justify-center transition-all active:scale-90"
                       >
                         <Minus size={16} />
                       </button>
 
-                      <span className="text-lg font-bold w-8 text-center">{item.quantity}</span>
+                      <span className="text-lg font-bold w-8 text-center">
+                        {item.quantity}
+                      </span>
 
                       <button
-                        onClick={() => handleIncrement(item)}
+                        onClick={(e) => handleIncrement(e, item)}
                         className="w-8 h-8 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center transition-all active:scale-90"
                       >
                         <Plus size={16} />
@@ -214,29 +261,22 @@ const Cart = () => {
         <div className="mt-8 bg-neutral-900 rounded-2xl p-6 border border-white/5">
           <h3 className="text-lg font-bold mb-4 text-gray-300">Chi tiết đơn hàng</h3>
 
-          {(() => {
-            const tp = Number(totalPrice) || 0;
-            return (
-              <>
-                <div className="flex justify-between text-gray-400">
-                  <span>Tổng món ({totalItems})</span>
-                  <span className="font-semibold">${tp.toFixed(2)}</span>
-                </div>
+          <div className="flex justify-between text-gray-400">
+            <span>Tổng món ({totalItems})</span>
+            <span className="font-semibold">{money(subtotal)}</span>
+          </div>
 
-                <div className="flex justify-between text-gray-400">
-                  <span>Phí dịch vụ (10%)</span>
-                  <span className="font-semibold">${(tp * 0.1).toFixed(2)}</span>
-                </div>
+          <div className="flex justify-between text-gray-400 mt-2">
+            <span>Phí dịch vụ (10%)</span>
+            <span className="font-semibold">{money(serviceFee)}</span>
+          </div>
 
-                <div className="h-px bg-white/10 my-3"></div>
+          <div className="h-px bg-white/10 my-3" />
 
-                <div className="flex justify-between text-xl font-black">
-                  <span className="text-white">Tổng cộng</span>
-                  <span className="text-orange-500">${(tp * 1.1).toFixed(2)}</span>
-                </div>
-              </>
-            );
-          })()}
+          <div className="flex justify-between text-xl font-black">
+            <span className="text-white">Tổng cộng</span>
+            <span className="text-orange-500">{money(grandTotal)}</span>
+          </div>
 
           <button
             onClick={handleCheckout}
@@ -254,6 +294,36 @@ const Cart = () => {
           </Link>
         </div>
       </div>
+
+      {/* ✅ Popup edit modifiers */}
+      {editingItem && (
+        <FoodDetailPopup
+          food={{
+            id: editingItem.id,
+            name: editingItem.name,
+            price: editingItem.price,
+            image: editingItem.image,
+            status: "available",
+          }}
+          mode="edit"
+          initial={{
+            quantity: editingItem.quantity,
+            note: editingItem.note || "",
+            modifiers: editingItem.modifiers || [],
+          }}
+          onClose={() => setEditingItem(null)}
+          onConfirm={(payload) => {
+            dispatch(
+              updateCartLineLocal({
+                fromLineKey: editingItem.lineKey,
+                next: payload,
+              })
+            );
+            setEditingItem(null);
+            toast.success("Đã cập nhật tuỳ chọn món!");
+          }}
+        />
+      )}
     </div>
   );
 };

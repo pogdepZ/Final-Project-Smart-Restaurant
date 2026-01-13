@@ -30,23 +30,10 @@ exports.getMenuItemById = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
-exports.getMenuItemById = async (req, res) => {
-  const { id } = req.params;
-  try {
-    // Bây giờ dòng này sẽ chạy ngon lành
-    const item = await menuRepo.getItemById(id);
-
-    if (!item) return res.status(404).json({ message: "Không tìm thấy món" });
-
-    // ... logic lấy modifier ...
-
-    res.json(item);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Lỗi server" });
-  }
-};
-
+exports.getMenuItemById = asyncHandler(async (req, res) => {
+  const data = await service.getMenuItemDetail(req.params.id);
+  res.json(data);
+});
 exports.getRelatedMenuItems = asyncHandler(async (req, res) => {
   // Truyền ID món ăn hiện tại vào service để tìm món liên quan
   const data = await service.getRelatedMenuItems(req.params.id);

@@ -48,24 +48,6 @@ export default function MenuItemCard({
           <span className="text-xl font-black text-white">
             ${Number(item.price).toFixed(2)}
           </span>
-
-          <button
-            disabled={item.status && item.status !== "available"}
-            onClick={(e) => onAddToCart(e, item)}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg active:scale-90 relative ${
-              item.status && item.status !== "available"
-                ? "bg-neutral-800 border-white/10 text-gray-600 cursor-not-allowed"
-                : added
-                ? "bg-green-500 border-green-500 text-white"
-                : "bg-neutral-800 border-white/10 text-orange-500 hover:bg-orange-500 hover:text-white hover:border-orange-500"
-            }`}
-          >
-            {added ? (
-              <Check size={18} className="animate-bounce" />
-            ) : (
-              <ShoppingBag size={18} />
-            )}
-          </button>
         </div>
       </div>
     </div>

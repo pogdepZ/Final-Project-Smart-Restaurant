@@ -434,6 +434,12 @@ export default function Menu() {
         <FoodDetailPopup
           food={selectedFood}
           onClose={() => setSelectedFood(null)}
+          onConfirm={(payload) => {
+         
+            dispatch(addToCartLocal(payload));
+            setSelectedFood(null);
+            toast.success(`Đã thêm ${payload.name} vào giỏ!`);
+          }}
         />
       )}
     </div>
