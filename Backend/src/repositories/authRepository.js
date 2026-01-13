@@ -31,3 +31,10 @@ exports.createUser = async ({ name, email, hashedPassword, role }) => {
 exports.markUserVerified = async (userId) => {
   await db.query("UPDATE users SET is_verified = TRUE WHERE id = $1", [userId]);
 };
+
+exports.updatePasswordById = async (id, hashedPassword) => {
+  await db.query(
+    "update users set password = $1 where id = $2",
+    [hashedPassword, id]
+  );
+};

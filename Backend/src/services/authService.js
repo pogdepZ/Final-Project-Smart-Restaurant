@@ -6,7 +6,8 @@ const jwt = require("jsonwebtoken");
 const authRepo = require("../repositories/authRepository");
 const config = require("../config");
 const { hashToken } = require("../utils/token");
-
+const passwordResetRepo = require("../repositories/passwordResetRepository");
+const { sendResetPasswordEmail } = require("../utils/mailer");
 const refreshTokenRepo = require("../repositories/refreshTokenRepository");
 const { sendVerifyEmail } = require("../utils/mailer");
 const crypto = require("crypto");
@@ -319,3 +320,71 @@ exports.resendVerifyEmail = async ({ email }) => {
   return { sent: true };
 };
 
+exports.forgotPassword = async ({ email }) => {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  if (!cleanEmail) return;
+
+  // tìm user public để lấy id/name/email
+  const user = await authRepo.findUserPublicByEmail(cleanEmail);
+
+  // ✅ Không tiết lộ tồn tại hay không
+  if (!user) return;
+
+  // revoke token cũ (optional nhưng tốt)
+  await passwordResetRepo.revokeAllByUserId(user.id);
+
+  // raw token gửi cho user qua email
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashToken(rawToken);
+
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 phút
+  await passwordResetRepo.create({
+    userId: user.id,
+    tokenHash,
+    expiresAt,
+  });
+
+  const baseUrl = process.env.APP_BASE_URL || "http://localhost:5173";
+  const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
+
+  await sendResetPasswordEmail({
+    to: user.email,
+    name: user.name,
+    resetUrl,
+  });
+};
+
+exports.resetPassword = async ({ token, newPassword }) => {
+  const rawToken = String(token || "").trim();
+  const pw = String(newPassword || "");
+
+  if (!rawToken) {
+    const err = new Error("Thiếu token đặt lại mật khẩu");
+    err.status = 400;
+    throw err;
+  }
+  if (!pw || pw.length < 6) {
+    const err = new Error("Mật khẩu tối thiểu 6 ký tự");
+    err.status = 400;
+    throw err;
+  }
+
+  const tokenHash = hashToken(rawToken);
+  const stored = await passwordResetRepo.findValid(tokenHash);
+
+  if (!stored) {
+    const err = new Error("Link không hợp lệ hoặc đã hết hạn");
+    err.status = 400;
+    throw err;
+  }
+
+  // hash mật khẩu mới
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(pw, salt);
+
+  await authRepo.updatePasswordById(stored.user_id, hashedPassword);
+  await passwordResetRepo.markUsed(stored.id);
+
+  // ✅ option bảo mật: revoke refresh tokens của user sau khi đổi pass
+  // await refreshTokenRepo.revokeAllByUserId(stored.user_id);
+};
