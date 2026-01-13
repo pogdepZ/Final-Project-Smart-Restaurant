@@ -1,6 +1,7 @@
-const service = require('../services/menuService');
+const service = require("../services/menuService");
 // helper wrap async để khỏi try/catch lặp
-const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
 
 // ===== CATEGORIES =====
 exports.getCategories = asyncHandler(async (req, res) => {
@@ -29,6 +30,10 @@ exports.getMenuItemById = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
+exports.getMenuItemById = asyncHandler(async (req, res) => {
+  const data = await service.getMenuItemDetail(req.params.id);
+  res.json(data);
+});
 exports.getRelatedMenuItems = asyncHandler(async (req, res) => {
   // Truyền ID món ăn hiện tại vào service để tìm món liên quan
   const data = await service.getRelatedMenuItems(req.params.id);
@@ -43,7 +48,11 @@ exports.createMenuItem = asyncHandler(async (req, res) => {
 
 exports.updateMenuItem = asyncHandler(async (req, res) => {
   const imageUrl = req.file ? req.file.path : undefined;
-  const updated = await service.updateMenuItem(req.params.id, req.body, imageUrl);
+  const updated = await service.updateMenuItem(
+    req.params.id,
+    req.body,
+    imageUrl
+  );
   res.json(updated);
 });
 

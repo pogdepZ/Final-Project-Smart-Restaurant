@@ -25,7 +25,7 @@ const Booking = () => {
 
     const grouped = tablesData.reduce((acc, table) => {
       const locationName = table.location || "Khu vực khác";
-      
+
       if (!acc[locationName]) {
         acc[locationName] = [];
       }
@@ -48,13 +48,14 @@ const Booking = () => {
       setLoading(true);
       try {
         const data = await tableApi.getTables(filters);
-        
+
         if (!mounted) return;
 
         // Transform the flat data into the nested structure needed for rendering
-        const processedData = groupTablesByLocation(Array.isArray(data) ? data : []);
+        const processedData = groupTablesByLocation(
+          Array.isArray(data) ? data : []
+        );
         setAreas(processedData);
-
       } catch (err) {
         console.error(err);
         toast.error(err?.message || "Lỗi tải danh sách bàn");
@@ -79,7 +80,8 @@ const Booking = () => {
   // simulate scan
   const handleSimulateScan = () => {
     if (selectedTable) {
-      navigate(`/scan/${selectedTable.id}`);
+      // Sửa dòng này: Thêm query param token vào URL
+      navigate(`/scan/${selectedTable.id}?qrToken=${selectedTable.qr_token}`);
     }
   };
 
@@ -92,8 +94,8 @@ const Booking = () => {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-white">
         <div className="flex flex-col items-center gap-2">
-           <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-           <p>Đang tải sơ đồ...</p>
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <p>Đang tải sơ đồ...</p>
         </div>
       </div>
     );
@@ -145,7 +147,8 @@ const Booking = () => {
                     // API returns "active". Assuming "active" = available.
                     const isOccupied = table.status === "occupied";
                     const isReserved = table.status === "reserved";
-                    const isAvailable = table.status === "available" || table.status === "active";
+                    const isAvailable =
+                      table.status === "available" || table.status === "active";
 
                     return (
                       <button
@@ -191,7 +194,7 @@ const Booking = () => {
                           }`}
                         >
                           {/* FIX: Use table_number instead of name */}
-                          {table.table_number} 
+                          {table.table_number}
                         </span>
 
                         <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -239,7 +242,7 @@ const Booking = () => {
 
               <div className="bg-white p-4 rounded-xl inline-block mb-6 mx-auto">
                 <QRCode
-                  value={`${window.location.origin}/scan/${selectedTable.id}`}
+                  value={`${window.location.origin}/scan/${selectedTable.id}?qrToken=${selectedTable.qr_token}`}
                   size={200}
                   level="H"
                 />

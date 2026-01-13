@@ -8,6 +8,12 @@ exports.adminOnly = (req, res, next) => {
   return res.status(403).json({ message: "Chỉ Admin mới được phép" });
 };
 
+exports.waiterOnly = (req, res, next) => {
+  const role = req.user?.role;
+  if (role === "WAITER" || role === "waiter") return next();
+  return res.status(403).json({ message: "Chỉ nhân viên phục vụ mới được phép" });
+};
+
 exports.staffOnly = (req, res, next) => {
   const role = req.user?.role;
   if (role !== "USER" && role !== "user") return next();

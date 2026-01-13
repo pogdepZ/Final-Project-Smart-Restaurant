@@ -1,77 +1,110 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Receipt, Search, RefreshCw, Filter } from "lucide-react";
+import axiosClient from "../../store/axiosClient";
+import { useSocket } from "../../context/SocketContext";
 
-import { useOrdersMock } from "../../hooks/useOrdersMock";
-import { useOrderNotificationsMock } from "../../hooks/useOrderNotificationsMock";
-import OrderCard from "..//../Components/OrderCard";
+// Import Components
+import OrderCard from "../../Components/OrderCard";
 import OrderDetailModal from "../../Components/OrderDetailModal";
 
 export default function WaiterOrdersPage() {
-  const [statusFilter, setStatusFilter] = useState("pending"); // pending | accepted | rejected | all
+  const socket = useSocket();
+  
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Mặc định hiển thị tab "received" (Pending)
+  const [statusFilter, setStatusFilter] = useState("received"); 
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const {
-    orders,
-    setOrders,
-    isLoading,
-    isRefreshing,
-    error,
-    refresh,
-    accept,
-    reject,
-    knownIdsRef,
-  } = useOrdersMock();
+  // 1. Fetch Orders từ API
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      // Gọi API lấy tất cả đơn để client tự filter tab cho mượt
+      // Hoặc gọi /orders?status=received nếu muốn tối ưu
+      const res = await axiosClient.get('/orders'); 
+      setOrders(Array.isArray(res) ? res : []); 
+    } catch (error) {
+      console.error(error);
+      toast.error("Lỗi tải đơn hàng");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // ✅ Thông báo tách riêng (mock)
-  useOrderNotificationsMock({
-    enabled: true,
-    intervalMs: 5000,
-    knownIdsRef,
-    onNewOrders: (newOrders) => {
-      setOrders((prev) => {
-        const next = [...newOrders, ...prev];
-        next.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        return next;
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  // 2. Lắng nghe Socket Real-time
+  useEffect(() => {
+    if (!socket) return;
+
+    // Khi có khách đặt món mới -> Thêm vào list Pending
+    const handleNewOrder = (newOrder) => {
+      setOrders(prev => {
+        // Tránh trùng lặp
+        if (prev.find(o => o.id === newOrder.id)) return prev;
+        console.log('New order received via socket:', newOrder);
+        return [newOrder, ...prev]; // Thêm lên đầu
       });
-    },
-    onJumpToPending: () => setStatusFilter("pending"),
-  });
+      toast.info(`🔔 Đơn mới: Bàn ${newOrder.table_number || 'Mang về'}`);
+    };
 
+    // Khi trạng thái thay đổi (Bếp làm xong, hoặc Waiter khác accept) -> Update list
+    const handleUpdateOrder = (updatedOrder) => {
+      setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+      
+      if (updatedOrder.status === 'ready') {
+        toast.success(`✅ Món bàn ${updatedOrder.table_number} đã xong!`);
+      }
+    };
+
+    socket.on('new_order', handleNewOrder);
+    socket.on('update_order', handleUpdateOrder);
+
+    return () => {
+      socket.off('new_order', handleNewOrder);
+      socket.off('update_order', handleUpdateOrder);
+    };
+  }, [socket]);
+
+  // 3. Logic Lọc & Tìm kiếm Client-side
   const filteredOrders = useMemo(() => {
     const q = search.trim().toLowerCase();
+    
     return orders.filter((o) => {
+      // Filter theo Tab (Status)
       const matchStatus = statusFilter === "all" ? true : o.status === statusFilter;
+      
+      // Filter theo Search text
       const matchSearch =
         !q ||
         o.id.toLowerCase().includes(q) ||
-        (o.tableNumber || "").toLowerCase().includes(q) ||
-        o.items.some((it) => it.name.toLowerCase().includes(q));
+        (o.table_number || "").toLowerCase().includes(q) ||
+        (o.items || []).some((it) => it.name.toLowerCase().includes(q));
+        
       return matchStatus && matchSearch;
     });
   }, [orders, search, statusFilter]);
 
-  async function onAccept(orderId) {
+  // 4. Actions (Chấp nhận / Từ chối)
+  const handleUpdateStatus = async (orderId, status) => {
     try {
-      await accept(orderId);
-      toast.success("Đã chấp nhận đơn.");
+      await axiosClient.patch(`/orders/${orderId}`, { status });
+      toast.success(status === 'preparing' ? "Đã nhận đơn & Chuyển bếp" : "Đã cập nhật");
+      // Socket sẽ trả về update_order để update UI, nhưng ta update luôn cho nhanh
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
     } catch (e) {
-      toast.error(e?.message || "Chấp nhận đơn thất bại.");
+      toast.error("Lỗi cập nhật");
     }
-  }
-
-  async function onReject(orderId) {
-    try {
-      await reject(orderId);
-      toast.info("Đã từ chối đơn.");
-    } catch (e) {
-      toast.error(e?.message || "Từ chối đơn thất bại.");
-    }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen bg-neutral-950 text-white font-sans">
       {/* Header */}
       <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur-md">
         <div className="container mx-auto max-w-6xl px-4 py-5">
@@ -83,67 +116,57 @@ export default function WaiterOrdersPage() {
                   Waiter Console
                 </span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-black mt-3">
-                Quản lý{" "}
-                <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
-                  Đơn đặt món
-                </span>
+              <h1 className="text-2xl md:text-3xl font-black mt-3 text-white">
+                Quản lý Đơn Hàng
               </h1>
-              <p className="text-gray-400 text-sm mt-1">
-                Nhận đơn mới, chấp nhận/từ chối và xem chi tiết theo bàn.
-              </p>
             </div>
 
-            <button
-              onClick={refresh}
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all active:scale-95 inline-flex items-center gap-2"
-            >
-              <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
-              Làm mới
+            <button onClick={fetchOrders} className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all inline-flex items-center gap-2">
+              <RefreshCw size={18} /> Làm mới
             </button>
           </div>
 
-          {/* Controls */}
+          {/* Controls Bar */}
           <div className="mt-5 flex flex-col md:flex-row md:items-center gap-3">
+            {/* Search Box */}
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm theo mã đơn (OD-...), bàn (T05), hoặc tên món..."
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-11 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/50 transition-all shadow-lg"
+                placeholder="Tìm theo mã đơn, số bàn, tên món..."
+                className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/50"
               />
             </div>
 
+            {/* Filter Tabs (Dropdown style) */}
             <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
               <Filter size={16} className="text-gray-400" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-sm text-gray-200 outline-none"
+                className="bg-transparent text-sm text-gray-200 outline-none cursor-pointer [&>option]:bg-neutral-900"
               >
-                <option value="pending">Chờ xử lý</option>
-                <option value="accepted">Đã chấp nhận</option>
-                <option value="rejected">Đã từ chối</option>
+                <option value="received">⏳ Chờ xử lý ({orders.filter(o => o.status === 'received').length})</option>
+                <option value="preparing">🔥 Đang nấu ({orders.filter(o => o.status === 'preparing').length})</option>
+                <option value="ready">✅ Sẵn sàng ({orders.filter(o => o.status === 'ready').length})</option>
+                <option value="completed">💰 Đã xong</option>
+                <option value="cancelled">❌ Đã hủy</option>
                 <option value="all">Tất cả</option>
               </select>
             </div>
           </div>
-
-          {error && (
-            <div className="mt-4 p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-              {error}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Content */}
+      {/* Main Content List */}
       <div className="container mx-auto max-w-6xl px-4 py-6 pb-24">
-        {isLoading ? (
-          <SkeletonList />
+        {loading ? (
+          <div className="text-center py-20 text-gray-500">Đang tải dữ liệu...</div>
         ) : filteredOrders.length === 0 ? (
-          <EmptyState statusFilter={statusFilter} />
+          <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/5">
+            <p className="text-gray-400">Không tìm thấy đơn hàng nào ở trạng thái này.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredOrders.map((order) => (
@@ -151,73 +174,31 @@ export default function WaiterOrdersPage() {
                 key={order.id}
                 order={order}
                 onView={() => setSelectedOrder(order)}
-                onAccept={() => onAccept(order.id)}
-                onReject={() => onReject(order.id)}
+                // Nút Chấp nhận chỉ hiện khi status = received
+                onAccept={() => handleUpdateStatus(order.id, 'preparing')} 
+                // Nút Từ chối
+                onReject={() => handleUpdateStatus(order.id, 'cancelled')}
               />
             ))}
           </div>
         )}
       </div>
 
+      {/* Modal chi tiết */}
       {selectedOrder && (
         <OrderDetailModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          onAccept={() => onAccept(selectedOrder.id)}
-          onReject={() => onReject(selectedOrder.id)}
+          onAccept={() => {
+              handleUpdateStatus(selectedOrder.id, 'preparing');
+              setSelectedOrder(null);
+          }}
+          onReject={() => {
+              handleUpdateStatus(selectedOrder.id, 'cancelled');
+              setSelectedOrder(null);
+          }}
         />
       )}
-    </div>
-  );
-}
-
-function EmptyState({ statusFilter }) {
-  const title =
-    statusFilter === "pending"
-      ? "Chưa có đơn chờ xử lý"
-      : statusFilter === "accepted"
-        ? "Chưa có đơn đã chấp nhận"
-        : statusFilter === "rejected"
-          ? "Chưa có đơn đã từ chối"
-          : "Chưa có đơn nào";
-
-  return (
-    <div className="rounded-2xl bg-neutral-900/60 border border-white/10 p-10 text-center">
-      <div className="mx-auto w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-        <Receipt className="text-orange-500" />
-      </div>
-      <div className="mt-4 text-white font-black text-xl">{title}</div>
-      <p className="mt-2 text-gray-400 text-sm max-w-md mx-auto">
-        Khi có khách đặt món, hệ thống sẽ hiện đơn ở đây và gửi thông báo tự động.
-      </p>
-    </div>
-  );
-}
-
-function SkeletonList() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-2xl bg-neutral-900/60 border border-white/10 p-5 animate-pulse"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="h-5 w-40 bg-white/10 rounded" />
-              <div className="mt-3 h-4 w-64 bg-white/10 rounded" />
-              <div className="mt-4 h-4 w-56 bg-white/10 rounded" />
-              <div className="mt-2 h-4 w-52 bg-white/10 rounded" />
-            </div>
-            <div className="h-10 w-24 bg-white/10 rounded" />
-          </div>
-          <div className="mt-5 flex gap-2">
-            <div className="h-10 flex-1 bg-white/10 rounded-xl" />
-            <div className="h-10 w-28 bg-white/10 rounded-xl" />
-            <div className="h-10 w-32 bg-white/10 rounded-xl" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
