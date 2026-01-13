@@ -25,6 +25,14 @@ export default function StatusBadge({ status }) {
       </span>
     );
   }
+  if( status === "preparing") {
+    return (
+      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold">
+        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+        Đang chuẩn bị
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-200 text-xs font-bold">
       <span className="w-1.5 h-1.5 rounded-full bg-red-400" />

@@ -84,6 +84,8 @@ export const syncCartToDb = createAsyncThunk(
         })),
       };
 
+      console.log("Syncing cart to DB with payload:", payload); 
+
       const res = await cartApi.sync(payload, qrToken);
       return res;
     } catch (err) {

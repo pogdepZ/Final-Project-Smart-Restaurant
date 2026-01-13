@@ -165,3 +165,28 @@ exports.updateStatus = async (id, data, io) => {
     
     return fullOrder; // Trả về full data cho Controller luôn
 }
+
+// Xử lý Accept/Reject từng món
+exports.updateItemStatus = async (itemId, status) => {
+    // 1. Update status item
+    const updatedItem = await orderRepo.updateItemStatus(itemId, status);
+    if (!updatedItem) throw new Error("Món không tồn tại");
+
+    // 2. Nếu Từ chối (rejected) -> Trừ tiền tổng đơn hàng
+    if (status === 'rejected') {
+        await orderRepo.decreaseOrderTotal(updatedItem.order_id, updatedItem.subtotal);
+    }
+
+    // 3. Lấy lại Full Order để bắn Socket (quan trọng để đồng bộ giao diện)
+    const fullOrder = await orderRepo.getById(updatedItem.order_id);
+
+    // 4. Kiểm tra logic tự động cập nhật trạng thái đơn cha (Optional)
+    // Ví dụ: Nếu tất cả món đều 'rejected' -> Đơn cha thành 'cancelled'
+    // Ví dụ: Nếu có ít nhất 1 món 'accepted' -> Đơn cha thành 'preparing'
+    // (Bạn có thể thêm logic này sau nếu muốn xịn hơn)
+
+    // 5. Bắn Socket
+    socketService.notifyOrderUpdate(fullOrder);
+
+    return fullOrder;
+};

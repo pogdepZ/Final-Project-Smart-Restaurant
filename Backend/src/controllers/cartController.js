@@ -66,6 +66,7 @@ exports.syncCart = async (req, res, next) => {
     if (!tableId) return res.status(400).json({ message: "QR_MISSING_TABLE" });
 
     const { items } = req.body || {};
+    console.log("Syncing cart for tableId:", tableId, "with items:", items);
     const result = await cartService.syncCartByTableId({
       tableId,
       items: items || [],

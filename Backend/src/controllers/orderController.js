@@ -43,3 +43,16 @@ exports.updateOrderStatus = async (req, res) => {
     res.status(status).json({ message: err.message });
   }
 };
+
+exports.updateOrderItemStatus = async (req, res) => {
+    const { itemId } = req.params;
+    const { status } = req.body; // 'accepted' | 'rejected'
+
+    try {
+      const order = await orderService.updateItemStatus(itemId, status);
+      res.json({ message: "Đã cập nhật món", order });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: err.message });
+    }
+};

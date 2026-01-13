@@ -481,7 +481,17 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
                     'qty', oi.quantity,     -- Đổi key thành 'qty' cho khớp Frontend
                     'price', oi.price,
                     'subtotal', oi.subtotal,
-                    'note', oi.note
+                    'note', oi.note,
+                    'modifiers', (
+                        SELECT COALESCE(
+                            json_agg(json_build_object(
+                                'name', oim.modifier_name, 
+                                'price', oim.price
+                            )), '[]'
+                        )
+                        FROM public.order_item_modifiers oim 
+                        WHERE oim.order_item_id = oi.id
+                    )
                 )
             ) FILTER (WHERE oi.id IS NOT NULL), '[]'
         ) as items
@@ -503,7 +513,7 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
       io.to("kitchen_room").emit("new_order", orderToSend);
     }
 
-    return {
+    return { 
       order: { ...order, total_amount: total },
       items: itemsRes.rows,
       modifiers: modsRes.rows,
