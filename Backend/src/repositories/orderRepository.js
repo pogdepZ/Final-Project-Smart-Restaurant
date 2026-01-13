@@ -96,35 +96,41 @@ exports.getAll = async ({ status }) => {
 
 // 5. Lấy chi tiết đơn theo ID
 exports.getById = async (id) => {
-  // Lấy thông tin chung
-  const orderRes = await db.query(
-    `SELECT o.*, t.table_number 
-             FROM orders o 
-             LEFT JOIN tables t ON o.table_id = t.id WHERE o.id = $1`,
-    [id]
-  );
-  if (orderRes.rows.length === 0) return null;
-  const order = orderRes.rows[0];
-
-  // Lấy items và modifiers
-  const itemsRes = await db.query(
-    `
-            SELECT 
-                oi.*,
-                COALESCE(
-                    json_agg(json_build_object('name', oim.modifier_name, 'price', oim.price)) 
-                    FILTER (WHERE oim.id IS NOT NULL), '[]'
-                ) as modifiers
-            FROM order_items oi
-            LEFT JOIN order_item_modifiers oim ON oi.id = oim.order_item_id
-            WHERE oi.order_id = $1
-            GROUP BY oi.id
-        `,
-    [id]
-  );
-
-  order.items = itemsRes.rows;
-  return order;
+  const query = `
+    SELECT 
+      o.*, 
+      t.table_number,
+      COALESCE(
+          json_agg(
+              json_build_object(
+                  'id', oi.id,
+                  'name', oi.item_name,   -- Quan trọng: phải khớp key với Frontend
+                  'qty', oi.quantity,
+                  'price', oi.price,
+                  'subtotal', oi.subtotal,
+                  'note', oi.note,
+                  'modifiers', (
+                      SELECT COALESCE(
+                          json_agg(json_build_object(
+                              'name', oim.modifier_name, 
+                              'price', oim.price
+                          )), '[]'
+                      )
+                      FROM order_item_modifiers oim 
+                      WHERE oim.order_item_id = oi.id
+                  )
+              )
+          ) FILTER (WHERE oi.id IS NOT NULL), '[]'
+      ) as items
+    FROM orders o
+    LEFT JOIN tables t ON o.table_id = t.id
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    WHERE o.id = $1
+    GROUP BY o.id, t.table_number
+  `;
+  
+  const result = await db.query(query, [id]);
+  return result.rows[0];
 };
 
 // 6. Cập nhật trạng thái

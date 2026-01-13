@@ -6,11 +6,11 @@ export default function KitchenOrderCard({ order, onView, onStart, onComplete })
   if (!order) return null;
 
   // in order
-  // console.log(">>>>>> order in KitchenOrderCard:", order);
+  console.log(">>>>>> order in KitchenOrderCard:", order);
 
 
   const items = order.items || [];
-  console.log(">>>>>> order items:", items);
+  // console.log(">>>>>> order items:", items);
 
 
   const totalItems = items.reduce((acc, item) => acc + (Number(item.qty) || 0), 0);

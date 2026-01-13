@@ -404,10 +404,7 @@ async function recalcOrderTotalTx(client, orderId) {
  * - update orders.total_amount
  * - return order + items + modifiers
  */
-async function syncCartByTableId(
-  { tableId, items = [], userId = null, note = null },
-  io
-) {
+async function syncCartByTableId({ tableId, items = [], userId = null, note = null }, io) {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -430,13 +427,16 @@ async function syncCartByTableId(
         err.status = 400;
         throw err;
       }
+      // Lấy thông tin menu item từ DB
       const menuRes = await client.query(
         `select id, name, price from public.menu_items where id = $1 limit 1`,
         [it.menuItemId]
       );
+
       const menuItem = menuRes.rows[0];
       if (!menuItem) throw new Error("MENU_ITEM_NOT_FOUND");
 
+      // Insert order item
       const orderItem = await insertOrderItemTx(client, {
         orderId: order.id,
         menuItem,
@@ -495,6 +495,8 @@ async function syncCartByTableId(
     );
 
     const orderToSend = fullOrderRes.rows[0];
+
+    console.log("Emitting new_order event via Socket.io:", orderToSend);
 
     if (io && orderToSend) {
       // Gửi event new_order

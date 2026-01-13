@@ -137,21 +137,31 @@ exports.getOrderDetails = async (id) => {
 
 // --- 4. Cập nhật trạng thái ---
 exports.updateStatus = async (id, data, io) => {
-    const updatedOrder = await orderRepo.updateStatus(id, data);
-    if (!updatedOrder) {
+    // 1. Thực hiện Update vào DB (Chỉ để đổi status)
+    const rawUpdated = await orderRepo.updateStatus(id, data);
+
+    if (!rawUpdated) {
         const err = new Error("Lỗi cập nhật hoặc đơn không tồn tại");
         err.status = 500; throw err;
     }
 
+    // 2. QUAN TRỌNG: Lấy lại Full Info (kèm items, table_number...)
+    const fullOrder = await orderRepo.getById(id);
+
+    console.log("Socket Payload (Full):", fullOrder); // Debug xem có items chưa
+
+    // 3. Bắn Socket với Full Data
     if (io) {
-        io.to("kitchen_room").emit("update_order", updatedOrder);
-        if (updatedOrder.table_id) {
-            io.to(`table_${updatedOrder.table_id}`).emit("order_status_update", {
-                orderId: updatedOrder.id,
-                status: updatedOrder.status,
+        // Kitchen cần full items để hiển thị card
+        io.to("kitchen_room").emit("update_order", fullOrder);
+        
+        if (fullOrder.table_id) {
+            io.to(`table_${fullOrder.table_id}`).emit("order_status_update", {
+                orderId: fullOrder.id,
+                status: fullOrder.status,
             });
         }
     }
-    return updatedOrder;
+    
+    return fullOrder; // Trả về full data cho Controller luôn
 }
-

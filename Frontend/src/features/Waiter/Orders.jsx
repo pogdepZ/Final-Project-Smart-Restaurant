@@ -48,9 +48,9 @@ export default function WaiterOrdersPage() {
       setOrders(prev => {
         // Tránh trùng lặp
         if (prev.find(o => o.id === newOrder.id)) return prev;
-        toast.info(`🔔 Đơn mới: Bàn ${newOrder.table_number || 'Mang về'}`);
         return [newOrder, ...prev]; // Thêm lên đầu
       });
+      toast.info(`🔔 Đơn mới: Bàn ${newOrder.table_number || 'Mang về'}`);
     };
 
     // Khi trạng thái thay đổi (Bếp làm xong, hoặc Waiter khác accept) -> Update list

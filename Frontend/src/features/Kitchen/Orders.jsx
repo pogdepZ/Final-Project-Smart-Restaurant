@@ -37,10 +37,11 @@ export default function KitchenPage() {
       if (updatedOrder.status === 'preparing') {
         console.log(">>>>>> updatedOrder in KitchenPage SOCKET:", updatedOrder);
         setOrders(prev => {
-            if (prev.find(o => o.id === updatedOrder.id)) return prev;
-            toast.info(`🍳 Nấu món mới: ${updatedOrder.table_id}`);
-            return [updatedOrder, ...prev];
+          if (prev.find(o => o.id === updatedOrder.id)) return prev;
+          return [updatedOrder, ...prev];
         });
+        toast.info(`🍳 Nấu món mới: ${updatedOrder.table_id}`);
+
       } else {
         setOrders(prev => prev.filter(o => o.id !== updatedOrder.id));
       }
