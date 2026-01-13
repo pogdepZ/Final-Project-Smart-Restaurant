@@ -195,7 +195,7 @@ const routers = [
   // ===== KITCHEN =====
   {
     path: "/kitchen",
-    element: <ProtectedRoute roles={["KITCHEN"]} />,
+    element: <ProtectedRoute roles={["kitchen"]} />,
     children: [
       {
         children: [
