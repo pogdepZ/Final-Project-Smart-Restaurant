@@ -1,4 +1,5 @@
 const TableRepository = require("../repositories/tableRepository");
+const AuthRepo = require("../repositories/authRepository");
 const jwt = require("jsonwebtoken");
 const QRCode = require("qrcode");
 // Kiểm tra kỹ đường dẫn này trong project của bạn
@@ -135,10 +136,26 @@ class TableService {
     await TableRepository.updateQRToken(id, token);
 
     return { 
-        message: "Đã làm mới mã QR", 
-        qr_token: token, 
-        qr_image: qrImage 
+      message: "Đã làm mới mã QR", 
+      qr_token: token, 
+      qr_image: qrImage 
     };
+  }
+
+  async assignTableToWaiter(waiterId, tableId) {
+    const table = await TableRepository.findById(tableId);
+    
+    if (!table) throw new Error("Bàn không tồn tại");
+    const waiter = await AuthRepo.findUserById(waiterId);
+    if (!waiter || waiter.role !== 'waiter') throw new Error("Nhân viên phục vụ không tồn tại");
+    await TableRepository.assignTableToWaiter(waiterId, tableId);
+    return {
+      message: "Phân công thành công",
+    };
+  }
+
+  async getByWaiterId(waiterId) {
+    return await TableRepository.getByWaiterId(waiterId);
   }
 }
 

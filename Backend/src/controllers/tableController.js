@@ -30,9 +30,13 @@ exports.createTable = async (req, res) => {
 
 exports.updateTable = async (req, res) => {
   try {
-    const result = await tableService.updateTable(req.params.id, req.body, req.io);
+    const result = await tableService.updateTable(
+      req.params.id,
+      req.body,
+      req.io
+    );
     res.json(result);
-  } catch (err) { 
+  } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
@@ -60,5 +64,34 @@ exports.regenerateQR = async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// 6. Lấy danh sách bàn được phân công (Cho Waiter)
+exports.getMyTables = async (req, res) => {
+  try {
+    const waiterId = req.user.id; // Lấy từ Token
+    const tables = await tableService.getByWaiterId(waiterId);
+    console.log("Assigned tables:", tables);
+    res.json(tables);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi lấy danh sách bàn" });
+  }
+};
+
+// 7. Phân công bàn (Cho Admin)
+exports.assignTable = async (req, res) => {
+  const { waiter_id, table_id } = req.body;
+  console.log(waiter_id, table_id);
+  if (!waiter_id || !table_id)
+    return res.status(400).json({ message: "Thiếu thông tin" });
+
+  try {
+    await tableService.assignTableToWaiter(waiter_id, table_id);
+    res.json({ message: "Phân công thành công" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi phân công" });
   }
 };

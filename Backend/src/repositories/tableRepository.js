@@ -105,6 +105,38 @@ class TableRepository {
         const result = await db.query('SELECT * FROM tables WHERE id = $1', [id]);
         return result.rows[0];
     }
+
+    // 8. Phân công bàn (Admin dùng)
+    async assignTableToWaiter(waiterId, tableId) {
+        // Dùng ON CONFLICT để nếu đã gán rồi thì thôi không lỗi
+        const result = await db.query(
+            `INSERT INTO table_assignments (waiter_id, table_id) VALUES ($1, $2) 
+             ON CONFLICT DO NOTHING`,
+            [waiterId, tableId]
+        );
+        return result.rows[0];
+    }
+
+    // 9. Lấy bàn theo Waiter ID
+    async getByWaiterId(waiterId) {
+        const result = await db.query(
+            `SELECT t.* 
+             FROM tables t
+             JOIN table_assignments ta ON t.id = ta.table_id
+             WHERE ta.waiter_id = $1
+             ORDER BY t.table_number ASC`,
+            [waiterId]
+        );
+        return result.rows;
+    }
+    
+    // 10. Hủy phân công (Optional)
+    async unassignTable(waiterId, tableId) {
+        await db.query(
+            `DELETE FROM table_assignments WHERE waiter_id = $1 AND table_id = $2`,
+            [waiterId, tableId]
+        );
+    }
 }
 
 module.exports = new TableRepository();

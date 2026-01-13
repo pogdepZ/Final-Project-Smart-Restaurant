@@ -11,5 +11,7 @@ router.patch('/:id/status', protect, adminOnly, tableController.toggleStatus);
 router.post('/:id/regenerate', protect, adminOnly, tableController.regenerateQR);
 router.post('/regenerate-all', protect, adminOnly, tableController.regenerateQR);
 
+// Assign Table (Admin)
+router.post('/assign', protect, adminOnly, tableController.assignTable);
 
 module.exports = router;
