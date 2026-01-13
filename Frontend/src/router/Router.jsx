@@ -166,7 +166,7 @@ const routers = [
   // ===== WAITER =====
   {
     path: "/waiter",
-    element: <ProtectedRoute roles={["WAITER"]} />,
+    element: <ProtectedRoute roles={["waiter"]} />,
     children: [
       {
         children: [
