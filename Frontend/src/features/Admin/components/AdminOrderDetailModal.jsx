@@ -1,6 +1,7 @@
 import React from "react";
 import { X, ReceiptText } from "lucide-react";
-import { formatVND } from "../utils/adminFormat";
+import { formatVND } from "../../../utils/adminFormat";
+import ScrollArea from "../../../Components/ScrollArea";
 
 const STATUS_META = {
   received: {
@@ -172,75 +173,77 @@ export default function OrderDetailModal({
                   <div className="text-xs text-gray-400">{items.length} món</div>
                 </div>
 
-                <div className="max-h-105 overflow-auto">
-                  {items.length === 0 ? (
-                    <div className="p-6 text-center">
-                      <div className="text-white font-bold">Chưa có item</div>
-                      <div className="text-gray-400 text-sm mt-1">
-                        API chưa trả về items hoặc order này không có món.
+                <ScrollArea>
+                  <div className="max-h-105 overflow-auto">
+                    {items.length === 0 ? (
+                      <div className="p-6 text-center">
+                        <div className="text-white font-bold">Chưa có item</div>
+                        <div className="text-gray-400 text-sm mt-1">
+                          API chưa trả về items hoặc order này không có món.
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <table className="w-full min-w-50">
-                      <thead className="bg-neutral-950/60 border-b border-white/10">
-                        <tr className="text-left text-xs text-gray-400">
-                          <th className="py-3 pl-4 pr-3 w-[60%]">Món</th>
-                          <th className="py-3 px-3 w-[12%]">Số lượng</th>
-                        </tr>
-                      </thead>
+                    ) : (
+                      <table className="w-full min-w-50">
+                        <thead className="bg-neutral-950/60 border-b border-white/10">
+                          <tr className="text-left text-xs text-gray-400">
+                            <th className="py-3 pl-4 pr-3 w-[60%]">Món</th>
+                            <th className="py-3 px-3 w-[12%]">Số lượng</th>
+                          </tr>
+                        </thead>
 
-                      <tbody>
-                        {items.map((it, idx) => {
-                          const key = it.id ?? `${order?.id}-item-${idx}`;
-                          const total =
-                            typeof it.totalPrice === "number"
-                              ? it.totalPrice
-                              : typeof it.unitPrice === "number" && typeof it.quantity === "number"
-                                ? it.unitPrice * it.quantity
-                                : null;
+                        <tbody>
+                          {items.map((it, idx) => {
+                            const key = it.id ?? `${order?.id}-item-${idx}`;
+                            const total =
+                              typeof it.totalPrice === "number"
+                                ? it.totalPrice
+                                : typeof it.unitPrice === "number" && typeof it.quantity === "number"
+                                  ? it.unitPrice * it.quantity
+                                  : null;
 
-                          return (
-                            <React.Fragment key={key}>
-                              {/* Row 1: tên món + qty */}
-                              <tr className="border-b border-white/5">
-                                <td className="py-3 pl-4 pr-3 align-top">
-                                  <div className="text-gray-100 font-semibold">
-                                    {it.name ?? "—"}
-                                  </div>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {it.note
-                                      ? `Note: ${it.note}`
-                                      : it.modifiers
-                                        ? `Modifiers: ${JSON.stringify(it.modifiers)}`
-                                        : "—"}
-                                  </div>
-                                </td>
+                            return (
+                              <React.Fragment key={key}>
+                                {/* Row 1: tên món + qty */}
+                                <tr className="border-b border-white/5">
+                                  <td className="py-3 pl-4 pr-3 align-top">
+                                    <div className="text-gray-100 font-semibold">
+                                      {it.name ?? "—"}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {it.note
+                                        ? `Note: ${it.note}`
+                                        : it.modifiers
+                                          ? `Modifiers: ${JSON.stringify(it.modifiers)}`
+                                          : "—"}
+                                    </div>
+                                  </td>
 
-                                <td className="py-3 px-3 align-top text-center">
-                                  <div className="text-gray-200 font-bold">
-                                    {it.quantity ?? "—"}
-                                  </div>
-                                </td>
-                              </tr>
+                                  <td className="py-3 px-3 align-top text-center">
+                                    <div className="text-gray-200 font-bold">
+                                      {it.quantity ?? "—"}
+                                    </div>
+                                  </td>
+                                </tr>
 
-                              {/* Row 2: giá */}
-                              <tr className="border-b border-white/50 bg-white/3 text-right">
-                                <td colSpan={3} className="py-2 pl-4 pr-4">
-                                  <div className="text-sm text-gray-400 font-bold">
-                                    {typeof it.unitPrice === "number" && typeof it.quantity === "number"
-                                      ? `Giá: ${formatVND(total)}`
-                                      : "Giá: —"}
-                                  </div>
-                                </td>
-                              </tr>
-                            </React.Fragment>
-                          );
-                        })}
+                                {/* Row 2: giá */}
+                                <tr className="border-b border-white/50 bg-white/3 text-right">
+                                  <td colSpan={3} className="py-2 pl-4 pr-4">
+                                    <div className="text-sm text-gray-400 font-bold">
+                                      {typeof it.unitPrice === "number" && typeof it.quantity === "number"
+                                        ? `Giá: ${formatVND(total)}`
+                                        : "Giá: —"}
+                                    </div>
+                                  </td>
+                                </tr>
+                              </React.Fragment>
+                            );
+                          })}
 
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </ScrollArea>
 
                 <div className="px-4 py-3 border-t border-white/10 flex items-center justify-end">
                   <button

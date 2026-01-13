@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, PlusSquare } from "lucide-react";
-import { adminMenuApi } from "../services/adminMenuApi";
-import { formatVND } from "../utils/adminFormat";
-import ScrollArea from "./ScrollArea";
-
+import { adminMenuApi } from "../../../services/adminMenuApi";
+import { formatVND } from "../../../utils/adminFormat";
+import ScrollArea from "../../../Components/ScrollArea";
+import MultiSelectCombobox from "../../../Components/MultiSelectCombobox";
+import { toast } from "react-toastify";
 
 const ITEM_STATUS = [
   { value: "available", label: "available" },
@@ -18,6 +19,9 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [modifierGroups, setModifierGroups] = useState([]); // list group
+  const [selectedGroupIds, setSelectedGroupIds] = useState([]); // mảng uuid
+  const [loadingGroups, setLoadingGroups] = useState(false);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState(0);
   const [status, setStatus] = useState("available");
   const [imageUrl, setImageUrl] = useState("");
@@ -27,6 +31,15 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const modifierGroupOptions = useMemo(() => {
+    return (modifierGroups || []).map((g) => ({
+      value: g.id,
+      label: g.name,
+      subLabel: `${g.selectionType} • ${g.isRequired ? "required" : "optional"} • min ${g.minSelections} / max ${g.maxSelections}`,
+    }));
+  }, [modifierGroups]);
+
+
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -35,6 +48,25 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
       document.body.style.overflow = prev || "auto";
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    (async () => {
+      try {
+        setLoadingGroups(true);
+        // API này bạn tạo ở adminMenuApi / adminModifierApi
+        const res = await adminMenuApi.getModifierGroups({ status: "active" });
+        setModifierGroups(res?.groups || res?.data?.groups || []);
+      } catch (e) {
+        console.error(e);
+        // không chặn tạo món, nhưng bạn có thể setError nếu muốn
+      } finally {
+        setLoadingGroups(false);
+      }
+    })();
+  }, [open]);
+
 
 
   if (!open) return null;
@@ -71,6 +103,8 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
     setStatus("available");
     setImageUrl("");
     setChefRecommended(false);
+    setSelectedGroupIds([]);
+    setModifierGroups([]);
     setError("");
   };
 
@@ -92,28 +126,41 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
     if (isUploading) return setError("Ảnh đang upload, vui lòng chờ.");
     if (!imageUrl) return setError("Vui lòng upload ảnh món ăn trước khi tạo.");
 
-
     try {
       setLoading(true);
       setError("");
-      await adminMenuApi.createMenuItem({
+
+      // ✅ 1) tạo món trước để có ID
+      const created = await adminMenuApi.createMenuItem({
         categoryId,
         name: trimmed,
         description,
         price: numPrice,
         prepTimeMinutes: Number(prepTimeMinutes) || 0,
         status,
-        imageUrl: imageUrl || null,
+        imageUrl,
         isChefRecommended,
       });
+
+      // ✅ 2) lấy ID (tuỳ axios interceptor)
+      const newId = created?.id || created?.data?.id;
+      if (!newId) throw new Error("Tạo món thành công nhưng không nhận được ID.");
+
+      // ✅ 3) gắn modifier groups
+      if (selectedGroupIds?.length) {
+        await adminMenuApi.setMenuItemModifierGroups(newId, selectedGroupIds);
+      }
+
       onSuccess?.();
+      toast.success("Thêm món thành công");
       reset();
     } catch (e) {
-      setError(e?.response?.data?.message || "Tạo món thất bại.");
+      setError(e?.response?.data?.message || e?.message || "Tạo món thất bại.");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50">
@@ -235,6 +282,42 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
                   />
                 </div>
               </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-white font-bold">Modifiers cho món</div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      Chọn các nhóm tuỳ chọn (Size, Topping, Spicy…)
+                    </div>
+                  </div>
+                  {loadingGroups ? <div className="text-xs text-gray-500">Đang tải...</div> : null}
+                </div>
+
+                <div className="mt-3">
+                  <MultiSelectCombobox
+                    options={modifierGroupOptions}
+                    value={selectedGroupIds}
+                    onChange={setSelectedGroupIds}
+                    placeholder="Chọn modifier groups..."
+                    disabled={loadingGroups || isLoading}
+                  />
+                </div>
+
+                {/* Optional: preview danh sách đã chọn */}
+                {selectedGroupIds.length ? (
+                  <div className="mt-3 text-xs text-gray-500">
+                    Đã chọn:{" "}
+                    <span className="text-gray-200">
+                      {modifierGroupOptions
+                        .filter((o) => selectedGroupIds.includes(o.value))
+                        .map((o) => o.label)
+                        .join(", ")}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+
 
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Ảnh món ăn</label>

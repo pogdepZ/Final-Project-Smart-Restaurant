@@ -39,4 +39,16 @@ export const adminMenuApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+
+  // lấy danh sách groups (optionally kèm options)
+  getModifierGroups(params) {
+    return axiosClient.get("/admin/modifiers", { params });
+  },
+
+  // set groups cho 1 menu item
+  setMenuItemModifierGroups(id, groupIds) {
+    return axiosClient.put(`/admin/menu/items/${id}/modifier-groups`, {
+      groupIds,
+    });
+  },
 };
