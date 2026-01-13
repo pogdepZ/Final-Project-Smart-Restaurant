@@ -16,7 +16,8 @@ class TableService {
     };
 
     const token = jwt.sign(payload, process.env.QR_SECRET, { expiresIn: "2y" });
-    const clientUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/menu?token=${token}`;
+    const clientUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/menu?qrToken=${token}`;
+    console.log(clientUrl)
     const qrImage = await QRCode.toDataURL(clientUrl);
 
     return { token, qrImage };

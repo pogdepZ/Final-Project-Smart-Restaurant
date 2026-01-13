@@ -3,7 +3,35 @@ import { Clock, Table2, CheckCircle2, Eye, PlayCircle } from "lucide-react";
 import { formatTime } from "../utils/orders";
 
 export default function KitchenOrderCard({ order, onView, onStart, onComplete }) {
-  const itemsCount = order.items.reduce((s, it) => s + (it.qty || 0), 0);
+  if (!order) return null;
+
+  // in order
+  console.log(">>>>>> order in KitchenOrderCard:", order);
+
+
+  const items = order.items || [];
+  // console.log(">>>>>> order items:", items);
+
+
+  const totalItems = items.reduce((acc, item) => acc + (Number(item.qty) || 0), 0);
+
+  // Helper format thời gian
+  const formatTime = (isoString) => {
+    if (!isoString) return "";
+    return new Date(isoString).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Helper tính thời gian đã trôi qua (phút)
+  const getMinutesElapsed = (isoString) => {
+    if (!isoString) return 0;
+    const diff = new Date() - new Date(isoString);
+    return Math.floor(diff / 60000);
+  };
+
+  const elapsed = getMinutesElapsed(order.created_at);
 
   return (
     <div className="rounded-2xl bg-neutral-900/60 border border-white/10 shadow-2xl overflow-hidden h-full flex flex-col">
@@ -15,18 +43,18 @@ export default function KitchenOrderCard({ order, onView, onStart, onComplete })
             <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-300">
               <div className="inline-flex items-center gap-2">
                 <Table2 size={16} className="text-orange-500" />
-                <span className="font-semibold text-gray-200">{order.tableNumber || "—"}</span>
+                <span className="font-semibold text-gray-200">{order.table_number || "Mang về"}</span>
               </div>
               <div className="inline-flex items-center gap-2">
                 <Clock size={16} className="text-orange-500" />
-                <span>{formatTime(order.createdAt)}</span>
+                <span>{formatTime(order.created_at)}</span>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-2">
             <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs font-bold">
-              {itemsCount} món
+              {totalItems} món
             </div>
 
             {order.status === "cooking" ? (
@@ -42,7 +70,7 @@ export default function KitchenOrderCard({ order, onView, onStart, onComplete })
         </div>
 
         <div className="mt-4 space-y-2">
-          {order.items.slice(0, 4).map((it, idx) => (
+          {(items || []).slice(0, 4).map((it, idx) => (
             <div key={idx} className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-white font-semibold truncate">{it.name}</div>
@@ -52,8 +80,8 @@ export default function KitchenOrderCard({ order, onView, onStart, onComplete })
               </div>
             </div>
           ))}
-          {order.items.length > 4 && (
-            <div className="text-xs text-gray-500">+{order.items.length - 4} món khác</div>
+          {(items || []).length > 4 && (
+            <div className="text-xs text-gray-500">+{items.length - 4} món khác</div>
           )}
         </div>
 

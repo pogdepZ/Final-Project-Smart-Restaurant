@@ -6,13 +6,17 @@ import { calcTotal, formatMoneyVND, formatTime } from "../utils/orders";
 export default function OrderCard({ order, onView, onAccept, onReject }) {
   const total = calcTotal(order);
 
+  console.log(">>>>>> order:", JSON.stringify(order));
+
   return (
     <div className="rounded-2xl bg-neutral-900/60 border border-white/10 shadow-2xl overflow-hidden h-full flex flex-col">
       <div className="p-5 flex flex-col h-full">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-3">
-              <div className="text-white font-black text-lg">{order.id}</div>
+              <div className="text-white font-black text-lg">
+                {order.id}
+              </div>
               <StatusBadge status={order.status} />
             </div>
 
@@ -20,18 +24,21 @@ export default function OrderCard({ order, onView, onAccept, onReject }) {
               <div className="inline-flex items-center gap-2">
                 <Table2 size={16} className="text-orange-500" />
                 <span className="font-semibold text-gray-200">
-                  {order.tableNumber || "—"}
+                  {order.table_id || "—"}
                 </span>
               </div>
               <div className="inline-flex items-center gap-2">
                 <Clock size={16} className="text-orange-500" />
-                <span>{formatTime(order.createdAt)}</span>
+                <span>{formatTime(order.created_at)}</span>
               </div>
             </div>
 
             <div className="mt-3 text-gray-400 text-sm">
               {order.items.slice(0, 2).map((it, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-4">
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-4"
+                >
                   <span className="truncate">
                     {it.qty}× {it.name}
                   </span>
@@ -72,7 +79,7 @@ export default function OrderCard({ order, onView, onAccept, onReject }) {
             Xem chi tiết
           </button>
 
-          {order.status === "pending" ? (
+          {order.status === "received" ? (
             <>
               <button
                 onClick={onReject}

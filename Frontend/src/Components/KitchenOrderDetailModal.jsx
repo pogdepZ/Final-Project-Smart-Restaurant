@@ -19,7 +19,7 @@ export default function KitchenOrderDetailModal({ order, onClose, onComplete }) 
                 </div>
                 <div className="inline-flex items-center gap-2">
                   <Clock size={16} className="text-orange-500" />
-                  <span>{formatTime(order.createdAt)}</span>
+                  <span>{formatTime(order.created_at)}</span>
                 </div>
               </div>
             </div>
@@ -36,7 +36,7 @@ export default function KitchenOrderDetailModal({ order, onClose, onComplete }) 
             <div className="rounded-2xl bg-neutral-900/60 border border-white/10 overflow-hidden">
               <div className="p-4 flex items-center justify-between">
                 <div className="font-bold text-white">Món cần làm</div>
-                <div className="text-gray-400 text-sm">{order.items.length} món</div>
+                <div className="text-gray-400 text-sm">{(order.items || []).length} món</div>
               </div>
 
               <div className="border-t border-white/10">
@@ -68,7 +68,6 @@ export default function KitchenOrderDetailModal({ order, onClose, onComplete }) 
               </div>
             ) : null}
 
-            // chỉ đưa phần ACTIONS để bạn thay nhanh trong modal
             <div className="mt-5 flex gap-2">
               <button
                 onClick={onClose}
