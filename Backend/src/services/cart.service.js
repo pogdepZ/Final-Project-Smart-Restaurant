@@ -477,6 +477,7 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
         COALESCE(
             json_agg(
                 json_build_object(
+                    'id', oi.id,
                     'name', oi.item_name,   -- Đổi key thành 'name' cho khớp Frontend
                     'qty', oi.quantity,     -- Đổi key thành 'qty' cho khớp Frontend
                     'price', oi.price,

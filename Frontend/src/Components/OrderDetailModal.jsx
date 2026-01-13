@@ -21,7 +21,7 @@ export default function OrderDetailModal({ order: initialOrder, onClose, onAccep
   // Hàm xử lý từng món (Accept/Reject Item)
   const handleItemAction = async (itemId, status) => {
     try {
-      // 1. Gọi API Backend
+      // 1. Gọi API Backend 
       const res = await axiosClient.patch(`/orders/items/${itemId}`, { status });
       
       toast.success(status === 'accepted' ? "Đã nhận món" : "Đã từ chối món");

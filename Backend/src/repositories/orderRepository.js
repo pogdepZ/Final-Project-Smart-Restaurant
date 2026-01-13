@@ -60,6 +60,7 @@ exports.getAll = async ({ status }) => {
                   'price', oi.price,
                   'subtotal', oi.subtotal,
                   'note', oi.note,
+                  'status', oi.status,
                   'modifiers', (
                       -- Sub-query lấy modifiers của từng item
                       SELECT COALESCE(
