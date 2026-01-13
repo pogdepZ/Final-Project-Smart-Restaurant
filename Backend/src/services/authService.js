@@ -1,5 +1,6 @@
 // src/services/authService.js
 require("dotenv").config();
+const { OAuth2Client } = require("google-auth-library");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const authRepo = require("../repositories/authRepository");
@@ -11,6 +12,72 @@ const { sendVerifyEmail } = require("../utils/mailer");
 const crypto = require("crypto");
 const emailVerifyRepo = require("../repositories/emailVerifyRepository");
 
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+exports.googleLogin = async ({ credential }) => {
+  if (!credential) {
+    const err = new Error("Thiếu Google credential");
+    err.status = 400;
+    throw err;
+  }
+
+  // ✅ Verify Google ID token ở backend (chuẩn của Google)
+  const ticket = await googleClient.verifyIdToken({
+    idToken: credential,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+  const payload = ticket.getPayload(); // chứa email, name, picture,...
+
+  const email = String(payload.email || "").toLowerCase();
+  const name = payload.name || "Google User";
+
+  if (!email) {
+    const err = new Error("Google token không có email");
+    err.status = 400;
+    throw err;
+  }
+
+  // 1) tìm user theo email
+  let user = await authRepo.findUserPublicByEmail(email);
+
+  // 2) chưa có thì tạo user mới (role customer)
+  if (!user) {
+    // bạn có thể tạo thêm cột is_verified = true vì email Google verified
+    user = await authRepo.createUser({
+      name,
+      email,
+      hashedPassword: "GOOGLE_OAUTH", // hoặc cho null nếu DB cho phép
+      role: "customer",
+    });
+    // nếu DB có is_verified: bạn nên set true (cần repo update)
+  }
+
+  // 3) phát JWT giống login thường
+  const accessToken = jwt.sign(
+    { id: user.id, role: user.role, name: user.name },
+    config.auth.accessTokenSecret,
+    { expiresIn: "30m" }
+  );
+
+  const refreshToken = jwt.sign(
+    { id: user.id, role: user.role, name: user.name },
+    config.auth.refreshTokenSecret,
+    { expiresIn: "30d" }
+  );
+
+  const refreshTokenHash = hashToken(refreshToken);
+  await refreshTokenRepo.create({
+    userId: user.id,
+    tokenHash: refreshTokenHash,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+    user: { id: user.id, name: user.name, role: user.role, email: user.email },
+  };
+};
 
 exports.register = async ({ name, email, password, role }) => {
   // Input validation (backend)
@@ -92,7 +159,7 @@ exports.login = async ({ email, password }) => {
   const accessToken = jwt.sign(
     { id: user.id, role: user.role, name: user.name },
     config.auth.accessTokenSecret,
-    { expiresIn: "5m" }
+    { expiresIn: "30m" }
   );
 
   // Refresh token dài hạn

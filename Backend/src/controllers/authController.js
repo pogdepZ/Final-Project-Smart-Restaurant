@@ -104,3 +104,27 @@ exports.resendVerifyEmail = async (req, res) => {
     return res.status(err.status || 500).json({ message: err.message || "Lỗi Server" });
   }
 };
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body; // GIS trả về field "credential"
+    const { accessToken, refreshToken, user } = await authService.googleLogin({ credential });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.json({
+      message: "Đăng nhập Google thành công",
+      accessToken,
+      user,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(err.status || 500).json({ message: err.message || "Lỗi Server" });
+  }
+};
+

@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Mail,
@@ -14,9 +14,10 @@ import Input from "../../../Components/Input";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signUpSchema } from "./schema/schemaSignUp";
-import { registerThunk } from "../../../store/slices/authSlice";
+import { registerThunk, setCredentials } from "../../../store/slices/authSlice";
 import { useDispatch } from "react-redux";
 import { authApi } from "../../../services/authApi";
+import axiosClient from "../../../store/axiosClient";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -83,6 +84,41 @@ const SignUp = () => {
     };
     const res = await dispatch(registerThunk(data));
   };
+
+  const googleBtnRef = useRef(null);
+  useEffect(() => {
+    if (!window.google || !googleBtnRef.current) return;
+
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        try {
+          const res = await axiosClient.post("/auth/google", {
+            credential: response.credential,
+          });
+
+          dispatch(
+            setCredentials({ accessToken: res.accessToken, user: res.user })
+          );
+
+          const role = res?.user?.role;
+          if (role === "admin") navigate("/admin");
+          else if (role === "waiter") navigate("/waiter");
+          else if (role === "kitchen") navigate("/kitchen");
+          else navigate("/");
+        } catch (e) {
+          console.log("Google signup/signin failed:", e);
+        }
+      },
+    });
+
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      theme: "outline",
+      size: "large",
+      width: "100%",
+      text: "signup_with",
+    });
+  }, []);
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans bg-neutral-950">
@@ -259,19 +295,13 @@ const SignUp = () => {
             </div>
 
             {/* Social */}
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 text-white text-[12px] font-bold rounded-xl hover:bg-white/10 transition-all"
-              >
-                Google
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 text-white text-[12px] font-bold rounded-xl hover:bg-white/10 transition-all"
-              >
-                Facebook
-              </button>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="w-full">
+                <div
+                  ref={googleBtnRef}
+                  className="w-full flex justify-center"
+                />
+              </div>
             </div>
           </form>
 

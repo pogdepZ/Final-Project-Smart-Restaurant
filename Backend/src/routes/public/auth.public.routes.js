@@ -8,5 +8,7 @@ router.post('/refresh', authController.refreshToken);
 router.get('/check-email', authController.checkEmail);
 router.post("/verify-email", authController.verifyEmail);
 router.post("/resend-verify", authController.resendVerifyEmail);
+router.post("/google", authController.googleLogin);
+
 
 module.exports = router;
