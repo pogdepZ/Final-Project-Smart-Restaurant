@@ -48,6 +48,7 @@ export default function WaiterOrdersPage() {
       setOrders(prev => {
         // Tránh trùng lặp
         if (prev.find(o => o.id === newOrder.id)) return prev;
+        console.log('New order received via socket:', newOrder);
         return [newOrder, ...prev]; // Thêm lên đầu
       });
       toast.info(`🔔 Đơn mới: Bàn ${newOrder.table_number || 'Mang về'}`);

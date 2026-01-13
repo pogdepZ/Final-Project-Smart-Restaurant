@@ -122,7 +122,21 @@ exports.createOrder = async (data, io) => {
 
 // --- 2. Lấy danh sách ---
 exports.getOrders = async (filters) => {
-    return await orderRepo.getAll(filters);
+    // 1. Lấy dữ liệu thô từ DB
+    const orders = await orderRepo.getAll(filters);
+
+    // 2. LOGIC LỌC DỮ LIỆU CHO BẾP
+    // Nếu API đang yêu cầu lấy đơn "preparing" (tức là request từ màn hình Bếp)
+    if (filters.status === 'preparing') {
+        return orders.map(order => ({
+            ...order,
+            // Chỉ giữ lại những món KHÔNG bị từ chối
+            items: order.items.filter(item => item.status !== 'rejected')
+        })).filter(order => order.items.length > 0); // (Tùy chọn) Loại bỏ đơn hàng rỗng nếu tất cả món đều bị reject
+    }
+
+    // Nếu là trạng thái khác (received, completed...) thì trả về full để Waiter/Admin xem lịch sử
+    return orders;
 }
 
 // --- 3. Lấy chi tiết ---
@@ -148,10 +162,25 @@ exports.updateStatus = async (id, data, io) => {
     // 2. QUAN TRỌNG: Lấy lại Full Info (kèm items, table_number...)
     const fullOrder = await orderRepo.getById(id);
 
+
+
     console.log("Socket Payload (Full):", fullOrder); // Debug xem có items chưa
 
     // 3. Bắn Socket với Full Data
     if (io) {
+        
+        const orderForKitchen = {
+            ...fullOrder,
+            items: fullOrder.items.filter(item => item.status !== 'rejected')
+        };
+    
+        if (orderForKitchen.items.length > 0) {
+             io.to("kitchen_room").emit("update_order", orderForKitchen);
+        } else {
+             // Tùy chọn: Nếu từ chối hết món thì báo bếp xóa đơn đó đi (nếu đang hiện)
+             // io.to("kitchen_room").emit("update_order", { ...fullOrder, status: 'cancelled' });
+        }
+
         // Kitchen cần full items để hiển thị card
         io.to("kitchen_room").emit("update_order", fullOrder);
         
@@ -165,3 +194,28 @@ exports.updateStatus = async (id, data, io) => {
     
     return fullOrder; // Trả về full data cho Controller luôn
 }
+
+// Xử lý Accept/Reject từng món
+exports.updateItemStatus = async (itemId, status) => {
+    // 1. Update status item
+    const updatedItem = await orderRepo.updateItemStatus(itemId, status);
+    if (!updatedItem) throw new Error("Món không tồn tại");
+
+    // 2. Nếu Từ chối (rejected) -> Trừ tiền tổng đơn hàng
+    if (status === 'rejected') {
+        await orderRepo.decreaseOrderTotal(updatedItem.order_id, updatedItem.subtotal);
+    }
+
+    // 3. Lấy lại Full Order để bắn Socket (quan trọng để đồng bộ giao diện)
+    const fullOrder = await orderRepo.getById(updatedItem.order_id);
+
+    // 4. Kiểm tra logic tự động cập nhật trạng thái đơn cha (Optional)
+    // Ví dụ: Nếu tất cả món đều 'rejected' -> Đơn cha thành 'cancelled'
+    // Ví dụ: Nếu có ít nhất 1 món 'accepted' -> Đơn cha thành 'preparing'
+    // (Bạn có thể thêm logic này sau nếu muốn xịn hơn)
+
+    // 5. Bắn Socket
+    socketService.notifyOrderUpdate(fullOrder);
+
+    return fullOrder;
+};

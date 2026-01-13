@@ -242,7 +242,7 @@ const Booking = () => {
 
               <div className="bg-white p-4 rounded-xl inline-block mb-6 mx-auto">
                 <QRCode
-                  value={`${window.location.origin}/scan/${selectedTable.id}?token=${selectedTable.qr_token}`}
+                  value={`${window.location.origin}/scan/${selectedTable.id}?qrToken=${selectedTable.qr_token}`}
                   size={200}
                   level="H"
                 />

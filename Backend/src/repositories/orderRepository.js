@@ -60,6 +60,7 @@ exports.getAll = async ({ status }) => {
                   'price', oi.price,
                   'subtotal', oi.subtotal,
                   'note', oi.note,
+                  'status', oi.status,
                   'modifiers', (
                       -- Sub-query lấy modifiers của từng item
                       SELECT COALESCE(
@@ -104,11 +105,12 @@ exports.getById = async (id) => {
           json_agg(
               json_build_object(
                   'id', oi.id,
-                  'name', oi.item_name,   -- Quan trọng: phải khớp key với Frontend
+                  'name', oi.item_name,  
                   'qty', oi.quantity,
                   'price', oi.price,
                   'subtotal', oi.subtotal,
                   'note', oi.note,
+                  'status', oi.status,
                   'modifiers', (
                       SELECT COALESCE(
                           json_agg(json_build_object(
@@ -152,4 +154,22 @@ exports.updateStatus = async (id, { status, payment_status }) => {
 
   const result = await db.query(query, params);
   return result.rows[0];
+};
+
+
+// 2. Thêm hàm updateItemStatus
+exports.updateItemStatus = async (itemId, status) => {
+    const result = await db.query(
+        `UPDATE order_items SET status = $1 WHERE id = $2 RETURNING *`,
+        [status, itemId]
+    );
+    return result.rows[0];
+};
+
+// 3. Hàm trừ tiền đơn hàng (Khi từ chối món)
+exports.decreaseOrderTotal = async (orderId, amount) => {
+    await db.query(
+        `UPDATE orders SET total_amount = total_amount - $1 WHERE id = $2`,
+        [amount, orderId]
+    );
 };
