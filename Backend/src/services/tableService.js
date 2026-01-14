@@ -157,6 +157,30 @@ class TableService {
   async getByWaiterId(waiterId) {
     return await TableRepository.getByWaiterId(waiterId);
   }
+
+  async BulkRegenerateQR() {
+    const tables = await TableRepository.getAll({});
+    const results = [];
+
+    console.log("Regenerating QR for all tables:", tables);
+
+    for (const table of tables) {
+      const { token, qrImage } = await this.generateSignedQR(table.id, table.table_number);
+      await TableRepository.updateQRToken(table.id, token);
+      results.push({
+        table_id: table.id,
+        table_number: table.table_number,
+        qr_token: token,
+        qr_image: qrImage
+      });
+    }
+    return {
+      message: "Đã làm mới mã QR cho tất cả bàn",
+      tables: results
+    };
+  }
 }
+
+
 
 module.exports = new TableService();    

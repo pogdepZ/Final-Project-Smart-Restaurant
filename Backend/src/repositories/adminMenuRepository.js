@@ -434,6 +434,43 @@ async function softDeleteItem(id) {
   return rs.rows[0];
 }
 
+async function menuItemExists(menuItemId) {
+  const { rows } = await db.query(
+    `SELECT 1 FROM menu_items WHERE id = $1 LIMIT 1`,
+    [menuItemId]
+  );
+  return rows.length > 0;
+}
+
+async function replaceMenuItemGroups(menuItemId, groupIds = []) {
+  try {
+    await db.query("BEGIN");
+
+    // xoá mapping cũ
+    await db.query(
+      `DELETE FROM menu_item_modifier_groups WHERE menu_item_id = $1`,
+      [menuItemId]
+    );
+
+    // insert mapping mới (nếu có)
+    if (Array.isArray(groupIds) && groupIds.length) {
+      await db.query(
+        `
+        INSERT INTO menu_item_modifier_groups (menu_item_id, group_id)
+        SELECT $1, UNNEST($2::uuid[])
+        `,
+        [menuItemId, groupIds]
+      );
+    }
+
+    await db.query("COMMIT");
+    return true;
+  } catch (e) {
+    await db.query("ROLLBACK");
+    throw e;
+  }
+}
+
 module.exports = {
   listCategories,
   countItems,
@@ -448,4 +485,6 @@ module.exports = {
   createCategory,
   hasItemInLockedOrders,
   softDeleteItem,
+  menuItemExists,
+  replaceMenuItemGroups,
 };

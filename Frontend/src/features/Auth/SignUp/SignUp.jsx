@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Input from "../../../Components/Input";
 
+import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signUpSchema } from "./schema/schemaSignUp";

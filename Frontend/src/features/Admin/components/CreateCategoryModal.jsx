@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, Layers } from "lucide-react";
-import { adminMenuApi } from "../services/adminMenuApi";
+import { adminMenuApi } from "../../../services/adminMenuApi";
 
 export default function CreateCategoryModal({ open, onClose, onSuccess }) {
   const [name, setName] = useState("");

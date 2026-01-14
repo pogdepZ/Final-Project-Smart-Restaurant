@@ -25,7 +25,6 @@ import Bill from "../features/Customer/Bill";
 import OrderHistory from "../features/Customer/OrderHistory"; // (NEW) Xem lịch sử ăn uống
 import UserProfile from "../features/Customer/UserProfile"; // (NEW) Cập nhật thông tin khách
 
-
 // Admin
 import DashBoard from "../features/Admin/Dashboard";
 import MenuManagement from "../features/Admin/MenuManagement";
@@ -46,7 +45,9 @@ import KitchenHistory from "../features/Kitchen/History"; // (NEW) Lịch sử m
 import MainLayout from "../layouts/MainLayout";
 import Booking from "../features/Customer/Booking";
 import VerifyEmail from "../features/Auth/VerifyEmail/VerifyEmail";
-
+import Forgot from "../features/Auth/Forgot/Forgot";
+import ResetPassword from "../features/Auth/ResetPassword/ResetPassword";
+import OrderDetail from "../features/Customer/OrderDetail";
 const routers = [
   // ===== PUBLIC ROUTES (Login/Register/Scan) =====
   {
@@ -75,6 +76,14 @@ const routers = [
       {
         path: "/cart/:tableCode",
         element: <Cart />,
+      },
+      {
+        path: "/forgot",
+        element: <Forgot />,
+      },
+      {
+        path: "/reset-password",
+        element: <ResetPassword />,
       },
       // Trang báo lỗi không có quyền truy cập
       {
@@ -113,7 +122,10 @@ const routers = [
         path: "booking",
         element: <Booking />,
       },
-      // (NEW) Các trang bổ sung cho khách hàng
+      {
+        path: "orders/:id",
+        element: <OrderDetail />,
+      },
       {
         path: "history",
         element: <OrderHistory />,

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -20,7 +21,7 @@ const navItems = [
   { to: "/admin/menu", label: "Menu", icon: UtensilsCrossed },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/tables", label: "Tables", icon: MdOutlineTableBar },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+  // { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminNavbar() {
@@ -39,6 +40,7 @@ export default function AdminNavbar() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/signin");
+    toast.success("Đăng xuất thành công");
   };
 
   return (

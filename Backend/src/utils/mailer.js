@@ -39,3 +39,31 @@ exports.sendVerifyEmail = async ({ to, name, verifyUrl }) => {
     html,
   });
 };
+
+exports.sendResetPasswordEmail = async ({ to, name, resetUrl }) => {
+  const subject = "Đặt lại mật khẩu - Lumière Bistro";
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6">
+      <h2>Xin chào ${name || ""},</h2>
+      <p>Bạn vừa yêu cầu đặt lại mật khẩu.</p>
+      <p>Bấm nút bên dưới để đặt lại mật khẩu (link có hiệu lực 15 phút):</p>
+      <p>
+        <a href="${resetUrl}"
+           style="display:inline-block;padding:12px 18px;
+                  background:#f97316;color:#fff;text-decoration:none;border-radius:8px">
+          Đặt lại mật khẩu
+        </a>
+      </p>
+      <p style="color:#666;font-size:13px">
+        Nếu bạn không yêu cầu, hãy bỏ qua email này.
+      </p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
+    to,
+    subject,
+    html,
+  });
+};

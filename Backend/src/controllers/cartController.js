@@ -1,14 +1,15 @@
 // src/controllers/cart.controller.js
 const cartService = require("../services/cart.service");
+const pool = require("../config/db");
 
 function errorToHttp(res, err) {
   const status = err.status || 500;
   const message =
     err.message === "TABLE_NOT_FOUND" ? "Không tìm thấy bàn" :
-    err.message === "CART_NOT_FOUND" ? "Không tìm thấy cart" :
-    err.message === "CART_ITEM_NOT_FOUND" ? "Không tìm thấy cart item" :
-    err.message === "INVALID_QUANTITY" ? "Quantity không hợp lệ" :
-    "Lỗi server";
+      err.message === "CART_NOT_FOUND" ? "Không tìm thấy cart" :
+        err.message === "CART_ITEM_NOT_FOUND" ? "Không tìm thấy cart item" :
+          err.message === "INVALID_QUANTITY" ? "Quantity không hợp lệ" :
+            "Lỗi server";
   return res.status(status).json({ message, code: err.message });
 }
 
@@ -65,12 +66,24 @@ exports.syncCart = async (req, res, next) => {
     const tableId = req.qr?.table_id;
     if (!tableId) return res.status(400).json({ message: "QR_MISSING_TABLE" });
 
+    const tRes = await pool.query(
+      `select table_number from public.tables where id = $1 limit 1`,
+      [tableId]
+    );
+    const tableNumber = tRes.rows[0]?.table_number;
+    const guestName = tableNumber ? `Bàn ${tableNumber}` : "Guest";
     const { items } = req.body || {};
-    console.log("Syncing cart for tableId:", tableId, "with items:", items);
+    
+    let userId = null;
+    if(req.user && req.user.id){
+      userId = req.user.id;
+    }
+    
     const result = await cartService.syncCartByTableId({
       tableId,
       items: items || [],
-      userId: null,
+      userId,
+      guestName, 
       note: null,
     }, req.io);
 

@@ -11,74 +11,60 @@ import OrderDetailModal from "../../Components/OrderDetailModal";
 export default function WaiterOrdersPage() {
   const socket = useSocket();
 
-  const [activeTab, setActiveTab] = useState("orders"); // 'orders' | 'my-tables'
-  const [myTables, setMyTables] = useState([]);
+  const [activeTab, setActiveTab] = useState("orders");
 
+  // State dữ liệu
+  const [myTables, setMyTables] = useState([]);
   const [orders, setOrders] = useState([]);
+
+  // Loading
   const [loading, setLoading] = useState(true);
 
-  // Mặc định hiển thị tab "received" (Pending)
+  // Filters
   const [statusFilter, setStatusFilter] = useState("received");
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const fetchMyTables = async () => {
-    try {
-      const res = await axiosClient.get("/tables/my-tables");
-      setMyTables(res || []);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // Gọi khi chuyển tab
-  useEffect(() => {
-    if (activeTab === "my-tables") {
-      fetchMyTables();
-    }
-  }, [activeTab]);
-
-  // 1. Fetch Orders từ API
-  const fetchOrders = async () => {
+  // 1. Tải TẤT CẢ dữ liệu cần thiết 1 lần khi vào trang (Parallel Fetching)
+  const fetchAllData = async () => {
     setLoading(true);
     try {
-      // Gọi API lấy tất cả đơn để client tự filter tab cho mượt
-      // Hoặc gọi /orders?status=received nếu muốn tối ưu
-      const res = await axiosClient.get("/orders");
-      setOrders(Array.isArray(res) ? res : []);
+      // Chạy song song cả 2 API để tiết kiệm thời gian
+      const [ordersRes, tablesRes] = await Promise.all([
+        axiosClient.get("/orders"),
+        axiosClient.get("/tables/my-tables"),
+      ]);
+
+      setOrders(Array.isArray(ordersRes) ? ordersRes : []);
+      setMyTables(Array.isArray(tablesRes) ? tablesRes : []);
     } catch (error) {
       console.error(error);
-      toast.error("Lỗi tải đơn hàng");
+      toast.error("Lỗi tải dữ liệu");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchAllData();
   }, []);
 
-  // 2. Lắng nghe Socket Real-time
+  // 2. Socket Real-time
   useEffect(() => {
     if (!socket) return;
 
-    // Khi có khách đặt món mới -> Thêm vào list Pending
     const handleNewOrder = (newOrder) => {
       setOrders((prev) => {
-        // Tránh trùng lặp
         if (prev.find((o) => o.id === newOrder.id)) return prev;
-        console.log("New order received via socket:", newOrder);
-        return [newOrder, ...prev]; // Thêm lên đầu
+        return [newOrder, ...prev];
       });
       toast.info(`🔔 Đơn mới: Bàn ${newOrder.table_number || "Mang về"}`);
     };
 
-    // Khi trạng thái thay đổi (Bếp làm xong, hoặc Waiter khác accept) -> Update list
     const handleUpdateOrder = (updatedOrder) => {
       setOrders((prev) =>
         prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
       );
-
       if (updatedOrder.status === "ready") {
         toast.success(`✅ Món bàn ${updatedOrder.table_number} đã xong!`);
       }
@@ -93,34 +79,28 @@ export default function WaiterOrdersPage() {
     };
   }, [socket]);
 
-  // 3. Logic Lọc & Tìm kiếm Client-side
+  // 3. Logic Filter (Giữ nguyên)
   const filteredOrders = useMemo(() => {
     const q = search.trim().toLowerCase();
-
     return orders.filter((o) => {
-      // Filter theo Tab (Status)
       const matchStatus =
         statusFilter === "all" ? true : o.status === statusFilter;
-
-      // Filter theo Search text
       const matchSearch =
         !q ||
         o.id.toLowerCase().includes(q) ||
         (o.table_number || "").toLowerCase().includes(q) ||
         (o.items || []).some((it) => it.name.toLowerCase().includes(q));
-
       return matchStatus && matchSearch;
     });
   }, [orders, search, statusFilter]);
 
-  // 4. Actions (Chấp nhận / Từ chối)
+  // Actions
   const handleUpdateStatus = async (orderId, status) => {
     try {
       await axiosClient.patch(`/orders/${orderId}`, { status });
       toast.success(
         status === "preparing" ? "Đã nhận đơn & Chuyển bếp" : "Đã cập nhật"
       );
-      // Socket sẽ trả về update_order để update UI, nhưng ta update luôn cho nhanh
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status } : o))
       );
@@ -130,7 +110,9 @@ export default function WaiterOrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white font-sans">
+    <div
+      className="h-screen overflow-y-auto bg-neutral-950 text-white font-sans"
+      style={{ scrollbarGutter: "stable" }}>
       {/* Header */}
       <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur-md">
         <div className="container mx-auto max-w-6xl px-4 py-5">
@@ -148,7 +130,7 @@ export default function WaiterOrdersPage() {
             </div>
 
             <button
-              onClick={fetchOrders}
+              onClick={fetchAllData}
               className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all inline-flex items-center gap-2"
             >
               <RefreshCw size={18} /> Làm mới
@@ -157,7 +139,6 @@ export default function WaiterOrdersPage() {
 
           {/* Controls Bar */}
           <div className="mt-5 flex flex-col md:flex-row md:items-center gap-3">
-            {/* Search Box */}
             <div className="flex-1 relative">
               <Search
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
@@ -171,7 +152,6 @@ export default function WaiterOrdersPage() {
               />
             </div>
 
-            {/* Filter Tabs (Dropdown style) */}
             <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
               <Filter size={16} className="text-gray-400" />
               <select
@@ -198,8 +178,7 @@ export default function WaiterOrdersPage() {
             </div>
           </div>
 
-          {/* Tab Buttons */}
-          {/* TABS NAVIGATION (MỚI) */}
+          {/* TABS NAVIGATION */}
           <div className="flex gap-6 mt-6 border-b border-white/5">
             <button
               onClick={() => setActiveTab("orders")}
@@ -227,87 +206,111 @@ export default function WaiterOrdersPage() {
 
       {/* Main Content List */}
       <div className="container mx-auto max-w-6xl px-4 py-6 pb-24">
-        {activeTab === "orders" && loading ? (
-          <div className="text-center py-20 text-gray-500">
-            Đang tải dữ liệu...
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/5">
-            <p className="text-gray-400">
-              Không tìm thấy đơn hàng nào ở trạng thái này.
-            </p>
+        {loading ? (
+          <div className="flex items-center justify-center min-h-75">
+            <div className="text-gray-500 animate-pulse flex flex-col items-center">
+              <span>Đang tải dữ liệu...</span>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filteredOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onView={() => setSelectedOrder(order)}
-                // Nút Chấp nhận chỉ hiện khi status = received
-                onAccept={() => handleUpdateStatus(order.id, "preparing")}
-                // Nút Từ chối
-                onReject={() => handleUpdateStatus(order.id, "cancelled")}
-              />
-            ))}
-          </div>
+          <>
+            {/* KEY CHANGE: Thay vì dùng {activeTab === '...' && ...}
+               Ta dùng class 'hidden' vs 'block'. 
+               Cả 2 tabs đều được render sẵn trong DOM, chỉ ẩn hiện bằng CSS.
+               Chuyển tab sẽ mượt tức thì vì không có Unmount/Remount.
+            */}
+
+            {/* --- VIEW: ORDERS --- */}
+            <div
+              className={
+                activeTab === "orders"
+                  ? "block animate-in fade-in duration-300"
+                  : "hidden"
+              }
+            >
+              {filteredOrders.length === 0 ? (
+                <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="text-gray-400">
+                    Không tìm thấy đơn hàng nào ở trạng thái này.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {filteredOrders.map((order) => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      onView={() => setSelectedOrder(order)}
+                      onAccept={() => handleUpdateStatus(order.id, "preparing")}
+                      onReject={() => handleUpdateStatus(order.id, "cancelled")}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* --- VIEW: MY TABLES --- */}
+            <div
+              className={
+                activeTab === "my-tables"
+                  ? "block animate-in fade-in duration-300"
+                  : "hidden"
+              }
+            >
+              {myTables.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 bg-white/5 rounded-2xl border border-white/5">
+                  Bạn chưa được phân công bàn nào.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {myTables.map((table) => (
+                    <div
+                      key={table.id}
+                      className="bg-neutral-900 border border-white/10 p-5 rounded-xl shadow-lg relative hover:border-orange-500/30 transition-all"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-2xl font-black text-white">
+                          {table.table_number}
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-1 rounded uppercase font-bold ${
+                            table.status === "active"
+                              ? "bg-green-500/20 text-green-400"
+                              : "bg-red-500/20 text-red-400"
+                          }`}
+                        >
+                          {table.status}
+                        </span>
+                      </div>
+
+                      <div className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                        <MapPin size={14} className="text-orange-500" />{" "}
+                        {table.location}
+                      </div>
+                      <div className="text-sm text-gray-400 flex items-center gap-2">
+                        <User size={14} className="text-orange-500" />{" "}
+                        {table.capacity} Khách
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setSearch(table.table_number);
+                          setActiveTab("orders");
+                        }}
+                        className="w-full mt-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-gray-300 hover:text-white transition-all active:scale-95"
+                      >
+                        Xem đơn bàn này
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
-      {/* VIEW 2: MY TABLES (MỚI) */}
-      {activeTab === "my-tables" && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {myTables.length === 0 ? (
-            <div className="col-span-full text-center py-10 text-gray-500">
-              Bạn chưa được phân công bàn nào.
-            </div>
-          ) : (
-            myTables.map((table) => (
-              <div
-                key={table.id}
-                className="bg-neutral-900 border border-white/10 p-5 rounded-xl shadow-lg relative"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-2xl font-black text-white">
-                    {table.table_number}
-                  </span>
-                  <span
-                    className={`text-[10px] px-2 py-1 rounded uppercase font-bold ${
-                      table.status === "active"
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-red-500/20 text-red-400"
-                    }`}
-                  >
-                    {table.status}
-                  </span>
-                </div>
-
-                <div className="text-sm text-gray-400 flex items-center gap-2 mb-1">
-                  <MapPin size={14} className="text-orange-500" />{" "}
-                  {table.location}
-                </div>
-                <div className="text-sm text-gray-400 flex items-center gap-2">
-                  <User size={14} className="text-orange-500" />{" "}
-                  {table.capacity} Khách
-                </div>
-
-                {/* Nút Xem đơn của bàn này (Optional) */}
-                <button
-                  onClick={() => {
-                    setSearch(table.table_number); // Filter orders tab theo bàn này
-                    setActiveTab("orders");
-                  }}
-                  className="w-full mt-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-gray-300 transition-all"
-                >
-                  Xem đơn bàn này
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* Modal chi tiết */}
+      {/* Modal */}
       {selectedOrder && (
         <OrderDetailModal
           order={selectedOrder}
