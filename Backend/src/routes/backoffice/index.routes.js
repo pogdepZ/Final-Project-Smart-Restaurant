@@ -6,7 +6,7 @@ router.use('/menu', require('./menu.routes'));
 router.use('/modifiers', require('./modifiers.admin.routes'));
 router.use('/orders', require('./orders.routes'));
 router.use('/tables', require('./tables.routes'));
-router.use('/staff', require('./staff.routes'));
+router.use('/accounts', require('./accounts.routes'));
 router.use('/upload', require('./upload.routes'));
 
 module.exports = router;

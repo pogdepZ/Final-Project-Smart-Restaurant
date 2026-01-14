@@ -19,7 +19,7 @@ const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
   { to: "/admin/menu", label: "Menu", icon: UtensilsCrossed },
-  { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/accounts", label: "Accounts", icon: Users },
   { to: "/admin/tables", label: "Tables", icon: MdOutlineTableBar },
   // { to: "/admin/settings", label: "Settings", icon: Settings },
 ];

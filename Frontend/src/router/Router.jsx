@@ -30,8 +30,8 @@ import DashBoard from "../features/Admin/Dashboard";
 import MenuManagement from "../features/Admin/MenuManagement";
 import TableManagement from "../features/Admin/TableManagement";
 import OrderManagement from "../features/Admin/OrderManagement";
-import UserManagement from "../features/Admin/UserManagement";
 import Reports from "../features/Admin/Reports";
+import AccountsManagement from "../features/Admin/AccountsManagement";
 import Settings from "../features/Admin/Settings"; // (NEW) Cài đặt nhà hàng
 
 // Waiter
@@ -48,6 +48,7 @@ import VerifyEmail from "../features/Auth/VerifyEmail/VerifyEmail";
 import Forgot from "../features/Auth/Forgot/Forgot";
 import ResetPassword from "../features/Auth/ResetPassword/ResetPassword";
 import OrderDetail from "../features/Customer/OrderDetail";
+
 const routers = [
   // ===== PUBLIC ROUTES (Login/Register/Scan) =====
   {
@@ -164,17 +165,8 @@ const routers = [
             element: <OrderManagement />,
           },
           {
-            path: "users",
-            element: <UserManagement />,
-          },
-          {
-            path: "reports",
-            element: <Reports />,
-          },
-          // (NEW) Cài đặt thông tin nhà hàng, thuế, giờ mở cửa
-          {
-            path: "settings",
-            element: <Settings />,
+            path: "accounts",
+            element: <AccountsManagement />,
           },
         ],
       },
