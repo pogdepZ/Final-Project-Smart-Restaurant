@@ -383,6 +383,16 @@ export default function Menu() {
     [searchInput, appliedSearch]
   );
 
+  const handleSelectRelated = useCallback(async (id) => {
+  try {
+    const res = await menuApi.getMenuItemById(id);
+    const item = res?.data ?? res;
+    setSelectedFood(item);
+  } catch (e) {
+    toast.error(e?.message || "Không tải được món liên quan");
+  }
+}, []);
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
       {/* HEADER */}
@@ -434,8 +444,8 @@ export default function Menu() {
         <FoodDetailPopup
           food={selectedFood}
           onClose={() => setSelectedFood(null)}
+          onSelectFood={handleSelectRelated}
           onConfirm={(payload) => {
-         
             dispatch(addToCartLocal(payload));
             setSelectedFood(null);
             toast.success(`Đã thêm ${payload.name} vào giỏ!`);
