@@ -6,7 +6,7 @@ import {
   ClipboardList,
   UtensilsCrossed,
   Users,
-  Settings,
+  ShieldUser,
   LogOut,
   Menu as MenuIcon,
   X,
@@ -50,12 +50,12 @@ export default function AdminNavbar() {
           {/* Brand */}
           <Link to="/admin" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Shield className="text-white" size={18} />
+              <ShieldUser className="text-white" size={24} />
             </div>
             <div className="leading-tight">
-              <div className="text-white font-black tracking-wide">Admin</div>
+              <div className="text-white font-black tracking-wide font-display">Lumière Bistro</div>
               <div className="text-[10px] text-gray-400 uppercase tracking-[0.3em]">
-                Console
+                Admin
               </div>
             </div>
           </Link>

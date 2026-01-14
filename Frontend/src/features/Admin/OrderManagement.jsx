@@ -1,16 +1,19 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ClipboardList,
   Search,
   Filter,
   RefreshCcw,
-  Calendar,
   Tag,
+  Calendar,
 } from "lucide-react";
+import { toast } from "react-toastify";
+
 import { useAdminOrders } from "../../hooks/useAdminOrders";
 import { formatVND } from "../../utils/adminFormat";
 import OrderDetailModal from "./components/AdminOrderDetailModal";
 import { useAdminOrderDetail } from "../../hooks/useAdminOrderDetail";
+import PaginationBar from "../../Components/PaginationBar";
 
 // ----- helpers -----
 const STATUS_META = {
@@ -36,36 +39,9 @@ const STATUS_META = {
   },
 };
 
-function safeLower(s) {
-  return (s ?? "").toString().toLowerCase();
-}
-
-function parseYmdToLocalDate(ymd) {
-  // input: "2026-01-12" -> Date at local midnight
-  if (!ymd) return null;
-  const [y, m, d] = ymd.split("-").map((x) => Number(x));
-  if (!y || !m || !d) return null;
-  return new Date(y, m - 1, d, 0, 0, 0, 0);
-}
-
-function startOfDay(date) {
-  if (!date) return null;
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function endOfDay(date) {
-  if (!date) return null;
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
 function formatDateTime(dt) {
   if (!dt) return "—";
   const d = new Date(dt);
-  // yyyy-mm-dd hh:mm
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -74,22 +50,27 @@ function formatDateTime(dt) {
   return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 }
 
-// ----- UI bits -----
 function StatusPill({ status }) {
-  const meta = STATUS_META[status] || { label: status || "—", className: "bg-white/5 text-gray-200 border-white/10" };
+  const meta =
+    STATUS_META[status] || {
+      label: status || "—",
+      className: "bg-white/5 text-gray-200 border-white/10",
+    };
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${meta.className}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${meta.className}`}
+    >
       {meta.label}
     </span>
   );
 }
 
-function SkeletonRow({ i }) {
+function SkeletonRow() {
   return (
     <tr className="border-b border-white/5">
-      <td className="py-3 pr-3">
-        <div className="h-4 w-24 bg-white/5 rounded animate-pulse" />
-        <div className="mt-2 h-3 w-16 bg-white/5 rounded animate-pulse" />
+      <td className="py-3 pr-3 pl-4">
+        <div className="h-4 w-44 bg-white/5 rounded animate-pulse" />
+        <div className="mt-2 h-3 w-24 bg-white/5 rounded animate-pulse" />
       </td>
       <td className="py-3 px-3">
         <div className="h-4 w-28 bg-white/5 rounded animate-pulse" />
@@ -98,23 +79,52 @@ function SkeletonRow({ i }) {
         <div className="h-6 w-24 bg-white/5 rounded-full animate-pulse" />
       </td>
       <td className="py-3 px-3">
-        <div className="h-4 w-20 bg-white/5 rounded animate-pulse" />
+        <div className="h-4 w-14 bg-white/5 rounded animate-pulse" />
+        <div className="mt-2 h-3 w-28 bg-white/5 rounded animate-pulse" />
       </td>
-      <td className="py-3 pl-3 text-right">
+      <td className="py-3 pl-3 pr-4 text-right">
         <div className="ml-auto h-4 w-24 bg-white/5 rounded animate-pulse" />
+        <div className="mt-2 ml-auto h-3 w-20 bg-white/5 rounded animate-pulse" />
       </td>
     </tr>
   );
 }
 
 export default function OrderManagement() {
-  const { data, isLoading, error, refetch } = useAdminOrders();
-
   // filters
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("ALL");
   const [fromDate, setFromDate] = useState(""); // yyyy-mm-dd
   const [toDate, setToDate] = useState(""); // yyyy-mm-dd
+
+  // paging
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+
+  const resetPage = () => setPage(1);
+
+  // ✅ params gửi lên server
+  const params = useMemo(
+    () => ({
+      q,
+      status,
+      from: fromDate || "",
+      to: toDate || "",
+      page,
+      limit,
+    }),
+    [q, status, fromDate, toDate, page, limit]
+  );
+
+  const { data, isLoading, error, refetch } = useAdminOrders(params);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
+  const orders = data?.orders ?? [];
+  const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 1 };
+  const totalPages = pagination.totalPages || 1;
 
   const [selectedOrderId, setSelectedOrderId] = useState(null);
 
@@ -123,38 +133,6 @@ export default function OrderManagement() {
     isLoading: isDetailLoading,
     error: detailError,
   } = useAdminOrderDetail(selectedOrderId, !!selectedOrderId);
-
-  const orders = data?.orders ?? [];
-
-  const filtered = useMemo(() => {
-    const query = safeLower(q).trim();
-
-    const from = startOfDay(parseYmdToLocalDate(fromDate));
-    const to = endOfDay(parseYmdToLocalDate(toDate));
-
-    return orders
-      .filter((o) => {
-        // search by code
-        if (!query) return true;
-        return safeLower(o.code).includes(query);
-      })
-      .filter((o) => {
-        // status filter
-        if (status === "ALL") return true;
-        return o.status === status;
-      })
-      .filter((o) => {
-        // date range filter by createdAt
-        if (!from && !to) return true;
-        const t = new Date(o.createdAt).getTime();
-        if (from && t < from.getTime()) return false;
-        if (to && t > to.getTime()) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [orders, q, status, fromDate, toDate]);
-
-  const total = filtered.length;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -175,13 +153,17 @@ export default function OrderManagement() {
             </span>
           </h1>
           <p className="text-gray-400 text-sm mt-1">
-            Tìm theo mã • Lọc theo ngày • Lọc theo trạng thái
+            Tìm theo mã • Lọc theo ngày • Lọc theo trạng thái • Pagination
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm">
-            Tổng: <span className="text-white font-bold">{isLoading ? "—" : total}</span> đơn
+            Tổng:{" "}
+            <span className="text-white font-bold">
+              {isLoading ? "—" : pagination.total}
+            </span>{" "}
+            đơn
           </div>
 
           <button
@@ -202,30 +184,104 @@ export default function OrderManagement() {
             <div className="w-10 h-10 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
               <Filter className="text-orange-500" size={18} />
             </div>
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-5 gap-3">
+
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-15 gap-3">
               {/* Search */}
-              <div className="md:col-span-4">
+              <div className="md:col-span-7">
                 <label className="text-xs text-gray-400 mb-1 block">Tìm theo mã</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    size={18}
+                  />
                   <input
                     value={q}
-                    onChange={(e) => setQ(e.target.value)}
+                    onChange={(e) => {
+                      setQ(e.target.value);
+                      resetPage();
+                    }}
                     placeholder="VD: ORD-20260112-0008"
                     className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
                   />
                 </div>
               </div>
 
+              {/* From */}
+              <div className="md:col-span-3">
+                <label className="text-xs text-gray-400 mb-1 block">Từ ngày</label>
+                <div className="relative">
+                  <Calendar
+                    size={18}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                  />
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => {
+                      setFromDate(e.target.value);
+                      resetPage();
+                    }}
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl
+                 pl-3 pr-10 py-2.5 text-sm text-white
+                 focus:outline-none focus:border-orange-500/40 transition
+                 hover:border-white/20
+                 [color-scheme:dark]
+                 [&::-webkit-calendar-picker-indicator]:opacity-0
+                 [&::-webkit-calendar-picker-indicator]:absolute
+                 [&::-webkit-calendar-picker-indicator]:right-0
+                 [&::-webkit-calendar-picker-indicator]:w-10
+                 [&::-webkit-calendar-picker-indicator]:h-full
+                 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* To */}
+              <div className="md:col-span-3">
+                <label className="text-xs text-gray-400 mb-1 block">Đến ngày</label>
+                <div className="relative">
+                  <Calendar
+                    size={18}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                  />
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => {
+                      setToDate(e.target.value);
+                      resetPage();
+                    }}
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl
+                 pl-3 pr-10 py-2.5 text-sm text-white
+                 focus:outline-none focus:border-orange-500/40 transition
+                 hover:border-white/20
+                 [color-scheme:dark]
+                 [&::-webkit-calendar-picker-indicator]:opacity-0
+                 [&::-webkit-calendar-picker-indicator]:absolute
+                 [&::-webkit-calendar-picker-indicator]:right-0
+                 [&::-webkit-calendar-picker-indicator]:w-10
+                 [&::-webkit-calendar-picker-indicator]:h-full
+                 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  />
+                </div>
+              </div>
+
               {/* Status */}
-              <div className="md:col-span-1">
+              <div className="md:col-span-2">
                 <label className="text-xs text-gray-400 mb-1 block">Trạng thái</label>
                 <div className="relative">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <Tag
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    size={18}
+                  />
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition"
+                    onChange={(e) => {
+                      setStatus(e.target.value);
+                      resetPage();
+                    }}
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition
+                    [&>option]:bg-neutral-900 [&>option]:text-white"
                   >
                     <option value="ALL">Tất cả</option>
                     <option value="received">Chờ xử lý</option>
@@ -234,15 +290,16 @@ export default function OrderManagement() {
                     <option value="completed">Hoàn tất</option>
                     <option value="cancelled">Đã hủy</option>
                   </select>
-
                 </div>
               </div>
             </div>
 
             {/* Quick info */}
             <div className="mt-3 text-xs text-gray-400">
-              Hiển thị <span className="text-white font-bold">{isLoading ? "—" : total}</span> /{" "}
-              <span className="text-white font-bold">{isLoading ? "—" : orders.length}</span> đơn
+              Page <span className="text-white font-bold">{pagination.page}</span> /{" "}
+              <span className="text-white font-bold">{totalPages}</span> • Hiển thị{" "}
+              <span className="text-white font-bold">{orders.length}</span> /{" "}
+              <span className="text-white font-bold">{pagination.total}</span> đơn
             </div>
           </div>
         </div>
@@ -268,23 +325,28 @@ export default function OrderManagement() {
 
             <tbody>
               {isLoading
-                ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} i={i} />)
-                : filtered.map((o) => (
+                ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
+                : orders.map((o) => (
                   <tr
                     key={o.id}
-                    onClick={() => setSelectedOrderId(o.id)} // ✅ click mở modal
+                    onClick={() => setSelectedOrderId(o.id)}
                     className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
                     title="Click để xem chi tiết"
                   >
                     <td className="py-3 pr-3 pl-4 align-top">
                       <div className="text-white font-bold">{o.code}</div>
                       <div className="text-xs text-gray-400 mt-1">
-                        Bàn: <span className="text-gray-200 font-semibold">{o.tableName ?? "—"}</span>
+                        Bàn:{" "}
+                        <span className="text-gray-200 font-semibold">
+                          {o.tableName ?? "—"}
+                        </span>
                       </div>
                     </td>
 
                     <td className="py-3 px-3 align-top">
-                      <div className="text-sm text-gray-200">{formatDateTime(o.createdAt)}</div>
+                      <div className="text-sm text-gray-200">
+                        {formatDateTime(o.createdAt)}
+                      </div>
                       {o.updatedAt ? (
                         <div className="text-xs text-gray-500 mt-1">
                           Update: {formatDateTime(o.updatedAt)}
@@ -297,7 +359,9 @@ export default function OrderManagement() {
                     </td>
 
                     <td className="py-3 px-3 align-top">
-                      <div className="text-sm text-gray-200 font-semibold">{o.totalItems ?? "—"}</div>
+                      <div className="text-sm text-gray-200 font-semibold">
+                        {o.totalItems ?? "—"}
+                      </div>
                       <div className="text-xs text-gray-500 mt-1">
                         {o.note ? `Note: ${o.note}` : "—"}
                       </div>
@@ -305,7 +369,9 @@ export default function OrderManagement() {
 
                     <td className="py-3 pl-3 pr-4 align-top text-right">
                       <div className="text-white font-bold">
-                        {typeof o.totalAmount === "number" ? formatVND(o.totalAmount) : "—"}
+                        {typeof o.totalAmount === "number"
+                          ? formatVND(o.totalAmount)
+                          : "—"}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
                         {o.paymentMethod ? `Pay: ${o.paymentMethod}` : "—"}
@@ -314,12 +380,12 @@ export default function OrderManagement() {
                   </tr>
                 ))}
 
-              {!isLoading && filtered.length === 0 ? (
+              {!isLoading && orders.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-10 text-center">
                     <div className="text-white font-bold">Không có đơn phù hợp</div>
                     <div className="text-gray-400 text-sm mt-1">
-                      Thử đổi trạng thái hoặc khoảng ngày, hoặc kiểm tra mã đơn.
+                      Thử đổi filter hoặc khoảng ngày, hoặc kiểm tra mã đơn.
                     </div>
                   </td>
                 </tr>
@@ -327,15 +393,30 @@ export default function OrderManagement() {
             </tbody>
           </table>
         </div>
-        {/* ✅ Modal */}
-        <OrderDetailModal
-          open={!!selectedOrderId}
-          order={orderDetail}
-          loading={isDetailLoading}
-          error={detailError}
-          onClose={() => setSelectedOrderId(null)}
+
+        {/* ✅ Pagination */}
+        <PaginationBar
+          page={pagination.page}
+          totalPages={totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          onPrev={() => setPage((p) => Math.max(p - 1, 1))}
+          onNext={() => setPage((p) => Math.min(p + 1, totalPages))}
+          onChangeLimit={(n) => {
+            setLimit(n);
+            setPage(1);
+          }}
         />
       </div>
+
+      {/* ✅ Modal */}
+      <OrderDetailModal
+        open={!!selectedOrderId}
+        order={orderDetail}
+        loading={isDetailLoading}
+        error={detailError}
+        onClose={() => setSelectedOrderId(null)}
+      />
     </div>
   );
 }

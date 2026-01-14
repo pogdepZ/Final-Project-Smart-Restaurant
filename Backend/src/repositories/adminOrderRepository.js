@@ -1,19 +1,27 @@
+// src/repositories/adminOrderRepository.js
 const db = require("../config/db");
 
 /**
- * Helper: build where + params
+ * Helper: build WHERE + params (dynamic)
+ * - If `statuses` is provided (array) -> filter by group (priority)
+ * - Else if `status` != "ALL" -> filter by single status
+ * - from/to: filter by date (YYYY-MM-DD) inclusive on day, using [from, to+1day)
+ * - q: search by computed order code: ORD-YYYYMMDD-XXXXXX
  */
-function buildWhere({ q, status, from, to }) {
+function buildWhere({ q, status, statuses, from, to } = {}) {
   const where = [];
   const params = [];
 
-  // status
-  if (status && status !== "ALL") {
+  // ✅ group statuses has priority
+  if (Array.isArray(statuses) && statuses.length) {
+    params.push(statuses.map((s) => String(s).toLowerCase()));
+    where.push(`lower(o.status) = ANY($${params.length}::text[])`);
+  } else if (status && status !== "ALL") {
     params.push(status);
     where.push(`o.status = $${params.length}`);
   }
 
-  // from (>= from date)
+  // from (>= from date at 00:00)
   if (from) {
     params.push(from);
     where.push(`o.created_at >= ($${params.length}::date)`);
@@ -41,7 +49,7 @@ function buildWhere({ q, status, from, to }) {
   return { whereSql, params };
 }
 
-async function countOrders(filters) {
+async function countOrders(filters = {}) {
   const { whereSql, params } = buildWhere(filters);
 
   const sql = `
@@ -54,10 +62,13 @@ async function countOrders(filters) {
   return result.rows[0]?.total ?? 0;
 }
 
-async function findOrders(filters, { limit = 20, offset = 0 } = {}) {
+/**
+ * Find orders with pagination
+ * NOTE: use parameterized LIMIT/OFFSET for safety
+ */
+async function findOrders(filters = {}, { limit = 20, offset = 0 } = {}) {
   const { whereSql, params } = buildWhere(filters);
 
-  // NOTE: limit/offset đã được sanitize ở controller
   const sql = `
     SELECT
       o.id,
@@ -80,10 +91,14 @@ async function findOrders(filters, { limit = 20, offset = 0 } = {}) {
     ) oi ON oi.order_id = o.id
     ${whereSql}
     ORDER BY o.created_at DESC
-    LIMIT ${limit} OFFSET ${offset}
+    LIMIT $${params.length + 1} OFFSET $${params.length + 2}
   `;
 
-  const result = await db.query(sql, params);
+  const result = await db.query(sql, [
+    ...params,
+    Number(limit) || 20,
+    Number(offset) || 0,
+  ]);
   return result.rows;
 }
 
