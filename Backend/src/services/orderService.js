@@ -5,6 +5,23 @@ const modifierRepo = require('../repositories/modifierRepository'); // Cần rep
 const tableRepo = require('../repositories/tableRepository'); // Cần repo này để check bàn
 const socketService = require('./socketService'); // Import
 
+
+const mapItemUiStatus = (status) => {
+  switch (status) {
+    case "cooking":
+      return "Cooking";
+    case "served":
+      return "Ready";
+    case "rejected":
+      return "Rejected";
+    case "accepted":
+    case "pending":
+    default:
+      return "Queued";
+  }
+};
+
+
 // --- 1. Tạo đơn hàng ---
 exports.createOrder = async (data, io) => {
     const { table_id, items, note, guest_name } = data;
@@ -218,4 +235,28 @@ exports.updateItemStatus = async (itemId, status) => {
     socketService.notifyOrderUpdate(fullOrder);
 
     return fullOrder;
+};
+
+exports.getMyOrders = async (userId, { page, limit }) => {
+  const { rows, total } = await orderRepo.findManyByUserId(userId, { page, limit });
+
+  return {
+    data: rows,
+    meta: {
+      page,
+      limit,
+      total,
+      hasMore: page * limit < total,
+    },
+  };
+};
+
+exports.getMyOrderDetail = async (userId, orderId) => {
+  const order = await orderRepo.findOneByIdAndUserId(orderId, userId);
+  if (!order) return null;
+
+  return {
+    ...order,
+    items: (order.items || []).map((it) => ({ ...it, uiStatus: mapItemUiStatus(it.status) })),
+  };
 };

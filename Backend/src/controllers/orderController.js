@@ -56,3 +56,39 @@ exports.updateOrderItemStatus = async (req, res) => {
       res.status(500).json({ message: err.message });
     }
 };
+
+exports.getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const { page = 1, limit = 10 } = req.query;
+
+    const data = await orderService.getMyOrders(userId, {
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+    });
+
+    return res.json(data);
+  } catch (e) {
+    console.error("getMyOrders error:", e);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+
+exports.getMyOrderDetail = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const orderId = req.params.id;
+    const order = await orderService.getMyOrderDetail(userId, orderId);
+
+    if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    return res.json(order);
+  } catch (e) {
+    console.error("getMyOrderDetail error:", e);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};

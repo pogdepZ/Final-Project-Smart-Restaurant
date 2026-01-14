@@ -47,7 +47,7 @@ import Booking from "../features/Customer/Booking";
 import VerifyEmail from "../features/Auth/VerifyEmail/VerifyEmail";
 import Forgot from "../features/Auth/Forgot/Forgot";
 import ResetPassword from "../features/Auth/ResetPassword/ResetPassword";
-
+import OrderDetail from "../features/Customer/OrderDetail";
 const routers = [
   // ===== PUBLIC ROUTES (Login/Register/Scan) =====
   {
@@ -122,7 +122,10 @@ const routers = [
         path: "booking",
         element: <Booking />,
       },
-      // (NEW) Các trang bổ sung cho khách hàng
+      {
+        path: "orders/:id",
+        element: <OrderDetail />,
+      },
       {
         path: "history",
         element: <OrderHistory />,
