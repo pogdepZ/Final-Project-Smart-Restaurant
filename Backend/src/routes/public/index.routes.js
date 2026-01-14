@@ -8,5 +8,6 @@ router.use('/qr', require('./qr.public.routes'));
 router.use('/tables', require('./tables.pubic.routes'));
 router.use('/cart', require('./cart.routes'));
 router.use('/users', require('./user.routes'));
+router.use('/billing', require('./billing.routes'));
 
 module.exports = router;

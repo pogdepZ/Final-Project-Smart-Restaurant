@@ -6,7 +6,7 @@ import { calcTotal, formatMoneyVND, formatTime } from "../utils/orders";
 export default function OrderCard({ order, onView, onAccept, onReject }) {
   const total = calcTotal(order);
 
-  console.log(">>>>>> order:", JSON.stringify(order));
+  // console.log(">>>>>> order:", JSON.stringify(order));
 
   return (
     <div className="rounded-2xl bg-neutral-900/60 border border-white/10 shadow-2xl overflow-hidden h-full flex flex-col">

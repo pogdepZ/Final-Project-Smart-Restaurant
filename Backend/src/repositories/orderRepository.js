@@ -6,8 +6,15 @@ exports.createOrder = async (
   { table_id, guest_name, total_amount, note }
 ) => {
   const result = await client.query(
-    `INSERT INTO orders (table_id, guest_name, total_amount, note, status, payment_status) 
-             VALUES ($1, $2, $3, $4, 'received', 'unpaid') RETURNING *`,
+    `INSERT INTO orders (
+        table_id, guest_name, total_amount, note, status, payment_status, created_at, updated_at
+     ) 
+     VALUES (
+        $1, $2, $3, $4, 'received', 'unpaid', 
+        (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh'), -- Sửa dòng này
+        (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')  -- Sửa dòng này
+     ) 
+     RETURNING *`,
     [table_id, guest_name || "Khách lẻ", total_amount, note]
   );
   return result.rows[0];
@@ -130,7 +137,7 @@ exports.getById = async (id) => {
     WHERE o.id = $1
     GROUP BY o.id, t.table_number
   `;
-  
+
   const result = await db.query(query, [id]);
   return result.rows[0];
 };
@@ -156,22 +163,21 @@ exports.updateStatus = async (id, { status, payment_status }) => {
   return result.rows[0];
 };
 
-
 // 2. Thêm hàm updateItemStatus
 exports.updateItemStatus = async (itemId, status) => {
-    const result = await db.query(
-        `UPDATE order_items SET status = $1 WHERE id = $2 RETURNING *`,
-        [status, itemId]
-    );
-    return result.rows[0];
+  const result = await db.query(
+    `UPDATE order_items SET status = $1 WHERE id = $2 RETURNING *`,
+    [status, itemId]
+  );
+  return result.rows[0];
 };
 
 // 3. Hàm trừ tiền đơn hàng (Khi từ chối món)
 exports.decreaseOrderTotal = async (orderId, amount) => {
-    await db.query(
-        `UPDATE orders SET total_amount = total_amount - $1 WHERE id = $2`,
-        [amount, orderId]
-    );
+  await db.query(
+    `UPDATE orders SET total_amount = total_amount - $1 WHERE id = $2`,
+    [amount, orderId]
+  );
 };
 
 exports.findManyByUserId = async (userId, { page, limit }) => {

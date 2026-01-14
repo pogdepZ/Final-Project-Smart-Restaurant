@@ -1,12 +1,21 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { Receipt, Search, RefreshCw, Filter, User, MapPin } from "lucide-react";
+import {
+  Receipt,
+  Search,
+  RefreshCw,
+  Filter,
+  User,
+  MapPin,
+  X,
+} from "lucide-react";
 import axiosClient from "../../store/axiosClient";
 import { useSocket } from "../../context/SocketContext";
 
 // Import Components
 import OrderCard from "../../Components/OrderCard";
 import OrderDetailModal from "../../Components/OrderDetailModal";
+import BillModal from "../../Components/BillModal";
 
 export default function WaiterOrdersPage() {
   const socket = useSocket();
@@ -24,6 +33,9 @@ export default function WaiterOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("received");
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // Bill Modal
+  const [selectedTableForBill, setSelectedTableForBill] = useState(null);
 
   // 1. Tải TẤT CẢ dữ liệu cần thiết 1 lần khi vào trang (Parallel Fetching)
   const fetchAllData = async () => {
@@ -43,6 +55,13 @@ export default function WaiterOrdersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    // Refresh lại cả danh sách đơn và danh sách bàn
+    // fetchOrders();
+    fetchAllData();
+    setSelectedTableForBill(null); // Đóng modal
   };
 
   useEffect(() => {
@@ -112,7 +131,8 @@ export default function WaiterOrdersPage() {
   return (
     <div
       className="h-screen overflow-y-auto bg-neutral-950 text-white font-sans"
-      style={{ scrollbarGutter: "stable" }}>
+      style={{ scrollbarGutter: "stable" }}
+    >
       {/* Header */}
       <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur-md">
         <div className="container mx-auto max-w-6xl px-4 py-5">
@@ -150,6 +170,15 @@ export default function WaiterOrdersPage() {
                 placeholder="Tìm theo mã đơn, số bàn, tên món..."
                 className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/50"
               />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Xóa tìm kiếm"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
 
             <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
@@ -301,6 +330,13 @@ export default function WaiterOrdersPage() {
                       >
                         Xem đơn bàn này
                       </button>
+
+                      <button
+                        onClick={() => setSelectedTableForBill(table)} // Mở BillModal
+                        className="w-full mt-4 py-2 bg-green-600 hover:bg-green-700 border border-white/10 rounded-lg text-xs font-bold text-gray-300 hover:text-white transition-all active:scale-95"
+                      >
+                        💰 Tính tiền
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -323,6 +359,16 @@ export default function WaiterOrdersPage() {
             handleUpdateStatus(selectedOrder.id, "cancelled");
             setSelectedOrder(null);
           }}
+        />
+      )}
+
+      {/* 5. RENDER MODAL Ở CUỐI CÙNG (Trước thẻ đóng </div> chính) */}
+      {selectedTableForBill && (
+        <BillModal
+          tableId={selectedTableForBill.id}
+          tableName={selectedTableForBill.table_number}
+          onClose={() => setSelectedTableForBill(null)}
+          onPaymentSuccess={handlePaymentSuccess}
         />
       )}
     </div>
