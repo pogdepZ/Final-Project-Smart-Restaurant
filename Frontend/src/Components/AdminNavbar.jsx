@@ -6,6 +6,7 @@ import {
   ClipboardList,
   UtensilsCrossed,
   Users,
+  User,
   ShieldUser,
   LogOut,
   Menu as MenuIcon,
@@ -69,6 +70,11 @@ export default function AdminNavbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
+            <Link to="/admin/profile" className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-neutral-800 border border-orange-500/30 flex items-center justify-center text-orange-500">
+                <User size={24} />
+              </div>
+            </Link>
             <button
               onClick={logout}
               className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all active:scale-95"

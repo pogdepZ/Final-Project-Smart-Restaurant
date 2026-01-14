@@ -32,6 +32,7 @@ import TableManagement from "../features/Admin/TableManagement";
 import OrderManagement from "../features/Admin/OrderManagement";
 import Reports from "../features/Admin/Reports";
 import AccountsManagement from "../features/Admin/AccountsManagement";
+import AdminProfile from "../features/Admin/AdminProfile";
 import Settings from "../features/Admin/Settings"; // (NEW) Cài đặt nhà hàng
 
 // Waiter
@@ -154,8 +155,6 @@ const routers = [
             path: "menu",
             element: <MenuManagement />,
           },
-          // (Option) Thêm route con nếu muốn edit chi tiết
-          // { path: "menu/edit/:id", element: <EditMenuItem /> },
           {
             path: "tables",
             element: <TableManagement />,
@@ -167,6 +166,10 @@ const routers = [
           {
             path: "accounts",
             element: <AccountsManagement />,
+          },
+          {
+            path: "profile",
+            element: <AdminProfile />,
           },
         ],
       },
