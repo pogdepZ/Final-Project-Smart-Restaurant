@@ -92,3 +92,38 @@ exports.getMyOrderDetail = async (req, res) => {
     return res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+
+exports.getOrdersByTable = async (req, res) => {
+  try {
+    const qrToken = req.headers['qrToken'] || req.get('qrToken');    
+    if (!qrToken) {
+      return res.status(400).json({ message: "Thiếu table token" });
+    }
+    const orders = await orderService.getOrdersByTableToken(qrToken);    
+    return res.json(orders);
+  } catch (e) {
+
+    console.error("getOrdersByTable error:", e);
+
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.getOrderTracking = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const tableToken = req.query.tableToken;
+    if (!tableToken) {
+      return res.status(400).json({ message: "Thiếu table token" });
+    }
+    const order = await orderService.getOrderTrackingByTableToken(orderId, tableToken);
+    if (!order) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+    return res.json(order);
+  } catch (e) {
+    console.error("getOrderTracking error:", e);
+    return res.status(500).json({ message: "Lỗi server" });
+  } 
+};

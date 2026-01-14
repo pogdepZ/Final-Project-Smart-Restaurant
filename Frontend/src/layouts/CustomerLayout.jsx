@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '../Components/NavBar';
 
-const MainLayout = () => {
+const CustomerLayout = () => {
   return (
     <div className="min-h-screen bg-neutral-950 text-gray-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
       {/* Navbar luôn ở trên cùng */}
@@ -28,4 +28,4 @@ const MainLayout = () => {
   );
 };
 
-export default MainLayout;
+export default CustomerLayout;

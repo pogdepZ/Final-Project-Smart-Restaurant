@@ -42,12 +42,13 @@ import WaiterNotifications from "../features/Waiter/Notifications"; // (NEW) Th�
 // Kitchen
 import KitchenOrders from "../features/Kitchen/Orders";
 import KitchenHistory from "../features/Kitchen/History"; // (NEW) Lịch sử món đã nấu
-import MainLayout from "../layouts/MainLayout";
+import CustomerLayout from "../layouts/CustomerLayout";
 import Booking from "../features/Customer/Booking";
 import VerifyEmail from "../features/Auth/VerifyEmail/VerifyEmail";
 import Forgot from "../features/Auth/Forgot/Forgot";
 import ResetPassword from "../features/Auth/ResetPassword/ResetPassword";
 import OrderDetail from "../features/Customer/OrderDetail";
+import OrderTrackingPage from "../features/Customer/OrderTrackingPage";
 const routers = [
   // ===== PUBLIC ROUTES (Login/Register/Scan) =====
   {
@@ -96,43 +97,52 @@ const routers = [
   // ===== CUSTOMER (Main Layout) =====
   {
     path: "/",
-    element: <MainLayout />,
+    element: <ProtectedRoute roles={["customer"]}/>,
     children: [
       {
-        index: true, // Mặc định khi vào "/"
-        element: <LandingPage />,
-      },
-      {
-        path: "cart",
-        element: <Cart />,
-      },
-      {
-        path: "menu",
-        element: <Menu />,
-      },
-      {
-        path: "order/status",
-        element: <OrderStatus />,
-      },
-      {
-        path: "bill",
-        element: <Bill />,
-      },
-      {
-        path: "booking",
-        element: <Booking />,
-      },
-      {
-        path: "orders/:id",
-        element: <OrderDetail />,
-      },
-      {
-        path: "history",
-        element: <OrderHistory />,
-      },
-      {
-        path: "profile",
-        element: <UserProfile />,
+        element: <CustomerLayout />,
+        children: [
+          {
+            index: true, // Mặc định khi vào "/"
+            element: <LandingPage />,
+          },
+          {
+            path: "cart",
+            element: <Cart />,
+          },
+          {
+            path: "menu",
+            element: <Menu />,
+          },
+          {
+            path: "order/status",
+            element: <OrderStatus />,
+          },
+          {
+            path: "bill",
+            element: <Bill />,
+          },
+          {
+            path: "booking",
+            element: <Booking />,
+          },
+          {
+            path: "orders/:id",
+            element: <OrderDetail />,
+          },
+          {
+            path: "history",
+            element: <OrderHistory />,
+          },
+          {
+            path: "profile",
+            element: <UserProfile />,
+          },
+          {
+            path: "order-tracking",
+            element: <OrderTrackingPage />,
+          },
+        ],
       },
     ],
   },

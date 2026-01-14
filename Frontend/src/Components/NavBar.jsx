@@ -66,6 +66,7 @@ const Navbar = () => {
             <NavLink to="/" label="Trang chủ" />
             <NavLink to="/menu" label="Thực đơn" />
             <NavLink to="/booking" label="Sơ đồ bàn" icon={<MapPin size={16} />} />
+            <NavLink to="/order-tracking" label="Đơn của bạn" icon={<MapPin size={16} />} />
           </div>
 
           {/* 3. RIGHT ACTIONS */}

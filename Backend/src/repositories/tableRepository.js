@@ -137,6 +137,15 @@ class TableRepository {
             [waiterId, tableId]
         );
     }
+
+    async findByToken(qr_token) {
+        const result = await db.query('SELECT * FROM tables WHERE qr_token = $1', [qr_token]);
+        return result.rows[0];
+    }
 }
+
+
+
+
 
 module.exports = new TableRepository();
