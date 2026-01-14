@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import {
   UtensilsCrossed,
   Search,
@@ -12,13 +13,14 @@ import {
 import { useAdminMenuItems } from "../../hooks/useAdminMenuItems";
 import { useAdminMenuCategories } from "../../hooks/useAdminMenuCategories";
 import { formatVND } from "../../utils/adminFormat";
-import AdminMenuItemDetailModal from "../../Components/AdminMenuItemDetailModal";
+import AdminMenuItemDetailModal from "./components/AdminMenuItemDetailModal";
 import PaginationBar from "../../Components/PaginationBar";
 import ToggleSwitch from "../../Components/ToggleSwitch";
 import { useToggleChefRecommended } from "../../hooks/useToggleChefRecommended";
-import CreateCategoryModal from "../../Components/CreateCategoryModal";
-import CreateMenuItemModal from "../../Components/CreateMenuItemModal";
-import EditMenuItemModal from "../../Components/EditMenuItemModal";
+import CreateCategoryModal from "./components/CreateCategoryModal";
+import CreateMenuItemModal from "./components/CreateMenuItemModal";
+import EditMenuItemModal from "./components/EditMenuItemModal";
+import ConfirmModal from "../../Components/ConfirmModal";
 import { adminMenuApi } from "../../services/adminMenuApi";
 
 const STATUS_META = {
@@ -70,6 +72,12 @@ export default function MenuManagement() {
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);     // xem chi tiết
+  const [deleteItem, setDeleteItem] = useState(null);     // confirm xoá
+  const [deleting, setDeleting] = useState(false);
+
+
   // paging
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -103,8 +111,6 @@ export default function MenuManagement() {
 
   // ✅ loading theo từng item
   const [togglingMap, setTogglingMap] = useState({}); // { [id]: true/false }
-
-  const [selectedItem, setSelectedItem] = useState(null);
 
   const totalPages = pagination.totalPages || 1;
 
@@ -174,12 +180,6 @@ export default function MenuManagement() {
         </div>
 
       </div>
-
-      {error ? (
-        <div className="mt-6 p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-          {typeof error === "string" ? error : "Có lỗi khi tải menu."}
-        </div>
-      ) : null}
 
       {/* Filters */}
       <div className="mt-6 rounded-2xl bg-neutral-900/60 border border-white/10 p-4">
@@ -325,7 +325,7 @@ export default function MenuManagement() {
                 : uiItems.map((it) => (
                   <tr
                     key={it.id}
-                    onClick={() => setSelectedItem(it)}
+                    onClick={() => setDetailItem(it)}
                     className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
                   >
                     <td className="py-3 pr-3 pl-4 align-top">
@@ -392,7 +392,8 @@ export default function MenuManagement() {
                       className="py-3 px-3 align-top"
                       onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal
                     >
-                      <div className="inline-flex items-center gap-2 justify-end">
+                      <div className="inline-flex items-center gap-2 justify-end"
+                        onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
@@ -407,17 +408,9 @@ export default function MenuManagement() {
                         <button
                           type="button"
                           className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20"
-                          onClick={async () => {
-                            if (!confirm(`Xoá món "${it.name}"?`)) return;
-
-                            try {
-                              await adminMenuApi.deleteMenuItem(it.id);
-
-                              // ✅ update UI ngay (soft delete => remove khỏi list)
-                              setUiItems((cur) => cur.filter((x) => x.id !== it.id));
-                            } catch (e) {
-                              alert(e?.response?.data?.message || "Xoá thất bại");
-                            }
+                          onClick={() => {
+                            setDeleteItem(it);
+                            setConfirmOpen(true);
                           }}
                         >
                           Delete
@@ -468,10 +461,11 @@ export default function MenuManagement() {
 
       {/* Modal */}
       <AdminMenuItemDetailModal
-        open={!!selectedItem}
-        item={selectedItem}
-        onClose={() => setSelectedItem(null)}
+        open={!!detailItem}
+        item={detailItem}
+        onClose={() => setDetailItem(null)}
       />
+
 
       <CreateCategoryModal
         open={openCreateCategory}
@@ -502,7 +496,34 @@ export default function MenuManagement() {
         }}
       />
 
-
+      <ConfirmModal
+        open={confirmOpen}
+        danger
+        title="Xoá món ăn"
+        description={`Bạn có chắc muốn xoá món "${deleteItem?.name}" không?`}
+        confirmText="Xoá"
+        cancelText="Huỷ"
+        loading={deleting}
+        onClose={() => {
+          if (deleting) return;
+          setConfirmOpen(false);
+          setDeleteItem(null);
+        }}
+        onConfirm={async () => {
+          try {
+            setDeleting(true);
+            await adminMenuApi.deleteMenuItem(deleteItem.id);
+            setUiItems((cur) => cur.filter((x) => x.id !== deleteItem.id));
+            toast.success("Đã xoá món");
+            setConfirmOpen(false);
+            setDeleteItem(null);     // ✅ reset đúng
+          } catch (e) {
+            toast.error(e?.response?.data?.message || "Xoá thất bại");
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
     </div>
   );
 }

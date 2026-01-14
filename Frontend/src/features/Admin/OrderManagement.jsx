@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAdminOrders } from "../../hooks/useAdminOrders";
 import { formatVND } from "../../utils/adminFormat";
-import OrderDetailModal from "../../Components/AdminOrderDetailModal";
+import OrderDetailModal from "./components/AdminOrderDetailModal";
 import { useAdminOrderDetail } from "../../hooks/useAdminOrderDetail";
 
 // ----- helpers -----
@@ -195,12 +195,6 @@ export default function OrderManagement() {
         </div>
       </div>
 
-      {error ? (
-        <div className="mt-6 p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-          {typeof error === "string" ? error : "Có lỗi khi tải danh sách order."}
-        </div>
-      ) : null}
-
       {/* Filters */}
       <div className="mt-6 rounded-2xl bg-neutral-900/60 border border-white/10 p-4">
         <div className="flex items-start gap-3">
@@ -341,16 +335,6 @@ export default function OrderManagement() {
           error={detailError}
           onClose={() => setSelectedOrderId(null)}
         />
-      </div>
-
-      {/* Tip */}
-      <div className="mt-6 p-5 rounded-2xl bg-neutral-900/60 border border-white/10">
-        <div className="text-white font-bold">Gợi ý nối backend</div>
-        <p className="text-gray-400 text-sm mt-1">
-          Hook <code className="px-1 py-0.5 rounded bg-black/30 border border-white/10">useAdminOrders</code> chỉ cần trả
-          về <b>orders</b> với các field: <b>id, code, status, createdAt, updatedAt, tableName, totalItems, totalAmount</b>.
-          Sau đó UI tự search/filter/sort.
-        </p>
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { ShoppingBag, User, Menu as MenuIcon, X, MapPin, LogOut } from 'lucide-react';
 // 1. Import useDispatch
-import { useSelector, useDispatch } from 'react-redux'; 
+import { useSelector, useDispatch } from 'react-redux';
 import { selectTotalItems } from '../store/slices/cartSlice';
 import { selectIsAuthenticated, selectCurrentUser, logout } from '../store/slices/authSlice';
 import { IoRestaurant } from "react-icons/io5";
@@ -10,7 +11,7 @@ import { IoRestaurant } from "react-icons/io5";
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  
+
   // 2. Khởi tạo dispatch và navigate
   const dispatch = useDispatch();
   const navigate = useNavigate(); // Dùng để chuyển trang sau khi logout nếu cần
@@ -30,6 +31,7 @@ const Navbar = () => {
     dispatch(logout()); // Gọi Redux action logout
     closeMenu();
     navigate('/'); // (Tuỳ chọn) Chuyển về trang chủ sau khi đăng xuất
+    toast.success("Đăng xuất thành công")
   };
 
   useEffect(() => {
@@ -83,18 +85,18 @@ const Navbar = () => {
               <div className="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
                 {/* Link Profile */}
                 <Link to="/profile" onClick={closeMenu} className="group flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500 group-hover:border-orange-500 transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-orange-500 group-hover:border-orange-500 transition-colors">
                     <User size={20} />
-                    </div>
+                  </div>
                 </Link>
-                
+
                 {/* 4. NÚT ĐĂNG XUẤT CHO DESKTOP (Mới thêm) */}
-                <button 
-                    onClick={handleLogout}
-                    title="Đăng xuất"
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors hover:bg-white/5 rounded-full"
+                <button
+                  onClick={handleLogout}
+                  title="Đăng xuất"
+                  className="p-2 text-gray-400 hover:text-red-500 transition-colors hover:bg-white/5 rounded-full"
                 >
-                    <LogOut size={20} />
+                  <LogOut size={20} />
                 </button>
               </div>
             ) : (
@@ -167,9 +169,9 @@ const Navbar = () => {
         <div className="mt-auto mb-8">
           {isLoggedIn && (
             // 5. Cập nhật nút đăng xuất Mobile gọi hàm handleLogout
-            <button 
-                onClick={handleLogout} 
-                className="flex items-center gap-2 text-red-500 font-medium hover:text-red-400 w-full py-3 rounded-xl hover:bg-white/5 transition-colors"
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-red-500 font-medium hover:text-red-400 w-full py-3 rounded-xl hover:bg-white/5 transition-colors"
             >
               <LogOut size={20} /> Đăng xuất
             </button>

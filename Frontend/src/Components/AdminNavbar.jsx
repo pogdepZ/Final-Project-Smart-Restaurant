@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -39,6 +40,7 @@ export default function AdminNavbar() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/signin");
+    toast.success("Đăng xuất thành công");
   };
 
   return (
