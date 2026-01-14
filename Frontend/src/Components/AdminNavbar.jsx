@@ -20,7 +20,7 @@ const navItems = [
   { to: "/admin/menu", label: "Menu", icon: UtensilsCrossed },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/tables", label: "Tables", icon: MdOutlineTableBar },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+  // { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminNavbar() {

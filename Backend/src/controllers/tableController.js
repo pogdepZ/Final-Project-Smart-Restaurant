@@ -67,6 +67,17 @@ exports.regenerateQR = async (req, res) => {
   }
 };
 
+exports.BulkRegenerateQR = async (req, res) => {
+  try {
+    const result = await tableService.BulkRegenerateQR();
+    res.json(result);
+  }
+
+  catch (err) {
+    res.status(500).json({ message: err.message });
+  } 
+};
+
 // 6. Lấy danh sách bàn được phân công (Cho Waiter)
 exports.getMyTables = async (req, res) => {
   try {
