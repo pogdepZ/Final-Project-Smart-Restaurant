@@ -60,4 +60,9 @@ router.post(
   adminMenuController.createCategory
 );
 
+router.put(
+  "/items/:id/modifier-groups",
+  adminMenuController.setMenuItemModifierGroups
+);
+
 module.exports = router;

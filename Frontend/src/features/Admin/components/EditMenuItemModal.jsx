@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { adminMenuApi } from "../services/adminMenuApi";
+import { adminMenuApi } from "../../../services/adminMenuApi";
+import MultiSelectCombobox from "../../../Components/MultiSelectCombobox";
+import { toast } from "react-toastify";
 
 export default function EditMenuItemModal({
   open,
@@ -21,6 +23,18 @@ export default function EditMenuItemModal({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [modifierGroups, setModifierGroups] = useState([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+
+  const modifierGroupOptions = useMemo(() => {
+    return (modifierGroups || []).map((g) => ({
+      value: g.id,
+      label: g.name,
+      subLabel: `${g.selectionType} • ${g.isRequired ? "required" : "optional"} • min ${g.minSelections} / max ${g.maxSelections}`,
+    }));
+  }, [modifierGroups]);
+
 
   useEffect(() => {
     if (!open || !item?.id) return;
@@ -32,11 +46,18 @@ export default function EditMenuItemModal({
         setLoading(true);
         setError("");
 
-        // ✅ lấy chi tiết item từ backend
-        const res = await adminMenuApi.getMenuItemDetail(item.id);
-        const full = res?.item;
+        // chạy song song cho nhanh
+        setLoadingGroups(true);
+        const [groupsRes, detailRes] = await Promise.all([
+          adminMenuApi.getModifierGroups({ status: "active" }),
+          adminMenuApi.getMenuItemDetail(item.id),
+        ]);
 
         if (cancelled) return;
+
+        setModifierGroups(groupsRes?.groups || groupsRes?.data?.groups || []);
+
+        const full = detailRes?.item;
 
         setForm({
           name: full?.name ?? "",
@@ -47,10 +68,16 @@ export default function EditMenuItemModal({
           description: full?.description ?? "",
           imageUrl: full?.imageUrl ?? "",
         });
+
+        // ✅ lấy groupIds hiện tại của món
+        setSelectedGroupIds(Array.isArray(full?.modifierGroupIds) ? full.modifierGroupIds : []);
       } catch (e) {
         if (!cancelled) setError(e?.response?.data?.message || "Không tải được chi tiết món");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadingGroups(false);
+        }
       }
     })();
 
@@ -58,6 +85,7 @@ export default function EditMenuItemModal({
       cancelled = true;
     };
   }, [open, item?.id]);
+
 
 
   if (!open) return null;
@@ -77,16 +105,27 @@ export default function EditMenuItemModal({
         imageUrl: form.imageUrl,
       };
 
+      // 1) update item
       await adminMenuApi.updateMenuItem(item.id, payload);
 
-      onUpdated?.({ ...item, ...payload });
+      // 2) set modifier groups (PUT replace)
+      await adminMenuApi.setMenuItemModifierGroups(item.id, selectedGroupIds);
+
+      onUpdated?.({
+        ...item,
+        ...payload,
+        modifierGroupIds: selectedGroupIds,
+      });
       onClose?.();
+      toast.success("Chỉnh sửa thành công")
     } catch (e) {
-      setError(e?.response?.data?.message || "Update thất bại");
+      setError(e?.response?.data?.message || e?.message || "Update thất bại");
+      toast.error(e?.response?.data?.message || e?.message || "Chỉnh sửa thất bại")
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50">
@@ -171,6 +210,28 @@ export default function EditMenuItemModal({
                   className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                   value={form.prepTimeMinutes}
                   onChange={(e) => setForm((s) => ({ ...s, prepTimeMinutes: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-white font-bold">Modifiers cho món</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    Chọn các nhóm tuỳ chọn (Size, Topping, Spicy…)
+                  </div>
+                </div>
+                {loadingGroups ? <div className="text-xs text-gray-500">Đang tải...</div> : null}
+              </div>
+
+              <div className="mt-3">
+                <MultiSelectCombobox
+                  options={modifierGroupOptions}
+                  value={selectedGroupIds}
+                  onChange={setSelectedGroupIds}
+                  placeholder="Chọn modifier groups..."
+                  disabled={loadingGroups || loading}
                 />
               </div>
             </div>

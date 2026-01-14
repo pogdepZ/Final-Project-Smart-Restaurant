@@ -128,3 +128,32 @@ exports.googleLogin = async (req, res) => {
   }
 };
 
+exports.forgotPassword = async (req, res) => {
+  try {
+    await authService.forgotPassword(req.body);
+
+    // ✅ Không tiết lộ email có tồn tại hay không
+    return res.json({
+      message: "Nếu email tồn tại, hệ thống đã gửi link đặt lại mật khẩu.",
+    });
+  } catch (err) {
+    console.error(err);
+    // vẫn trả message chung
+    return res.json({
+      message: "Nếu email tồn tại, hệ thống đã gửi link đặt lại mật khẩu.",
+    });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    await authService.resetPassword(req.body);
+    return res.json({ message: "Đặt lại mật khẩu thành công" });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(err.status || 400)
+      .json({ message: err.message || "Reset mật khẩu thất bại" });
+  }
+};
+

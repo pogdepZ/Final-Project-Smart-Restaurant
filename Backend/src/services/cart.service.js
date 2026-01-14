@@ -295,12 +295,12 @@ const normalizeModifiers2 = (mods = []) => {
     .filter((m) => m.modifier_name); // giữ name
 };
 
-async function createOrderTx(client, { tableId, userId = null, note = null }) {
+async function createOrderTx(client, { tableId, userId = null, guestName = null, note = null }) {
   const res = await client.query(
-    `insert into public.orders (table_id, user_id, note, total_amount, status, payment_status)
-     values ($1, $2, $3, 0, 'received', 'unpaid')
+    `insert into public.orders (table_id, user_id,guest_name, note, total_amount, status, payment_status)
+     values ($1, $2, $3, $4, 0, 'received', 'unpaid')
      returning *`,
-    [tableId, userId, note]
+    [tableId, userId, guestName, note]
   );
   return res.rows[0];
 }
@@ -404,7 +404,7 @@ async function recalcOrderTotalTx(client, orderId) {
  * - update orders.total_amount
  * - return order + items + modifiers
  */
-async function syncCartByTableId({ tableId, items = [], userId = null, note = null }, io) {
+async function syncCartByTableId({ tableId, items = [], userId = null, guestName = null, note = null }, io) {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -416,7 +416,7 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
     }
 
     // 1) Tạo order
-    const order = await createOrderTx(client, { tableId, userId, note });
+    const order = await createOrderTx(client, { tableId, userId, guestName, note });
 
     // 2) Insert từng item
     for (const it of items || []) {
@@ -471,36 +471,38 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
     // Query này gom nhóm items thành mảng để Frontend Waiter/Kitchen hiển thị đúng
     const fullOrderRes = await client.query(
       `
-      SELECT 
-        o.*, 
-        t.table_number,
-        COALESCE(
-            json_agg(
-                json_build_object(
-                    'id', oi.id,
-                    'name', oi.item_name,   -- Đổi key thành 'name' cho khớp Frontend
-                    'qty', oi.quantity,     -- Đổi key thành 'qty' cho khớp Frontend
-                    'price', oi.price,
-                    'subtotal', oi.subtotal,
-                    'note', oi.note,
-                    'modifiers', (
-                        SELECT COALESCE(
-                            json_agg(json_build_object(
-                                'name', oim.modifier_name, 
-                                'price', oim.price
-                            )), '[]'
-                        )
-                        FROM public.order_item_modifiers oim 
-                        WHERE oim.order_item_id = oi.id
-                    )
-                )
-            ) FILTER (WHERE oi.id IS NOT NULL), '[]'
-        ) as items
-      FROM orders o
-      LEFT JOIN tables t ON o.table_id = t.id
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.id = $1
-      GROUP BY o.id, t.table_number
+        SELECT 
+      o.*,
+      t.table_number,
+      COALESCE(u.name, o.guest_name) AS customer_name,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'id', oi.id,
+            'name', oi.item_name,
+            'qty', oi.quantity,
+            'price', oi.price,
+            'subtotal', oi.subtotal,
+            'note', oi.note,
+            'modifiers', (
+              SELECT COALESCE(
+                json_agg(json_build_object('name', oim.modifier_name, 'price', oim.price)),
+                '[]'::json
+              )
+              FROM public.order_item_modifiers oim
+              WHERE oim.order_item_id = oi.id
+            )
+          )
+        ) FILTER (WHERE oi.id IS NOT NULL),
+        '[]'::json
+      ) as items
+    FROM orders o
+    LEFT JOIN tables t ON o.table_id = t.id
+    LEFT JOIN users u ON o.user_id = u.id
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    WHERE o.id = $1
+    GROUP BY o.id, t.table_number, u.name;
+
       `,
       [order.id] // <--- SỬA LỖI: Dùng order.id (biến ở bước 1) thay vì newOrder.id
     );
@@ -514,7 +516,7 @@ async function syncCartByTableId({ tableId, items = [], userId = null, note = nu
       io.to("kitchen_room").emit("new_order", orderToSend);
     }
 
-    return { 
+    return {
       order: { ...order, total_amount: total },
       items: itemsRes.rows,
       modifiers: modsRes.rows,

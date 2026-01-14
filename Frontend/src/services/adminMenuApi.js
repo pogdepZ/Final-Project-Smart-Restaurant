@@ -30,4 +30,25 @@ export const adminMenuApi = {
 
   deleteMenuItem: (id) =>
     axiosClient.patch(`/admin/menu/items/${id}/delete`).then((r) => r),
+
+  uploadMenuImage(imageFile) {
+    const form = new FormData();
+    form.append("image", imageFile); // key này phải trùng với BE (multer.single("file") chẳng hạn)
+
+    return axiosClient.post("/admin/upload", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  // lấy danh sách groups (optionally kèm options)
+  getModifierGroups(params) {
+    return axiosClient.get("/admin/modifiers", { params });
+  },
+
+  // set groups cho 1 menu item
+  setMenuItemModifierGroups(id, groupIds) {
+    return axiosClient.put(`/admin/menu/items/${id}/modifier-groups`, {
+      groupIds,
+    });
+  },
 };

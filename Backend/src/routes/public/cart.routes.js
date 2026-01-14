@@ -2,6 +2,7 @@
 const router = require("express").Router();
 const cartController = require("../../controllers/cartController");
 const { requireQrToken } = require("../../middlewares/qrToken");
+const { optionalAuth } = require("../../middlewares/optionalAuth");
 
 // /api/cart/active?tableCode=TB01
 router.get("/active", cartController.getActiveCart);
@@ -15,6 +16,6 @@ router.delete("/items/:cartItemId", cartController.removeItem);
 router.delete("/:cartId/items", cartController.clearCart);
 
 
-router.post("/sync", requireQrToken, cartController.syncCart);
+router.post("/sync", requireQrToken, optionalAuth, cartController.syncCart);
 
 module.exports = router;
