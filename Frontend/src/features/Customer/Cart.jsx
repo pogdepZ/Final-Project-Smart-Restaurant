@@ -24,6 +24,8 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import FoodDetailPopup from "./DetailFoodPopup";
+import { menuApi } from "../../services/menuApi";
+
 
 
 const money = (n) => `$${Number(n || 0).toFixed(2)}`;
@@ -133,6 +135,28 @@ const Cart = () => {
   const subtotal = computed.subtotal;
   const serviceFee = subtotal * 0.1;
   const grandTotal = subtotal + serviceFee;
+
+  const handleSelectFood = useCallback(async (id) => {
+  try {
+    const res = await menuApi.getMenuItemById(id);
+    const item = res?.data ?? res;
+
+    // mở popup sang món related (không còn "edit line" nữa)
+    setEditingItem({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      image: item.image_url ?? item.image,
+      quantity: 1,
+      note: "",
+      modifiers: [],
+      lineKey: null, // không phải line trong cart
+    });
+  } catch (e) {
+    toast.error(e?.message || "Không tải được món liên quan");
+  }
+}, []);
+
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-32">
@@ -312,6 +336,7 @@ const Cart = () => {
             modifiers: editingItem.modifiers || [],
           }}
           onClose={() => setEditingItem(null)}
+          onSelectFood={handleSelectFood} 
           onConfirm={(payload) => {
             dispatch(
               updateCartLineLocal({
