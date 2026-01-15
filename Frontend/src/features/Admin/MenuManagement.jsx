@@ -206,8 +206,8 @@ export default function MenuManagement() {
 
           <button
             onClick={() => setOpenCreateCategory(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl 
-               bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition"
           >
             + Category
           </button>

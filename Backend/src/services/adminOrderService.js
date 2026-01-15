@@ -20,9 +20,7 @@ function mapOrderRow(r) {
     userId: r.user_id,
     tableId: r.table_id,
     // TODO: nếu có join tables thì thay bằng table_code/table_name thật
-    tableName: r.table_id
-      ? String(r.table_id).slice(0, 8)
-      : r.guest_name || "—",
+    tableName: r.table_name || r.guest_name || "—",
   };
 }
 
