@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import ConfirmModal from "../../../Components/ConfirmModal";
 import CreateCategoryModal from "./CreateCategoryModal";
 import { adminMenuApi } from "../../../services/adminMenuApi";
+import { Archive, RefreshCcw } from "lucide-react";
 
 function Field({ label, children }) {
   return (
@@ -165,7 +166,17 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
   return (
     <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
       <div className="px-4 py-3 border-b border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="text-white font-bold">Categories</div>
+        <div className="flex gap-2 items-center">
+          <div className="w-9 h-9 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+            <Archive className="text-orange-500" size={18} />
+          </div>
+          <div className="min-w-0">
+            <div className="text-white font-bold leading-tight">Category</div>
+            <div className="text-xs text-gray-400">
+              {loading ? "Đang tải..." : `Có ${categories.length} categories`}
+            </div>
+          </div>
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -189,9 +200,18 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
 
           <button
             onClick={() => setOpenCreate(true)}
-            className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition"
           >
             + Category
+          </button>
+          <button
+            onClick={() => fetchCategories()}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition"
+          >
+            <RefreshCcw size={16} />
+            Refresh
           </button>
         </div>
       </div>

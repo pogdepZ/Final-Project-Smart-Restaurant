@@ -123,6 +123,7 @@ export default function OrderManagement() {
   }, [error]);
 
   const orders = data?.orders ?? [];
+  console.log(orders[0]);
   const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 1 };
   const totalPages = pagination.totalPages || 1;
 
@@ -336,10 +337,7 @@ export default function OrderManagement() {
                     <td className="py-3 pr-3 pl-4 align-top">
                       <div className="text-white font-bold">{o.code}</div>
                       <div className="text-xs text-gray-400 mt-1">
-                        Bàn:{" "}
-                        <span className="text-gray-200 font-semibold">
-                          {o.tableName ?? "—"}
-                        </span>
+                        {o.tableName ?? "—"}
                       </div>
                     </td>
 

@@ -210,11 +210,36 @@ export default function OrderDetailModal({
                                       {it.name ?? "—"}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                      {it.note
-                                        ? `Note: ${it.note}`
-                                        : it.modifiers
-                                          ? `Modifiers: ${JSON.stringify(it.modifiers)}`
-                                          : "—"}
+                                      {/* Note */}
+                                      {it.note ? (
+                                        <div className="text-xs text-gray-500 mt-1">Note: {it.note}</div>
+                                      ) : null}
+
+                                      {/* Modifiers */}
+                                      {Array.isArray(it.modifiers) && it.modifiers.length > 0 ? (
+                                        <div className="mt-2 space-y-1">
+                                          <div className="text-xs text-gray-400 font-semibold">Modifiers đã chọn:</div>
+
+                                          <div className="flex flex-wrap gap-2">
+                                            {it.modifiers.map((m, mi) => {
+                                              const mKey = m.id ?? `${key}-m-${mi}`;
+                                              const price = typeof m.price === "number" ? m.price : Number(m.price || 0);
+
+                                              return (
+                                                <span
+                                                  key={mKey}
+                                                  className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-gray-200"
+                                                >
+                                                  <span className="font-semibold">{m.modifier_name || "—"}</span>
+                                                  {price > 0 ? <span className="text-orange-300">+{formatVND(price)}</span> : null}
+                                                </span>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-xs text-gray-600 mt-2">Không có modifiers</div>
+                                      )}
                                     </div>
                                   </td>
 
