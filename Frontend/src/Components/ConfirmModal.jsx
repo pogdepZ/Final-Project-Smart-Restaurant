@@ -12,7 +12,7 @@ export default function ConfirmModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60]">
+    <div className="fixed inset-0 z-60">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={() => !loading && onClose?.()}
@@ -39,8 +39,8 @@ export default function ConfirmModal({
               onClick={onConfirm}
               disabled={loading}
               className={`px-4 py-2 rounded-xl border ${danger
-                  ? "bg-red-500/20 border-red-500/30 text-red-200 hover:bg-red-500/30"
-                  : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
+                ? "bg-red-500/20 border-red-500/30 text-red-200 hover:bg-red-500/30"
+                : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
                 }`}
             >
               {loading ? "Đang xử lý..." : confirmText}

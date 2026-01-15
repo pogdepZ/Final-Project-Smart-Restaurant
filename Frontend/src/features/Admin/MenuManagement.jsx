@@ -22,6 +22,7 @@ import CreateMenuItemModal from "./components/CreateMenuItemModal";
 import EditMenuItemModal from "./components/EditMenuItemModal";
 import ConfirmModal from "../../Components/ConfirmModal";
 import CategoryManagerPanel from "./components/CategoryManagerPanel";
+import ModifierManagerPanel from "./components/ModifierManagerPanel";
 import { adminMenuApi } from "../../services/adminMenuApi";
 
 const STATUS_META = {
@@ -541,6 +542,8 @@ export default function MenuManagement() {
         onReloadMenuItems={refetch}
         onReloadCategories={refetchCategories}
       />
+
+      <ModifierManagerPanel onReload={refetch} />
 
       {/* Modal */}
       <AdminMenuItemDetailModal
