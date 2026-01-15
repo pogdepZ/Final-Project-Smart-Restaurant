@@ -201,9 +201,8 @@ exports.updateStatus = async (id, data, io) => {
   // 2. QUAN TRỌNG: Lấy lại Full Info (kèm items, table_number...)
   const fullOrder = await orderRepo.getById(id);
 
-  console.log("Socket Payload (Full):", fullOrder); // Debug xem có items chưa
+  // console.log("Socket Payload (Full):", fullOrder); // Debug xem có items chưa
 
-  // 3. Bắn Socket với Full Data
   if (io) {
     const orderForKitchen = {
       ...fullOrder,
@@ -212,24 +211,35 @@ exports.updateStatus = async (id, data, io) => {
 
     if (orderForKitchen.items.length > 0) {
       io.to("kitchen_room").emit("update_order", orderForKitchen);
-    } else {
-      // Tùy chọn: Nếu từ chối hết món thì báo bếp xóa đơn đó đi (nếu đang hiện)
-      // io.to("kitchen_room").emit("update_order", { ...fullOrder, status: 'cancelled' });
     }
 
-    // Kitchen cần full items để hiển thị card
     io.to("kitchen_room").emit("update_order", fullOrder);
 
+    // QUAN TRỌNG: Bắn socket cho CUSTOMER (khách hàng)
     if (fullOrder.table_id) {
       io.to(`table_${fullOrder.table_id}`).emit("order_status_update", {
         orderId: fullOrder.id,
         status: fullOrder.status,
+        message: getStatusMessage(fullOrder.status),
+        timestamp: new Date().toISOString(),
       });
     }
   }
 
   return fullOrder; // Trả về full data cho Controller luôn
 };
+
+// Helper để lấy message thân thiện
+function getStatusMessage(status) {
+  const messages = {
+    received: "📝 Đơn đã được tiếp nhận",
+    preparing: "🔥 Bếp đang chuẩn bị",
+    ready: "✅ Đơn đã sẵn sàng!",
+    completed: "💰 Thanh toán hoàn tất",
+    cancelled: "❌ Đơn đã bị hủy",
+  };
+  return messages[status] || "📦 Cập nhật đơn hàng";
+}
 
 // Xử lý Accept/Reject từng món
 exports.updateItemStatus = async (itemId, status) => {
@@ -247,11 +257,6 @@ exports.updateItemStatus = async (itemId, status) => {
 
   // 3. Lấy lại Full Order để bắn Socket (quan trọng để đồng bộ giao diện)
   const fullOrder = await orderRepo.getById(updatedItem.order_id);
-
-  // 4. Kiểm tra logic tự động cập nhật trạng thái đơn cha (Optional)
-  // Ví dụ: Nếu tất cả món đều 'rejected' -> Đơn cha thành 'cancelled'
-  // Ví dụ: Nếu có ít nhất 1 món 'accepted' -> Đơn cha thành 'preparing'
-  // (Bạn có thể thêm logic này sau nếu muốn xịn hơn)
 
   // 5. Bắn Socket
   socketService.notifyOrderUpdate(fullOrder);
