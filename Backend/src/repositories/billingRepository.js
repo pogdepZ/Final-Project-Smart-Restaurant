@@ -14,7 +14,6 @@ class BillingRepository {
                         'qty', oi.quantity,
                         'price', oi.price,
                         'subtotal', oi.subtotal,
-                        -- 👇 THÊM ĐOẠN NÀY ĐỂ LẤY MODIFIERS 👇
                         'modifiers', (
                             SELECT COALESCE(
                                 json_agg(json_build_object(
@@ -25,9 +24,8 @@ class BillingRepository {
                             FROM order_item_modifiers oim 
                             WHERE oim.order_item_id = oi.id
                         )
-                        -- 👆 KẾT THÚC ĐOẠN THÊM 👆
                     )
-                ) as items
+                ) FILTER (WHERE oi.status != 'rejected') as items
             FROM orders o
             JOIN order_items oi ON o.id = oi.order_id
             WHERE o.table_id = $1 

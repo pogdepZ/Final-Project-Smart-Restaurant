@@ -151,6 +151,14 @@ class TableRepository {
         );
         return result.rows[0];
     }
+
+    async clearSession(tableId) {
+        const result = await db.query(
+            `UPDATE tables SET current_session_id = NULL WHERE id = $1 RETURNING *`,
+            [tableId]
+        );
+        return result.rows[0];
+    }
 }
 
 

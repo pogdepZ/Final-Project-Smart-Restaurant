@@ -14,6 +14,7 @@ exports.previewTableBill = async (req, res) => {
 exports.checkoutTable = async (req, res) => {
     const { tableId } = req.params;
     const userId = req.user.id; // Lấy từ token
+    console.log("User ID thanh toán:", userId);
     try {
         const bill = await billingService.processTablePayment(tableId, userId, req.body);
         res.json({ message: "Thanh toán bàn thành công", bill });

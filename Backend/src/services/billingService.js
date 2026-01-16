@@ -1,4 +1,6 @@
 const billingRepo = require("../repositories/billingRepository");
+const tableRepository = require("../repositories/tableRepository");
+const tableSessionRepository = require("../repositories/tableSessionRepository");
 const socketService = require("./socketService");
 const db = require("../config/db");
 
@@ -107,8 +109,12 @@ class BillingService {
       // 3. Update Orders (Link vào Bill)
       await billingRepo.markOrdersAsPaid(billInfo.order_ids, newBill.id);
 
-      // 4. (Optional) Update trạng thái Bàn -> 'cleaning' hoặc 'empty' nếu muốn
-      // await client.query("UPDATE tables SET status = 'active' WHERE id = $1", [tableId]);
+      // 4. Sau khi thanh toán xong, xóa session bàn để cho khách khác sử dụng
+      await tableRepository.clearSession(tableId);
+
+      // 5. Cập nhật giá trị ended_at cho session vừa xóa
+      await tableSessionRepository.endSession(tableId);
+      await tableSessionRepository.endAllActiveByTableId(tableId);
 
       await client.query("COMMIT");
 
