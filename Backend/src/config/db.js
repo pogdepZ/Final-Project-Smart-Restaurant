@@ -10,13 +10,21 @@ if (!connectionString) {
 
 const pool = new Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false } // ⚠️ BẮT BUỘC nếu dùng Supabase
-}); 
+  ssl: { rejectUnauthorized: false }, // ⚠️ BẮT BUỘC nếu dùng Supabase
+});
+
+// Đặt timezone mặc định cho tất cả connection
+pool.on("connect", (client) => {
+  client.query("SET timezone = 'Asia/Ho_Chi_Minh'");
+});
 
 (async () => {
   try {
     const client = await pool.connect();
+    // Set timezone ngay khi test connection
+    await client.query("SET timezone = 'Asia/Ho_Chi_Minh'");
     console.log("✅ PostgreSQL connected successfully!");
+    console.log("✅ Timezone set to Asia/Ho_Chi_Minh");
     client.release();
   } catch (err) {
     console.error("❌ PostgreSQL connection failed:");

@@ -11,8 +11,8 @@ exports.createOrder = async (
      ) 
      VALUES (
         $1, $2, $3, $4, 'received', 'unpaid', 
-        (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh'), -- Sửa dòng này
-        (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')  -- Sửa dòng này
+        NOW(),
+        NOW()
      ) 
      RETURNING *`,
     [table_id, guest_name || "Khách lẻ", total_amount, note]
@@ -68,6 +68,7 @@ exports.getAll = async ({ status }) => {
                   'subtotal', oi.subtotal,
                   'note', oi.note,
                   'status', oi.status,
+                  'prep_time_minutes', COALESCE(mi.prep_time_minutes, 15),
                   'modifiers', (
                       -- Sub-query lấy modifiers của từng item
                       SELECT COALESCE(
@@ -85,6 +86,7 @@ exports.getAll = async ({ status }) => {
     FROM orders o
     LEFT JOIN tables t ON o.table_id = t.id
     LEFT JOIN order_items oi ON o.id = oi.order_id
+    LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
   `;
 
   const params = [];

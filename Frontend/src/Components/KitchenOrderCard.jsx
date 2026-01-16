@@ -1,19 +1,19 @@
 import React from "react";
-import { Clock, Table2, CheckCircle2, Eye, PlayCircle } from "lucide-react";
+import { Clock, Table2, CheckCircle2, Eye, PlayCircle, AlertTriangle } from "lucide-react";
 import { formatTime } from "../utils/orders";
+import OrderTimer, { OrderItemsTimerSummary } from "./OrderTimer";
 
 export default function KitchenOrderCard({ order, onView, onStart, onComplete }) {
   if (!order) return null;
-
-  // in order
-  console.log(">>>>>> order in KitchenOrderCard:", order);
-
 
   const items = order.items || [];
   // console.log(">>>>>> order items:", items);
 
 
   const totalItems = items.reduce((acc, item) => acc + (Number(item.qty) || 0), 0);
+
+  // Tính prep_time lớn nhất trong các món để hiển thị timer chính
+  const maxPrepTime = Math.max(...items.map((it) => it.prep_time_minutes || 15), 15);
 
   // Helper format thời gian
   const formatTime = (isoString) => {
@@ -32,9 +32,29 @@ export default function KitchenOrderCard({ order, onView, onStart, onComplete })
   };
 
   const elapsed = getMinutesElapsed(order.created_at);
+  const isUrgent = elapsed >= maxPrepTime;
+  const isWarning = elapsed >= maxPrepTime * 0.75 && !isUrgent;
 
   return (
-    <div className="rounded-2xl bg-neutral-900/60 border border-white/10 shadow-2xl overflow-hidden h-full flex flex-col">
+    <div 
+      className={`rounded-2xl bg-neutral-900/60 border shadow-2xl overflow-hidden h-full flex flex-col transition-all ${
+        isUrgent 
+          ? "border-red-500/50 ring-2 ring-red-500/20" 
+          : isWarning 
+            ? "border-yellow-500/30" 
+            : "border-white/10"
+      }`}
+    >
+      {/* Urgent Banner */}
+      {isUrgent && (
+        <div className="px-4 py-2 bg-red-500/20 border-b border-red-500/30 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-red-400 animate-bounce" />
+          <span className="text-red-400 text-xs font-bold uppercase tracking-wide">
+            Đơn trễ - Cần ưu tiên!
+          </span>
+        </div>
+      )}
+
       <div className="p-5 flex flex-col h-full">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -53,6 +73,13 @@ export default function KitchenOrderCard({ order, onView, onStart, onComplete })
           </div>
 
           <div className="flex flex-col items-end gap-2">
+            {/* Timer chính */}
+            <OrderTimer 
+              createdAt={order.created_at} 
+              estimatedMinutes={maxPrepTime}
+              size="default"
+            />
+
             <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs font-bold">
               {totalItems} món
             </div>
@@ -69,17 +96,40 @@ export default function KitchenOrderCard({ order, onView, onStart, onComplete })
           </div>
         </div>
 
+        {/* Items với indicator thời gian riêng */}
         <div className="mt-4 space-y-2">
-          {(items || []).slice(0, 4).map((it, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-white font-semibold truncate">{it.name}</div>
+          {(items || []).slice(0, 4).map((it, idx) => {
+            const itemPrepTime = it.prep_time_minutes || 15;
+            const itemOverdue = elapsed >= itemPrepTime;
+            
+            return (
+              <div 
+                key={idx} 
+                className={`flex items-center justify-between gap-3 p-2 rounded-lg transition-all ${
+                  itemOverdue ? "bg-red-500/10 border border-red-500/20" : ""
+                }`}
+              >
+                <div className="min-w-0 flex items-center gap-2">
+                  {itemOverdue && (
+                    <AlertTriangle size={14} className="text-red-400 shrink-0" />
+                  )}
+                  <div className={`font-semibold truncate ${itemOverdue ? "text-red-300" : "text-white"}`}>
+                    {it.name}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {itemOverdue && (
+                    <span className="text-[10px] text-red-400 font-mono">
+                      +{elapsed - itemPrepTime}m
+                    </span>
+                  )}
+                  <div className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-200 text-sm font-bold">
+                    x{it.qty}
+                  </div>
+                </div>
               </div>
-              <div className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-200 text-sm font-bold">
-                x{it.qty}
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {(items || []).length > 4 && (
             <div className="text-xs text-gray-500">+{items.length - 4} món khác</div>
           )}
@@ -113,10 +163,14 @@ export default function KitchenOrderCard({ order, onView, onStart, onComplete })
           ) : (
             <button
               onClick={onComplete}
-              className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all active:scale-95 inline-flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.25)]"
+              className={`px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 inline-flex items-center justify-center gap-2 ${
+                isUrgent 
+                  ? "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse" 
+                  : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.25)]"
+              }`}
             >
               <CheckCircle2 size={18} />
-              Hoàn thành
+              {isUrgent ? "Hoàn thành ngay!" : "Hoàn thành"}
             </button>
           )}
         </div>
