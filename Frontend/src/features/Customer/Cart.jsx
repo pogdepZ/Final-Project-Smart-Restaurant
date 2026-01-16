@@ -79,6 +79,13 @@ const Cart = () => {
       return;
     }
 
+    const sessionToken = localStorage.getItem("sessionToken");
+    if (!sessionToken) {
+      toast.warning("Phiên bàn đã hết hạn, vui lòng quét lại QR để đặt món!");
+      navigate(tableCode ? `/menu/${tableCode}` : "/scan");
+      return;
+    }
+
     try {
       await dispatch(syncCartToDb({ qrToken })).unwrap();
       toast.success("Đã gửi đơn lên hệ thống!");
