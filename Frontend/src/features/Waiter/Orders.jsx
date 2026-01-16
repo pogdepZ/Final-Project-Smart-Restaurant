@@ -8,9 +8,12 @@ import {
   User,
   MapPin,
   X,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import axiosClient from "../../store/axiosClient";
 import { useSocket } from "../../context/SocketContext";
+import { useNotificationSound } from "../../hooks/useNotificationSound";
 
 // Import Components
 import OrderCard from "../../Components/OrderCard";
@@ -19,8 +22,12 @@ import BillModal from "../../Components/BillModal";
 
 export default function WaiterOrdersPage() {
   const socket = useSocket();
+  const { play: playNotificationSound } = useNotificationSound(
+    "/sounds/new-order.mp3"
+  );
 
   const [activeTab, setActiveTab] = useState("orders");
+  const [soundEnabled, setSoundEnabled] = useState(true); // Toggle âm thanh
 
   // State dữ liệu
   const [myTables, setMyTables] = useState([]);
@@ -77,6 +84,12 @@ export default function WaiterOrdersPage() {
         if (prev.find((o) => o.id === newOrder.id)) return prev;
         return [newOrder, ...prev];
       });
+
+      // 🔔 Phát âm thanh thông báo
+      if (soundEnabled) {
+        playNotificationSound();
+      }
+
       toast.info(`🔔 Đơn mới: Bàn ${newOrder.table_number || "Mang về"}`);
     };
 
@@ -85,6 +98,10 @@ export default function WaiterOrdersPage() {
         prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
       );
       if (updatedOrder.status === "ready") {
+        // 🔔 Phát âm thanh khi món xong
+        if (soundEnabled) {
+          playNotificationSound();
+        }
         toast.success(`✅ Món bàn ${updatedOrder.table_number} đã xong!`);
       }
     };
@@ -96,7 +113,7 @@ export default function WaiterOrdersPage() {
       socket.off("new_order", handleNewOrder);
       socket.off("update_order", handleUpdateOrder);
     };
-  }, [socket]);
+  }, [socket, soundEnabled, playNotificationSound]);
 
   // 3. Logic Filter (Giữ nguyên)
   const filteredOrders = useMemo(() => {
@@ -149,12 +166,27 @@ export default function WaiterOrdersPage() {
               </h1>
             </div>
 
-            <button
-              onClick={fetchAllData}
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all inline-flex items-center gap-2"
-            >
-              <RefreshCw size={18} /> Làm mới
-            </button>
+            <div className="flex items-center gap-2">
+              {/* 🔔 Nút Toggle Âm Thanh */}
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className={`p-2 rounded-xl border transition-all ${
+                  soundEnabled
+                    ? "bg-orange-500/10 border-orange-500/30 text-orange-500"
+                    : "bg-white/5 border-white/10 text-gray-500"
+                }`}
+                title={soundEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
+              >
+                {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              </button>
+
+              <button
+                onClick={fetchAllData}
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all inline-flex items-center gap-2"
+              >
+                <RefreshCw size={18} /> Làm mới
+              </button>
+            </div>
           </div>
 
           {/* Controls Bar */}

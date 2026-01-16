@@ -1,19 +1,24 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { ChefHat, Search, Flame } from "lucide-react";
+import { ChefHat, Search, Flame, Volume2, VolumeX } from "lucide-react";
 import axiosClient from "../../store/axiosClient";
 import { useSocket } from "../../context/SocketContext";
+import { useNotificationSound } from "../../hooks/useNotificationSound";
 
 import KitchenOrderCard from "../../Components/KitchenOrderCard";
 import KitchenOrderDetailModal from "../../Components/KitchenOrderDetailModal";
 
 export default function KitchenPage() {
-  const socket = useSocket(); // <--- SỬ DỤNG HOOK
+  const socket = useSocket();
+  const { play: playNotificationSound } = useNotificationSound(
+    "/sounds/kitchen-order.mp3"
+  );
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(true); // Toggle âm thanh
 
   // 1. Fetch Orders (Chỉ lấy status = preparing)
   const fetchOrders = async () => {
@@ -34,26 +39,30 @@ export default function KitchenPage() {
     if (!socket) return;
 
     const handleUpdateOrder = (updatedOrder) => {
-      if (updatedOrder.status === 'preparing') {
-        console.log(">>>>>> updatedOrder in KitchenPage SOCKET:", updatedOrder);
-        setOrders(prev => {
-          if (prev.find(o => o.id === updatedOrder.id)) return prev;
+      if (updatedOrder.status === "preparing") {
+        // console.log(">>>>>> updatedOrder in KitchenPage SOCKET:", updatedOrder);
+        setOrders((prev) => {
+          if (prev.find((o) => o.id === updatedOrder.id)) return prev;
           return [updatedOrder, ...prev];
         });
-        toast.info(`🍳 Nấu món mới: ${updatedOrder.table_id}`);
 
+        // 🔔 Phát âm thanh thông báo
+        if (soundEnabled) {
+          playNotificationSound();
+        }
+
+        toast.info(`🍳 Nấu món mới: ${updatedOrder.table_number || "Mang về"}`);
       } else {
-        setOrders(prev => prev.filter(o => o.id !== updatedOrder.id));
+        setOrders((prev) => prev.filter((o) => o.id !== updatedOrder.id));
       }
     };
 
-    socket.on('update_order', handleUpdateOrder);
+    socket.on("update_order", handleUpdateOrder);
 
     return () => {
-      socket.off('update_order', handleUpdateOrder);
+      socket.off("update_order", handleUpdateOrder);
     };
-  }, [socket]); // <--- Dependency
-
+  }, [socket, soundEnabled, playNotificationSound]); // <--- Dependency
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -96,12 +105,27 @@ export default function KitchenPage() {
               </h1>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200">
-              <Flame size={18} className="text-orange-500" />
-              <span className="text-sm">
-                Đang chờ:{" "}
-                <span className="font-bold text-white">{orders.length}</span>
-              </span>
+            <div className="flex items-center gap-3">
+              {/* 🔔 Nút Toggle Âm Thanh */}
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className={`p-2 rounded-xl border transition-all ${
+                  soundEnabled
+                    ? "bg-orange-500/10 border-orange-500/30 text-orange-500"
+                    : "bg-white/5 border-white/10 text-gray-500"
+                }`}
+                title={soundEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
+              >
+                {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              </button>
+
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200">
+                <Flame size={18} className="text-orange-500" />
+                <span className="text-sm">
+                  Đang chờ:{" "}
+                  <span className="font-bold text-white">{orders.length}</span>
+                </span>
+              </div>
             </div>
           </div>
 
