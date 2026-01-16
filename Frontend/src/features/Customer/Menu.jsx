@@ -22,6 +22,7 @@ import MenuSkeleton from "./components/MenuSkeleton";
 import MenuErrorState from "./components/MenuErrorState";
 import MenuEmptyState from "./components/MenuEmptyState";
 import MenuList from "./components/MenuList";
+import Navbar from "../../Components/NavBar";
 
 const PAGE_SIZE = 12;
 
@@ -385,6 +386,8 @@ export default function Menu() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
+      <Navbar></Navbar>
+      
       {/* HEADER */}
       <MenuHeader
         tableCode={tableCode}

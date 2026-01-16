@@ -96,8 +96,6 @@ const OrderTrackingPage = () => {
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 30000);
-    return () => clearInterval(interval);
   }, [fetchOrders]);
 
   // QUAN TRỌNG: Lắng nghe socket events từ backend

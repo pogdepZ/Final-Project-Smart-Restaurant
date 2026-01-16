@@ -183,7 +183,7 @@ exports.decreaseOrderTotal = async (orderId, amount) => {
 // 4. Hàm cập nhật status của tất cả items trong một order
 exports.updateAllItemsStatusByOrderId = async (orderId, itemStatus) => {
   const result = await db.query(
-    `UPDATE order_items SET status = $1 WHERE order_id = $2 RETURNING *`,
+    `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status = 'pending' RETURNING *`,
     [itemStatus, orderId]
   );
   return result.rows;

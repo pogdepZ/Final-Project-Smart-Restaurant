@@ -97,7 +97,7 @@ const routers = [
   // ===== CUSTOMER (Main Layout) =====
   {
     path: "/",
-    element: <ProtectedRoute roles={["customer"]}/>,
+    element: <ProtectedRoute/>,
     children: [
       {
         element: <CustomerLayout />,

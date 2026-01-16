@@ -21,7 +21,7 @@ class SocketService {
 
       // Khách hàng join phòng bàn ăn (từ query tableToken)
       socket.on("join_table", (data) => {
-        console.log("🔑 join_table data:", data);
+        // console.log("🔑 join_table data:", data);
         const tableCode = data.tableCode || socket.handshake.query.tableCode;
         if (tableCode) {
           socket.join(`table_${tableCode}`);

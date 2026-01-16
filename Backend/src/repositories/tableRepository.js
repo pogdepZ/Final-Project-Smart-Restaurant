@@ -31,7 +31,7 @@ class TableRepository {
 
     // 2. Find By Number (Check duplicate)
     async findByNumber(table_number) {
-        const result = await db.query('SELECT id FROM tables WHERE table_number = $1', [table_number]);
+        const result = await db.query('SELECT * FROM tables WHERE table_number = $1', [table_number]);
         return result.rows[0];
     }
 
@@ -84,7 +84,7 @@ class TableRepository {
     // 7. Update Status Only
     async updateStatus(id, status) {
         const result = await db.query(
-            'UPDATE tables SET status = $1 WHERE id = $2 RETURNING *',
+            `UPDATE tables SET status = $1 WHERE id = $2 RETURNING *`,
             [status, id]
         );
         return result.rows[0];
@@ -140,6 +140,15 @@ class TableRepository {
 
     async findByToken(qr_token) {
         const result = await db.query('SELECT * FROM tables WHERE qr_token = $1', [qr_token]);
+        return result.rows[0];
+    }
+
+
+    async updateSession(tableId, sessionId) {
+        const result = await db.query(
+            `UPDATE tables SET current_session_id = $1 WHERE id = $2 RETURNING *`,
+            [sessionId, tableId]    
+        );
         return result.rows[0];
     }
 }
