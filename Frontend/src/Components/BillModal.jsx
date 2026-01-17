@@ -7,7 +7,7 @@ import {
   FileDown,
   QrCode,
 } from "lucide-react";
-import axiosClient from "../store/axiosClient";
+import { billApi } from "../services/billApi";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import { formatMoneyVND } from "../utils/orders";
@@ -35,13 +35,10 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     const fetchBill = async () => {
       setCalculating(true);
       try {
-        const res = await axiosClient.post(
-          `/billing/preview/table/${tableId}`,
-          {
-            discount_type: discountType,
-            discount_value: Number(discountValue),
-          }
-        );
+        const res = await billApi.previewBill(tableId, {
+          discount_type: discountType,
+          discount_value: Number(discountValue),
+        });
         setBillData(res);
       } catch (err) {
         toast.error(err.response?.data?.message || "Lỗi tải hóa đơn");
@@ -312,7 +309,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
 
     setLoading(true);
     try {
-      await axiosClient.post(`/billing/checkout/table/${tableId}`, {
+      await billApi.checkoutBill(tableId, {
         payment_method: paymentMethod,
         discount_type: discountType,
         discount_value: Number(discountValue),
@@ -375,13 +372,13 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
               {billData.items.map((item, idx) => (
                 <div
                   key={idx}
-                  className="group p-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
+                  className="group p-4 border-b border-white/5 last:border-0 hover:bg-white/2 transition-colors"
                 >
                   {/* HÀNG TRÊN: Thông tin chính món ăn */}
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex gap-3">
                       {/* Badge Số lượng */}
-                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 font-bold text-sm">
+                      <div className="  shrink-0 w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 font-bold text-sm">
                         {item.qty}
                       </div>
 
@@ -404,7 +401,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
 
                   {/* HÀNG DƯỚI: Modifiers & Note */}
                   {(item.modifiers?.length > 0 || item.note) && (
-                    <div className="mt-3 pl-[44px] space-y-2">
+                    <div className="mt-3 pl-11 space-y-2">
                       {/* List Modifiers */}
                       {item.modifiers?.length > 0 && (
                         <div className="space-y-1">
@@ -418,7 +415,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                                 <span className="truncate">{mod.name}</span>
                               </div>
                               {/* Dòng kẻ nối mờ */}
-                              <div className="flex-1 border-b border-dashed border-white/10 mx-2 relative top-[-1px] opacity-30"></div>
+                              <div className="flex-1 border-b border-dashed border-white/10 mx-2 relative top-px opacity-30"></div>
                               <span className="font-medium text-gray-300">
                                 +{formatMoneyVND(mod.price)}
                               </span>

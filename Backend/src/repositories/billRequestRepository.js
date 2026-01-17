@@ -67,7 +67,7 @@ class BillRequestRepository {
     await db.query(
       `UPDATE bill_requests 
        SET status = 'completed', handled_at = NOW()
-       WHERE table_id = $1 AND status = 'pending'`,
+       WHERE table_id = $1 AND (status = 'pending' OR status = 'acknowledged')`,
       [tableId]
     );
   }

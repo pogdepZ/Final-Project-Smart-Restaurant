@@ -130,13 +130,17 @@ class SocketService {
   }
 
   // --- BỔ SUNG HÀM NÀY ĐỂ SỬA LỖI ---
-  notifyTableUpdate(table) {
+  notifyTableUpdate(table) {  
     if (!this.io) return;
 
     console.log("📡 Bắn socket update bàn:", table);
 
     // Gửi cho Admin/Waiter (đang ở trong admin_room hoặc kitchen_room)
     // để họ biết bàn này đã thanh toán xong
+    this.io.to(`table_${table.id}`).emit("bill_update", {
+      message: this._getStatusMessage("completed"),
+      timestamp: new Date().toISOString(),
+    });    
     this.io.to("admin_room").to("kitchen_room").emit("table_update", table);
   }
 }

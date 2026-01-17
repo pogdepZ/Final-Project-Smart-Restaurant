@@ -74,7 +74,7 @@ const OrderTrackingPage = () => {
       // Auto-select đơn hàng đang active
       if (!selectedOrderId) {
         const activeOrder = mappedOrders.find(
-          (o) => !["completed", "cancelled"].includes(o.status)
+          (o) => !["completed", "cancelled"].includes(o.status),
         );
         if (activeOrder) {
           setSelectedOrderId(activeOrder.id);
@@ -103,6 +103,8 @@ const OrderTrackingPage = () => {
     console.log("🔔 Setting up socket listeners for order tracking");
     setIsConnected(true);
 
+    console.log("Socket connected:", socket);
+
     // Lắng nghe cập nhật trạng thái đơn hàng
     const handleOrderStatusUpdate = (data) => {
       console.log("📢 Order Status Update:", data);
@@ -124,17 +126,28 @@ const OrderTrackingPage = () => {
       fetchOrders();
 
       toast.success(`✅ Món đã được cập nhật!`, {
-        position: "bottom-right",
+        position: "top-right",
         autoClose: 3000,
       });
     };
 
+    const handleBillUpdate = (data) => {
+      console.log("📢 Bill Update:", data);
+      toast.success(data.message || "💰 Cập nhật hóa đơn!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      fetchOrders();
+    }
+
     socket.on("order_status_update", handleOrderStatusUpdate);
     socket.on("order_item_status_update", handleOrderItemStatusUpdate);
+    socket.on("bill_update", handleBillUpdate); // Có thể dùng chung handler
 
     return () => {
       socket.off("order_status_update", handleOrderStatusUpdate);
       socket.off("order_item_status_update", handleOrderItemStatusUpdate);
+      socket.off("bill_update", handleBillUpdate); // Có thể dùng chung handler
       setIsConnected(false);
     };
   }, [socket, fetchOrders]);

@@ -40,7 +40,7 @@ export const loginThunk = createAsyncThunk(
         err?.response?.data?.message || err?.message || "Network error";
       return rejectWithValue(msg);
     }
-  }
+  },
 );
 
 export const registerThunk = createAsyncThunk(
@@ -54,7 +54,7 @@ export const registerThunk = createAsyncThunk(
         err?.response?.data?.message || err?.message || "Network error";
       return rejectWithValue(msg);
     }
-  }
+  },
 );
 
 /** ======================
@@ -107,6 +107,14 @@ const authSlice = createSlice({
 
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
+      localStorage.removeItem("qrToken");
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("tableCode");
+      localStorage.removeItem("tableNumber");
+      localStorage.removeItem("tableSession");
+      localStorage.removeItem("tableSessionId");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
     },
   },
 
@@ -145,7 +153,10 @@ const authSlice = createSlice({
       })
       .addCase(registerThunk.fulfilled, (state, action) => {
         state.isLoading = false;
-        toast.success(action.payload?.message || "Register successful and please verify your email");
+        toast.success(
+          action.payload?.message ||
+            "Register successful and please verify your email",
+        );
       })
       .addCase(registerThunk.rejected, (state, action) => {
         state.isLoading = false;
