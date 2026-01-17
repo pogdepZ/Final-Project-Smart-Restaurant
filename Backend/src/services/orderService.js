@@ -334,7 +334,8 @@ exports.getOrdersByTableToken = async (tableToken) => {
   return orders;
 };
 
-exports.getUnpaidOrderByUserId = async (userId, tableId, session_id) => {
-  const order = await orderRepo.findUnpaidByUserId(userId, tableId, session_id);
+exports.getUnpaidOrderByUserId = async (userId, tableId, sessionId) => {
+  // console.log("Fetching unpaid order for:", { userId, tableId, sessionId });
+  const order = await orderRepo.findUnpaidByUserId(userId, tableId, sessionId);
   return order;
 };

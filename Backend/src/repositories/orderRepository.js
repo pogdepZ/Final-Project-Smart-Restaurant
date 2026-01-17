@@ -370,7 +370,7 @@ exports.findByTableId = async (tableId) => {
 };
 
 
-exports.findUnpaidByUserId = async (userId, tableId, session_id) => {
+exports.findUnpaidByUserId = async (userId, tableId, sessionId) => {
   const query = `
     SELECT * FROM orders
     WHERE user_id = $1
@@ -380,6 +380,6 @@ exports.findUnpaidByUserId = async (userId, tableId, session_id) => {
     ORDER BY created_at DESC
     LIMIT 1
   `;  
-  const result = await db.query(query, [userId, tableId, session_id]);
+  const result = await db.query(query, [userId, tableId, sessionId]);
   return result.rows[0] || null;
 }

@@ -130,17 +130,18 @@ exports.getOrderTracking = async (req, res) => {
 
 exports.getUnpaidOrderByUserId = async (req, res) => {
   try {
-    const { userId, tableId, session_id } = req.query;
-    if (!userId || !tableId || !session_id) {
-      return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
+    // console.log("getUnpaidOrderByUserId called with:", req.query);
+    const { userId, tableId, sessionId } = req.query;
+    if (!userId || !tableId || !sessionId) {
+      return res.status(201).json({ success:false, message: "Thiếu thông tin cần thiết" });
     } 
-    const order = await orderService.getUnpaidOrderByUserId(userId, tableId, session_id);
+    const order = await orderService.getUnpaidOrderByUserId(userId, tableId, sessionId);
     if (!order) {
-      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+      return res.status(201).json({ success:false, message: "Không tìm thấy đơn hàng" });
     }
-    return res.json(order);
+    return res.status(200).json({ success:true, order });
   } catch (e) {
-    console.error("getOrderByUserId error:", e);
-    return res.status(500).json({ message: "Lỗi server" });
+    console.error("getUnpaidOrderByUserId error:", e);
+    return res.status(500).json({ success:false, message: "Lỗi server" });
   }
 };
