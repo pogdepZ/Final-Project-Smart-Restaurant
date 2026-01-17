@@ -24,6 +24,7 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import FoodDetailPopup from "./DetailFoodPopup";
+import tableApi from "../../services/tableApi";
 
 
 const money = (n) => `$${Number(n || 0).toFixed(2)}`;
@@ -80,6 +81,18 @@ const Cart = () => {
     }
 
     const sessionToken = localStorage.getItem("sessionToken");
+    const tableCode = localStorage.getItem("tableCode");
+
+    const isValidSession = await tableApi.validateSession(tableCode, sessionToken);
+
+    if(isValidSession && isValidSession.valid === false) {
+      toast.warning("Phiên bàn đã hết hạn, vui lòng quét lại QR để đặt món!");
+      navigate(tableCode ? `/menu/${tableCode}` : "/scan");
+      return;
+    }
+
+    console.log("Session validation:", isValidSession);
+
     if (!sessionToken) {
       toast.warning("Phiên bàn đã hết hạn, vui lòng quét lại QR để đặt món!");
       navigate(tableCode ? `/menu/${tableCode}` : "/scan");

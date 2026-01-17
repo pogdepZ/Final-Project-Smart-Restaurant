@@ -6,6 +6,10 @@ const { protect } = require('../../middlewares/authMiddleware');
 
 // Public: verify QR token -> trả về table/restaurant context
 router.get('/my-tables', protect, tableController.getMyTables);
+
+router.get('/validate-session', tableSessionController.validateSession);
+
+
 //router.post('/verify', tableController.verifyQR);
 router.get('/', tableController.getTables)
 router.get('/:id', tableController.getTableById)

@@ -53,13 +53,18 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
 
     const user = localStorage.getItem("user");
     
-    const userID = user ? JSON.parse(user).id : null;
+    const userId = user ? JSON.parse(user).id : null;
 
-    const order = await orderApi.getUnpaidOrderByUserId(userID, tableId, sessionId);
+    // console.log("Requesting bill with:", { tableId, sessionId, userId });
 
+    const response = await orderApi.getUnpaidOrderByUserId(userId, tableId, sessionId);
 
+    if(response && response.success === false){
+      toast.error(response.message || "Bạn chưa có đơn hàng nào để yêu cầu thanh toán.");
+      return;
+    }
 
-
+    
     setLoading(true);
     try {
       const res = await billRequestApi.requestBill({ tableId, sessionId });
