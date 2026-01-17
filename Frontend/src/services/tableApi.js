@@ -9,18 +9,18 @@ export const checkAndCreateSession = async (tableCode, userId = null) => {
   return response.data;
 };
 
-// Xác thực mã đặt bàn và kích hoạt session
-export const verifyBookingAndActivateSession = async (
-  tableCode,
-  bookingCode,
-  userId = null
-) => {
-  const response = await axiosClient.post(`/tables/${tableCode}/verify-booking`, {
-    bookingCode,
-    userId,
-  });
-  return response.data;
-};
+// // Xác thực mã đặt bàn và kích hoạt session
+// export const verifyBookingAndActivateSession = async (
+//   tableCode,
+//   bookingCode,
+//   userId = null
+// ) => {
+//   const response = await axiosClient.post(`/tables/${tableCode}/verify-booking`, {
+//     bookingCode,
+//     userId,
+//   });
+//   return response.data;
+// };
 
 // Kết thúc session bàn (khi thanh toán xong)
 export const endTableSession = async (tableCode, sessionId) => {
@@ -52,7 +52,7 @@ export const tableApi = {
   toggleStatus: (id) => axiosClient.patch(`/tables/${id}/status`),
 
   checkAndCreateSession,
-  verifyBookingAndActivateSession,
+  // verifyBookingAndActivateSession,
   endTableSession,
   validateSession,
 };

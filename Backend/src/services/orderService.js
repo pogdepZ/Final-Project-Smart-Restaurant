@@ -188,14 +188,14 @@ exports.updateStatus = async (id, data, io) => {
 
   // 1.5. Cập nhật status của tất cả order items theo order status
   if (data.status === "preparing") {
-    // Khi waiter chấp nhận đơn -> tất cả items có status = 'accepted'
-    await orderRepo.updateAllItemsStatusByOrderId(id, "accepted");
-  } else if (data.status === "cancelled") {
+    // Khi waiter chấp nhận đơn -> tất cả items có status = 'preparing'
+    await orderRepo.updateAllItemsStatusByOrderId(id, "preparing");
+  } else if (data.status === "rejected") {
     // Khi waiter từ chối đơn -> tất cả items có status = 'rejected'
     await orderRepo.updateAllItemsStatusByOrderId(id, "rejected");
   } else if (data.status === "ready") {
-    // Khi đơn hàng sẵn sàng -> tất cả items có status = 'served'
-    await orderRepo.updateAllItemsStatusByOrderId(id, "served");
+    // Khi đơn hàng sẵn sàng -> tất cả items có status = 'ready'
+    await orderRepo.updateAllItemsStatusByOrderId(id, "ready");
   }
 
   // 2. QUAN TRỌNG: Lấy lại Full Info (kèm items, table_number...)

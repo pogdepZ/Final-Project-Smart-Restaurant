@@ -108,6 +108,7 @@ export default function WaiterOrdersPage() {
 
     socket.on("new_order", handleNewOrder);
     socket.on("update_order", handleUpdateOrder);
+    
 
     return () => {
       socket.off("new_order", handleNewOrder);
@@ -303,7 +304,7 @@ export default function WaiterOrdersPage() {
                       order={order}
                       onView={() => setSelectedOrder(order)}
                       onAccept={() => handleUpdateStatus(order.id, "preparing")}
-                      onReject={() => handleUpdateStatus(order.id, "cancelled")}
+                      onReject={() => handleUpdateStatus(order.id, "rejected")}
                     />
                   ))}
                 </div>
@@ -388,7 +389,7 @@ export default function WaiterOrdersPage() {
             setSelectedOrder(null);
           }}
           onReject={() => {
-            handleUpdateStatus(selectedOrder.id, "cancelled");
+            handleUpdateStatus(selectedOrder.id, "rejected");
             setSelectedOrder(null);
           }}
         />

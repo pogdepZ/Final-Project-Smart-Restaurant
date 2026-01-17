@@ -197,6 +197,7 @@ const routers = [
     element: <ProtectedRoute roles={["waiter"]} />,
     children: [
       {
+        element: <WaiterLayout />,
         children: [
           {
             index: true, // Mặc định vào danh sách bàn hoặc order

@@ -1,6 +1,7 @@
 const billingRepo = require("../repositories/billingRepository");
 const tableRepository = require("../repositories/tableRepository");
 const tableSessionRepository = require("../repositories/tableSessionRepository");
+const billRequestRepo = require("../repositories/billRequestRepository");
 const socketService = require("./socketService");
 const db = require("../config/db");
 
@@ -115,6 +116,9 @@ class BillingService {
       // 5. Cập nhật giá trị ended_at cho session vừa xóa
       await tableSessionRepository.endSession(tableId);
       await tableSessionRepository.endAllActiveByTableId(tableId);
+
+      // 6. Hủy tất cả bill requests của bàn này
+      await billRequestRepo.cancelAllPendingByTableId(tableId);
 
       await client.query("COMMIT");
 

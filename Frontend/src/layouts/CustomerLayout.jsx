@@ -1,8 +1,13 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '../Components/NavBar';
+import FloatingBillRequest from "../Components/FloatingBillRequest";
 
 const CustomerLayout = () => {
+  // Lấy thông tin table session từ context hoặc localStorage
+  const tableId = localStorage.getItem("tableCode");
+  const sessionId = localStorage.getItem("sessionId");
+
   return (
     <div className="min-h-screen bg-neutral-950 text-gray-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
       {/* Navbar luôn ở trên cùng */}
@@ -24,6 +29,11 @@ const CustomerLayout = () => {
           </div>
         </div>
       </footer>
+
+      {/* Floating Bill Request - Chỉ hiện khi có tableId */}
+      {tableId && (
+        <FloatingBillRequest tableId={tableId} sessionId={sessionId} />
+      )}
     </div>
   );
 };

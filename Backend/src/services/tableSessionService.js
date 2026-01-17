@@ -70,10 +70,11 @@ class TableSessionService {
 
     console.log("session token:", newSession);
 
-    // 5. Cập nhật trạng thái bàn thành 'occupied'
+    // 5. Cập nhật session cho bàn
     await tableRepository.updateSession(table.id, newSession.id);
 
     return {
+      success: true,
       tableSession: {
         id: newSession.id,
         sessionToken: newSession.session_token,

@@ -29,7 +29,7 @@ export default function OrderCard({ order, onView, onAccept, onReject }) {
   }, [order]);
 
   // Chỉ hiện timer cho các đơn chưa hoàn thành
-  const showTimer = !["completed", "cancelled"].includes(order.status);
+  const showTimer = !["completed", "rejected"].includes(order.status);
 
   return (
     <div

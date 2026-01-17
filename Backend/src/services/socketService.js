@@ -95,6 +95,28 @@ class SocketService {
     }
   }
 
+  // Thông báo có yêu cầu thanh toán mới
+  notifyBillRequest(data) {
+    if (this.io) {
+      // Gửi cho tất cả staff (waiter, cashier, admin)
+      this.io.to("staff").emit("bill_request", data);
+      console.log(
+        "📢 Bill request notification sent:",
+        data.request?.table_number
+      );
+    }
+  }
+
+  // Thông báo cập nhật trạng thái yêu cầu
+  notifyBillRequestUpdate(data) {
+    if (this.io) {
+      // Gửi cho staff
+      this.io.to("staff").emit("bill_request_update", data);
+      // Gửi cho bàn cụ thể (nếu khách đang xem)
+      this.io.to(`table_${data.tableId}`).emit("bill_request_update", data);
+    }
+  }
+
   // Helper: Tạo message dễ hiểu cho khách
   _getStatusMessage(status) {
     const messages = {
