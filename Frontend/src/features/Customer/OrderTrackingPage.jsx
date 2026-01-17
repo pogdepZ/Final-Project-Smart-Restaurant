@@ -17,17 +17,15 @@ import OrderItemStatus from "../../components/customer/OrderItemStatus";
 // Map status từ backend sang UI status
 const mapItemStatus = (status) => {
   switch (status) {
-    case "pending":
-      return "Queued";
     case "served":
     case "ready":
       return "Ready";
     case "rejected":
       return "Rejected";
-    case "accepted":
+    case "preparing":
       return "Cooking";
     default:
-      return "Pending";
+      return "Queued";
   }
 };
 
