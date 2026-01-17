@@ -127,3 +127,20 @@ exports.getOrderTracking = async (req, res) => {
     return res.status(500).json({ message: "Lỗi server" });
   } 
 };
+
+exports.getUnpaidOrderByUserId = async (req, res) => {
+  try {
+    const { userId, tableId, session_id } = req.query;
+    if (!userId || !tableId || !session_id) {
+      return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
+    } 
+    const order = await orderService.getUnpaidOrderByUserId(userId, tableId, session_id);
+    if (!order) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+    return res.json(order);
+  } catch (e) {
+    console.error("getOrderByUserId error:", e);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};

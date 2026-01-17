@@ -26,4 +26,10 @@ export const orderApi = {
       },
     });
   },
+
+  getUnpaidOrderByUserId(userId, tableId, session_id) {
+    return axiosClient.get("/orders/unpaid-by-user", {
+      params: { userId, tableId, session_id },
+    });
+  }
 };

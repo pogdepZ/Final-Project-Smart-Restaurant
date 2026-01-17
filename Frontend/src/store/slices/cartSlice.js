@@ -32,13 +32,13 @@ export const buildLineKey = (itemId, modifiers = []) => {
 const calcModifierExtra = (modifiers = []) =>
   (modifiers || []).reduce(
     (sum, m) => sum + Number(m?.price ?? m?.price_adjustment ?? 0),
-    0
+    0,
   );
 
 const calcTotals = (items) => {
   const totalItems = (items || []).reduce(
     (sum, i) => sum + (Number(i.quantity) || 0),
-    0
+    0,
   );
 
   const totalPrice = (items || []).reduce((sum, i) => {
@@ -71,27 +71,40 @@ const initialState = {
 
 export const syncCartToDb = createAsyncThunk(
   "cart/syncCartToDb",
-  async ({ qrToken }, { getState, rejectWithValue }) => {
+  async ({ qrToken, sessionId, userId }, { getState, rejectWithValue }) => {
     try {
-      const { items } = getState().cart;
+      const state = getState();
+      const items = state.cart.items || [];
 
+      if (!items.length) {
+        return rejectWithValue({ message: "Giỏ hàng trống" });
+      }
+
+      // Map items to API format
       const payload = {
-        items: (items || []).map((i) => ({
-          menuItemId: i.id,
-          quantity: Number(i.quantity) || 1,
-          modifiers: i.modifiers || [],
-          note: i.note || "",
+        items: items.map((it) => ({
+          menuItemId: it.id,
+          quantity: it.quantity || 1,
+          note: it.note || "",
+          modifiers: (it.modifiers || []).map((m) => ({
+            option_id: m.id || m.option_id,
+            name: m.name,
+            price: m.price || m.price_adjustment || 0,
+            group_name: m.group_name || "",
+          })),
         })),
+        sessionId: sessionId || null,
+        userId: userId || null,
       };
 
-      console.log("Syncing cart to DB with payload:", payload); 
+      // console.log("Syncing cart to DB with payload:", payload);
 
       const res = await cartApi.sync(payload, qrToken);
       return res;
     } catch (err) {
       return rejectWithValue(err?.response?.data || { message: err.message });
     }
-  }
+  },
 );
 
 const cartSlice = createSlice({

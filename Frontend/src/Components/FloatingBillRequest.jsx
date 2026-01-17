@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Receipt, CheckCircle, Bell, X, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { billRequestApi } from "../services/billRequestApi";
+import { orderApi } from "../services/orderApi";
 import { useSocket } from "../context/SocketContext";
 
 const FloatingBillRequest = ({ tableId, sessionId }) => {
@@ -38,7 +39,7 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
       if (String(data.tableId) === String(tableId)) {
         if (data.type === "acknowledged") {
           setStatus("acknowledged");
-          toast.info("🏃 Nhân viên đang đến bàn của bạn!");
+          toast.info("Nhân viên đang đến bàn của bạn!");
         }
       }
     };
@@ -49,6 +50,15 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
 
   const handleRequest = async () => {
     if (status !== "idle") return;
+
+    const user = localStorage.getItem("user");
+    
+    const userID = user ? JSON.parse(user).id : null;
+
+    const order = await orderApi.getUnpaidOrderByUserId(userID, tableId, sessionId);
+
+
+
 
     setLoading(true);
     try {
@@ -99,7 +109,7 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
+        className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-linear-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
       >
         <Receipt size={24} />
       </button>
@@ -144,7 +154,7 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
                 <button
                   onClick={handleRequest}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-xl bg-linear-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 >
                   {loading ? (
                     <Loader2 size={18} className="animate-spin" />

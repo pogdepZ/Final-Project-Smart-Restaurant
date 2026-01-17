@@ -10,12 +10,14 @@ router.get("/", orderController.getOrders);
 // Lấy đơn hàng theo table token (cho khách hàng)
 router.get("/by-table", orderController.getOrdersByTable);
 
+router.get("/unpaid-by-user", orderController.getUnpaidOrderByUserId);
 
 router.patch("/:id", orderController.updateOrderStatus);
 // router.patch('/:id', waiterOnly, orderController.updateOrderStatus);
 router.patch("/items/:itemId", orderController.updateOrderItemStatus);
 router.get("/my", protect, orderController.getMyOrders);
 router.get("/:id", protect, orderController.getMyOrderDetail);
+
 
 // Lấy đơn hàng theo table token (cho khách hàng)
 

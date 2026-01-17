@@ -99,7 +99,7 @@ class SocketService {
   notifyBillRequest(data) {
     if (this.io) {
       // Gửi cho tất cả staff (waiter, cashier, admin)
-      this.io.to("staff").emit("bill_request", data);
+      this.io.to("kitchen_room").emit("bill_request", data);
       console.log(
         "📢 Bill request notification sent:",
         data.request?.table_number

@@ -368,3 +368,18 @@ exports.findByTableId = async (tableId) => {
   const result = await db.query(query, [tableId]);
   return result.rows;
 };
+
+
+exports.findUnpaidByUserId = async (userId, tableId, session_id) => {
+  const query = `
+    SELECT * FROM orders
+    WHERE user_id = $1
+      AND table_id = $2
+      AND payment_status = 'unpaid'
+      AND session_id = $3
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;  
+  const result = await db.query(query, [userId, tableId, session_id]);
+  return result.rows[0] || null;
+}

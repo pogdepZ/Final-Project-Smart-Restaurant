@@ -86,8 +86,19 @@ const Cart = () => {
       return;
     }
 
+    const sessionId = localStorage.getItem("tableSessionId");
+
+    // Lấy userId từ localStorage hoặc Redux store (nếu user đã đăng nhập)
+    const userId = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).id : null;
+
+    console.log("Checking out with:", { qrToken, sessionId, userId });
+
     try {
-      await dispatch(syncCartToDb({ qrToken })).unwrap();
+      await dispatch(syncCartToDb({ 
+        qrToken, 
+        sessionId: sessionId,
+        userId 
+      })).unwrap();
       toast.success("Đã gửi đơn lên hệ thống!");
       navigate("/menu");
     } catch (e) {

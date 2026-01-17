@@ -27,7 +27,7 @@ async function getActiveCartByTableId(client, tableId) {
      where table_id = $1 and status = 'active'
      order by created_at desc
      limit 1`,
-    [tableId]
+    [tableId],
   );
   return r.rows[0] || null;
 }
@@ -37,7 +37,7 @@ async function createCart(client, { tableId, userId = null }) {
     `insert into carts (table_id, user_id, status)
      values ($1, $2, 'active')
      returning *`,
-    [tableId, userId]
+    [tableId, userId],
   );
   return r.rows[0];
 }
@@ -58,7 +58,7 @@ async function listCartItems(client, cartId) {
      join menu_items mi on mi.id = ci.menu_item_id
      where ci.cart_id = $1
      order by ci.created_at asc`,
-    [cartId]
+    [cartId],
   );
   return r.rows;
 }
@@ -121,7 +121,7 @@ async function addItemToCartTx(client, input) {
   // cart must exist (same tx can see uncommitted insert)
   const cartRes = await client.query(
     `select id from carts where id = $1 limit 1`,
-    [cartId]
+    [cartId],
   );
   if (!cartRes.rows[0]) {
     const err = new Error("CART_NOT_FOUND");
@@ -137,7 +137,7 @@ async function addItemToCartTx(client, input) {
     `select id, modifiers, quantity
      from cart_items
      where cart_id = $1 and menu_item_id = $2`,
-    [cartId, menuItemId]
+    [cartId, menuItemId],
   );
 
   let matchedRow = null;
@@ -159,7 +159,7 @@ async function addItemToCartTx(client, input) {
        set quantity = $2, note = coalesce($3, note), updated_at = now()
        where id = $1
        returning id as "cartItemId"`,
-      [matchedRow.id, newQty, note]
+      [matchedRow.id, newQty, note],
     );
 
     return { affected: up.rows[0] };
@@ -168,7 +168,7 @@ async function addItemToCartTx(client, input) {
       `insert into cart_items (cart_id, menu_item_id, quantity, note, modifiers)
        values ($1, $2, $3, $4, $5::jsonb)
        returning id as "cartItemId"`,
-      [cartId, menuItemId, qtyToAdd, note, JSON.stringify(normalized)]
+      [cartId, menuItemId, qtyToAdd, note, JSON.stringify(normalized)],
     );
 
     return { affected: ins.rows[0] };
@@ -190,7 +190,7 @@ async function updateCartItemQuantity(cartItemId, quantity) {
     // lấy cartId để trả items
     const found = await client.query(
       `select id, cart_id as "cartId" from cart_items where id = $1 limit 1`,
-      [cartItemId]
+      [cartItemId],
     );
     const row = found.rows[0];
     if (!row) {
@@ -206,7 +206,7 @@ async function updateCartItemQuantity(cartItemId, quantity) {
         `update cart_items
          set quantity = $2, updated_at = now()
          where id = $1`,
-        [cartItemId, q]
+        [cartItemId, q],
       );
     }
 
@@ -229,7 +229,7 @@ async function removeCartItem(cartItemId) {
 
     const found = await client.query(
       `select cart_id as "cartId" from cart_items where id = $1 limit 1`,
-      [cartItemId]
+      [cartItemId],
     );
     const row = found.rows[0];
     if (!row) {
@@ -259,7 +259,7 @@ async function clearCartItems(cartId) {
 
     const cartRes = await client.query(
       `select id from carts where id = $1 limit 1`,
-      [cartId]
+      [cartId],
     );
     if (!cartRes.rows[0]) {
       const err = new Error("CART_NOT_FOUND");
@@ -295,19 +295,22 @@ const normalizeModifiers2 = (mods = []) => {
     .filter((m) => m.modifier_name); // giữ name
 };
 
-async function createOrderTx(client, { tableId, userId = null, guestName = null, note = null }) {
+async function createOrderTx(
+  client,
+  { tableId, userId = null, guestName = null, note = null, sessionId = null },
+) {
   const res = await client.query(
-    `insert into public.orders (table_id, user_id,guest_name, note, total_amount, status, payment_status)
-     values ($1, $2, $3, $4, 0, 'received', 'unpaid')
+    `insert into public.orders (table_id, user_id, guest_name, note, total_amount, status, payment_status, session_id)
+     values ($1, $2, $3, $4, 0, 'received', 'unpaid', $5)
      returning *`,
-    [tableId, userId, guestName, note]
+    [tableId, userId, guestName, note, sessionId],
   );
   return res.rows[0];
 }
 
 async function insertOrderItemTx(
   client,
-  { orderId, menuItem, quantity, note }
+  { orderId, menuItem, quantity, note },
 ) {
   const qty = Math.max(1, n(quantity, 1));
 
@@ -330,7 +333,7 @@ async function insertOrderItemTx(
       qty,
       subtotal,
       note || null,
-    ]
+    ],
   );
 
   return res.rows[0];
@@ -338,7 +341,7 @@ async function insertOrderItemTx(
 
 async function insertOrderItemModifiersTx(
   client,
-  { orderItemId, modifiers = [] }
+  { orderItemId, modifiers = [] },
 ) {
   if (!modifiers.length) return;
 
@@ -352,7 +355,7 @@ async function insertOrderItemModifiersTx(
       orderItemId,
       m.option_id, // modifier_option_id (nullable ok)
       m.modifier_name, // modifier_name
-      n(m.price, 0) // price
+      n(m.price, 0), // price
     );
   }
 
@@ -360,7 +363,7 @@ async function insertOrderItemModifiersTx(
     `insert into public.order_item_modifiers
       (order_item_id, modifier_option_id, modifier_name, price)
      values ${values.join(", ")}`,
-    params
+    params,
   );
 }
 
@@ -383,14 +386,14 @@ async function recalcOrderTotalTx(client, orderId) {
     select (base.base_total + mods.mods_total) as total
     from base, mods
     `,
-    [orderId]
+    [orderId],
   );
 
   const total = n(res.rows?.[0]?.total, 0);
 
   await client.query(
     `update public.orders set total_amount = $2, updated_at = now() where id = $1`,
-    [orderId, total]
+    [orderId, total],
   );
 
   return total;
@@ -404,7 +407,17 @@ async function recalcOrderTotalTx(client, orderId) {
  * - update orders.total_amount
  * - return order + items + modifiers
  */
-async function syncCartByTableId({ tableId, items = [], userId = null, guestName = null, note = null }, io) {
+async function syncCartByTableId(
+  {
+    tableId,
+    items = [],
+    userId = null,
+    guestName = null,
+    note = null,
+    sessionId = null,
+  },
+  io,
+) {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -415,13 +428,17 @@ async function syncCartByTableId({ tableId, items = [], userId = null, guestName
       throw err;
     }
 
-    // 1) Tạo order
-    const order = await createOrderTx(client, { tableId, userId, guestName, note });
+    // 1) Tạo order với sessionId
+    const order = await createOrderTx(client, {
+      tableId,
+      userId,
+      guestName,
+      note,
+      sessionId,
+    });
 
     // 2) Insert từng item
     for (const it of items || []) {
-      // ... (Phần logic insert item và modifiers giữ nguyên như cũ) ...
-      // (Giả sử đoạn code insert item của bạn ở đây không đổi)
       if (!it?.menuItemId) {
         const err = new Error("MISSING_MENU_ITEM_ID");
         err.status = 400;
@@ -430,7 +447,7 @@ async function syncCartByTableId({ tableId, items = [], userId = null, guestName
       // Lấy thông tin menu item từ DB
       const menuRes = await client.query(
         `select id, name, price from public.menu_items where id = $1 limit 1`,
-        [it.menuItemId]
+        [it.menuItemId],
       );
 
       const menuItem = menuRes.rows[0];
@@ -457,11 +474,11 @@ async function syncCartByTableId({ tableId, items = [], userId = null, guestName
     // 5) Lấy data trả về cho HTTP response (giữ nguyên logic cũ của bạn)
     const itemsRes = await client.query(
       `select * from public.order_items where order_id = $1 order by id asc`,
-      [order.id]
+      [order.id],
     );
     const modsRes = await client.query(
       `select m.* from public.order_item_modifiers m join public.order_items i on i.id = m.order_item_id where i.order_id = $1 order by m.id asc`,
-      [order.id]
+      [order.id],
     );
 
     // --- QUAN TRỌNG: COMMIT TRƯỚC KHI QUERY SOCKET ---
@@ -504,12 +521,12 @@ async function syncCartByTableId({ tableId, items = [], userId = null, guestName
     GROUP BY o.id, t.table_number, u.name;
 
       `,
-      [order.id] // <--- SỬA LỖI: Dùng order.id (biến ở bước 1) thay vì newOrder.id
+      [order.id], // <--- SỬA LỖI: Dùng order.id (biến ở bước 1) thay vì newOrder.id
     );
 
     const orderToSend = fullOrderRes.rows[0];
 
-    console.log("Emitting new_order event via Socket.io:", orderToSend);
+    // console.log("Emitting new_order event via Socket.io:", orderToSend);
 
     if (io && orderToSend) {
       // Gửi event new_order
