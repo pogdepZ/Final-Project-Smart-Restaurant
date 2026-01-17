@@ -205,7 +205,7 @@ export default function OrderDetailModal({ order: initialOrder, onClose, onAccep
                 </button>
                 <button
                   onClick={onAccept}
-                  className="flex-[2] py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all"
+                  className="flex-2 py-3 bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all"
                 >
                   <CheckCircle2 size={18} />
                   Chuyển Bếp Nấu

@@ -3,7 +3,7 @@ import { CheckCircle2, AlertCircle, Clock } from "lucide-react";
 
 export function OrderStatusNotification({ message, status, onClose }) {
   useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
+    const timer = setTimeout(onClose, 3000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
