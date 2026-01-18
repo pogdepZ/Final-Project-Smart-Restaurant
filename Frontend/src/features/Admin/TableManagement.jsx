@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// src/pages/Admin/TableManagement/TableManagement.jsx
+import React, { useMemo, useState, useEffect } from "react";
 import axiosClient from "../../store/axiosClient";
 import { toast } from "react-toastify";
 import JSZip from "jszip";
@@ -6,29 +7,25 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import { MdOutlineTableBar } from "react-icons/md";
 import { useSocket } from "../../context/SocketContext";
+
 import {
   Plus,
-  Search,
   Filter,
   Edit,
   Power,
   Archive,
-  FileText,
   Grid,
   Square,
   X,
   MapPin,
   Users,
   RefreshCw,
-  Table,
 } from "lucide-react";
-import TableDetailPanel from "./components/TableDetailPanel"; // Đảm bảo đường dẫn đúng
+
+import TableDetailPanel from "./components/TableDetailPanel";
 
 const TableManagement = () => {
   const socket = useSocket();
-  // --- DEBUG 1: Kiểm tra socket có tồn tại không ---
-  console.log("DEBUG: Socket instance:", socket);
-  console.log("DEBUG: Socket connected?", socket?.connected);
 
   // --- STATE ---
   const [tables, setTables] = useState([]);
@@ -58,14 +55,12 @@ const TableManagement = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // 1. Validate Số bàn
-    if (!formData.table_number.trim()) {
+    if (!String(formData.table_number || "").trim()) {
       newErrors.table_number = "Vui lòng nhập số bàn";
-    } else if (formData.table_number.length > 10) {
+    } else if (String(formData.table_number).length > 10) {
       newErrors.table_number = "Tên bàn quá dài (tối đa 10 ký tự)";
     }
 
-    // 2. Validate Sức chứa
     const cap = parseInt(formData.capacity);
     if (!formData.capacity) {
       newErrors.capacity = "Nhập sức chứa";
@@ -73,27 +68,23 @@ const TableManagement = () => {
       newErrors.capacity = "Sức chứa từ 1-20 người";
     }
 
-    // 3. Validate Vị trí
     if (!formData.location) {
       newErrors.location = "Vui lòng chọn vị trí";
     }
 
     setErrors(newErrors);
-    // Trả về true nếu không có lỗi (object rỗng)
     return Object.keys(newErrors).length === 0;
   };
 
-  // --- 1. FETCH DATA ---
+  // --- SOCKET LISTENER ---
   useEffect(() => {
     if (!socket) return;
 
     socket.on("table_update", (payload) => {
-      console.log("Socket nhận tin:", payload); // <--- Thêm log này
-
-      const { type, table } = payload;
+      const { type, table } = payload || {};
+      if (!table?.id) return;
 
       if (type === "update") {
-        // Tìm và thay thế bàn cũ bằng bàn mới trong state
         setTables((prev) => prev.map((t) => (t.id === table.id ? table : t)));
         toast.info(`Bàn ${table.table_number} vừa cập nhật!`);
       } else if (type === "create") {
@@ -105,13 +96,13 @@ const TableManagement = () => {
     return () => socket.off("table_update");
   }, [socket]);
 
+  // --- FETCH TABLES ---
   const fetchTables = async () => {
     setLoading(true);
     try {
-      console.log(filters);
       const query = new URLSearchParams(filters).toString();
       const res = await axiosClient.get(`/admin/tables?${query}`);
-      setTables(res); // Giả sử axiosClient trả về data trực tiếp
+      setTables(res);
     } catch (err) {
       toast.error("Lỗi tải danh sách bàn");
     } finally {
@@ -121,11 +112,10 @@ const TableManagement = () => {
 
   useEffect(() => {
     fetchTables();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  // --- 2. BULK ACTIONS (Xử lý hàng loạt) ---
-
-  // A. Tải tất cả ảnh QR (ZIP)
+  // --- BULK ACTIONS ---
   const handleDownloadZip = async () => {
     const zip = new JSZip();
     const folder = zip.folder("SmartRestaurant_QR_Codes");
@@ -136,6 +126,7 @@ const TableManagement = () => {
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
         clientUrl
       )}`;
+
       try {
         const response = await fetch(qrApi);
         const blob = await response.blob();
@@ -151,10 +142,10 @@ const TableManagement = () => {
     });
   };
 
-  // B. Tải PDF Tổng hợp (In hàng loạt)
   const handleGeneratePDF = async (layoutType = "grid") => {
     toast.info("Đang tạo PDF...");
     const doc = new jsPDF();
+
     let x = 15,
       y = 20,
       size = 70,
@@ -189,16 +180,16 @@ const TableManagement = () => {
       doc.setFontSize(fontSize);
       doc.setFont("helvetica", "bold");
 
-      // Căn giữa text
-      const textWidth = doc.getTextWidth(table.table_number);
-      doc.text(table.table_number, x + (size - textWidth) / 2, y - 5);
+      const textWidth = doc.getTextWidth(String(table.table_number));
+      doc.text(String(table.table_number), x + (size - textWidth) / 2, y - 5);
       doc.addImage(imgData, "PNG", x, y, size, size);
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(table.location, x + size / 2, y + size + 5, { align: "center" });
+      doc.text(String(table.location || ""), x + size / 2, y + size + 5, {
+        align: "center",
+      });
 
-      // Logic chuyển trang
       if (layoutType === "grid") {
         count++;
         if (count % 2 !== 0) x += 100;
@@ -215,12 +206,28 @@ const TableManagement = () => {
         if (tables.indexOf(table) < tables.length - 1) doc.addPage();
       }
     }
+
     window.open(doc.output("bloburl"), "_blank");
     toast.success("PDF sẵn sàng!");
   };
 
-  // --- 3. CRUD HANDLERS ---
+  const handleBulkRegenerate = async () => {
+    const msg =
+      "⚠️ CẢNH BÁO NGUY HIỂM:\n\nHành động này sẽ VÔ HIỆU HÓA TOÀN BỘ mã QR hiện tại đang dán trên bàn.\nKhách hàng sẽ không thể gọi món bằng mã cũ.\n\nBạn có chắc chắn muốn tạo mới tất cả không?";
 
+    if (!window.confirm(msg)) return;
+
+    try {
+      toast.info("Đang xử lý làm mới hàng loạt...");
+      const res = await axiosClient.post("/admin/tables/regenerate-all");
+      toast.success(res.message || "Đã làm mới tất cả mã QR!");
+      fetchTables();
+    } catch (err) {
+      toast.error("Lỗi hệ thống khi làm mới QR");
+    }
+  };
+
+  // --- CRUD HANDLERS ---
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -249,15 +256,13 @@ const TableManagement = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      // Có lỗi thì dừng lại, không gọi API
-      // Có thể toast thêm thông báo tổng quát
       toast.error("Vui lòng kiểm tra lại thông tin");
       return;
     }
 
     try {
       if (isEditing) {
-        await axiosClient.put(`/admin/tables/${formData.id}`, formData); // API: admin/tables/:id
+        await axiosClient.put(`/admin/tables/${formData.id}`, formData);
         toast.success("Cập nhật thành công!");
       } else {
         await axiosClient.post("/admin/tables", formData);
@@ -272,21 +277,23 @@ const TableManagement = () => {
 
   const handleToggleStatus = async (table) => {
     const newStatus = table.status === "active" ? "inactive" : "active";
+
     if (newStatus === "inactive") {
       try {
-        const res = await axiosClient.patch(
-          `/admin/tables/${table.id}/status`,
-          { status: newStatus }
-        );
+        const res = await axiosClient.patch(`/admin/tables/${table.id}/status`, {
+          status: newStatus,
+        });
+
         if (res.warning) {
-          // Giả sử axiosClient đã trả về data (res.data)
           if (!window.confirm(`⚠️ ${res.message}\nBạn vẫn muốn tắt bàn này?`))
             return;
+
           await axiosClient.patch(
             `/admin/tables/${table.id}/status?force=true`,
             { status: newStatus }
           );
         }
+
         toast.success("Đã tắt bàn");
         fetchTables();
       } catch (err) {
@@ -305,132 +312,154 @@ const TableManagement = () => {
     }
   };
 
-  // --- BULK ACTION: RESET ALL ---
-  const handleBulkRegenerate = async () => {
-    const msg =
-      "⚠️ CẢNH BÁO NGUY HIỂM:\n\nHành động này sẽ VÔ HIỆU HÓA TOÀN BỘ mã QR hiện tại đang dán trên bàn.\nKhách hàng sẽ không thể gọi món bằng mã cũ.\n\nBạn có chắc chắn muốn tạo mới tất cả không?";
-
-    if (!window.confirm(msg)) return;
-
-    try {
-      toast.info("Đang xử lý làm mới hàng loạt...");
-      const res = await axiosClient.post("/admin/tables/regenerate-all"); // API Backend đã viết
-
-      // Backend trả về: { message: "Đã làm mới...", count: 20 }
-      toast.success(res.message || "Đã làm mới tất cả mã QR!");
-      fetchTables(); // Reload lại danh sách để lấy token mới
-    } catch (err) {
-      toast.error("Lỗi hệ thống khi làm mới QR");
-    }
-  };
+  // ===== UI HELPERS =====
+  const totalActive = useMemo(
+    () => (tables || []).filter((t) => t.status === "active").length,
+    [tables]
+  );
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
-      <div className="flex bg-neutral-950 text-gray-200 font-sans">
-        {/* --- LEFT COLUMN: TABLE GRID --- */}
-        <div className="flex-1 flex flex-col h-full min-w-0 transition-all duration-300">
-          {/* Header */}
-          <div className="p-6 border-b border-white/10 shrink-0 space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20">
-              <MdOutlineTableBar className="w-4 h-4 text-orange-500" />
-              <span className="text-orange-500 font-bold text-sm uppercase tracking-wider">
-                Menu Management
-              </span>
-            </div>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-black mt-3">
-                  Quản lý{" "}
-                  <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
-                    Bàn ăn
-                  </span>
-                </h1>
-                <p className="text-sm text-gray-400 mt-1">
-                  Tổng số: {tables.length} bàn
-                </p>
-              </div>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20">
+            <MdOutlineTableBar className="w-4 h-4 text-orange-500" />
+            <span className="text-orange-500 font-bold text-sm uppercase tracking-wider">
+              Table Management
+            </span>
+          </div>
 
-              {/* Bulk Action Buttons */}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleBulkRegenerate}
-                  className="bg-red-900/80 text-red-200 px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-red-800 border border-red-500/30 text-xs font-bold transition-all"
-                  title="Vô hiệu hóa tất cả QR cũ và tạo mới"
-                >
-                  <RefreshCw size={16} /> Reset All
-                </button>
+          <h1 className="text-2xl md:text-3xl font-black mt-3">
+            Quản lý{" "}
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
+              bàn ăn
+            </span>
+          </h1>
 
-                <button
-                  onClick={handleDownloadZip}
-                  className="bg-neutral-800 text-white px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-neutral-700 border border-white/10 text-xs font-medium"
-                  title="Tải tất cả ảnh (ZIP)"
-                >
-                  <Archive size={16} /> ZIP
-                </button>
-                <button
-                  onClick={() => handleGeneratePDF("grid")}
-                  className="bg-neutral-800 text-white px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-neutral-700 border border-white/10 text-xs font-medium"
-                  title="In lưới 4 bàn/trang"
-                >
-                  <Grid size={16} /> PDF Lưới
-                </button>
-                <button
-                  onClick={() => handleGeneratePDF("single")}
-                  className="bg-neutral-800 text-white px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-neutral-700 border border-white/10 text-xs font-medium"
-                  title="In 1 bàn/trang"
-                >
-                  <Square size={16} /> PDF Đơn
-                </button>
-              </div>
-            </div>
+          <div className="text-sm text-gray-400 mt-2">
+            Tổng:{" "}
+            <span className="text-white font-bold">{tables.length}</span> bàn • Active:{" "}
+            <span className="text-white font-bold">{totalActive}</span>
+          </div>
+        </div>
 
-            {/* Filter Bar */}
-            <div className="flex flex-wrap gap-3 items-center">
-              {/* 1. FILTER STATUS */}
-              <div className="flex items-center bg-neutral-900/50 border border-white/10 rounded-xl px-3 py-2">
-                <Filter size={16} className="text-orange-500 mr-2" />
+        {/* Actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleBulkRegenerate}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20 transition text-sm font-bold"
+            title="Vô hiệu hóa tất cả QR cũ và tạo mới"
+          >
+            <RefreshCw size={16} />
+            Reset All
+          </button>
+
+          <button
+            onClick={handleDownloadZip}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition text-sm"
+            title="Tải tất cả ảnh (ZIP)"
+          >
+            <Archive size={16} />
+            ZIP
+          </button>
+
+          <button
+            onClick={() => handleGeneratePDF("grid")}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition text-sm"
+            title="In lưới 4 bàn/trang"
+          >
+            <Grid size={16} />
+            PDF Lưới
+          </button>
+
+          <button
+            onClick={() => handleGeneratePDF("single")}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition text-sm"
+            title="In 1 bàn/trang"
+          >
+            <Square size={16} />
+            PDF Đơn
+          </button>
+
+          <button
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition text-sm font-bold"
+          >
+            <Plus size={16} />
+            Thêm bàn
+          </button>
+        </div>
+      </div>
+
+      {/* Filters panel */}
+      <div className="mt-6 rounded-2xl bg-neutral-900/60 border border-white/10 p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+            <Filter className="text-orange-500" size={18} />
+          </div>
+
+          <div className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              {/* Status */}
+              <div className="md:col-span-3">
+                <label className="text-xs text-gray-400 mb-1 block">Trạng thái</label>
                 <select
-                  className="bg-transparent text-sm text-gray-300 outline-none cursor-pointer [&>option]:bg-neutral-900"
+                  className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white
+                    border border-white/10 focus:outline-none focus:border-orange-500/40 transition
+                    [&>option]:bg-neutral-950 [&>option]:text-white"
                   value={filters.status}
                   onChange={(e) =>
-                    setFilters({ ...filters, status: e.target.value })
+                    setFilters((s) => ({ ...s, status: e.target.value }))
                   }
                 >
-                  <option value="">Tất cả trạng thái</option>
-                  <option value="active">Active (Hoạt động)</option>
-                  <option value="inactive">Inactive (Bảo trì)</option>
+                  <option value="">Tất cả</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
 
-              {/* 2. FILTER LOCATION (Input Text) */}
-              <div className="flex items-center bg-neutral-900/50 border border-white/10 rounded-xl px-3 py-2">
-                {/* Đổi icon thành MapPin cho hợp ngữ cảnh */}
-                <MapPin size={16} className="text-orange-500 mr-2" />
-
-                <select
-                  className="bg-transparent text-sm text-gray-300 outline-none cursor-pointer [&>option]:bg-neutral-900"
-                  value={filters.location}
-                  onChange={(e) =>
-                    setFilters({ ...filters, location: e.target.value })
-                  }
-                >
-                  <option value="">Tất cả khu vực</option>
-                  {/* Danh sách này phải khớp với VALID_LOCATIONS ở Backend */}
-                  <option value="Indoor">Trong nhà (Indoor)</option>
-                  <option value="Outdoor">Ngoài trời (Outdoor)</option>
-                  <option value="Patio">Sân thượng (Patio)</option>
-                  <option value="VIP Room">Phòng VIP</option>
-                </select>
+              {/* Location */}
+              <div className="md:col-span-4">
+                <label className="text-xs text-gray-400 mb-1 block">Khu vực</label>
+                <div className="relative">
+                  <MapPin
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    size={18}
+                  />
+                  <select
+                    className="w-full rounded-xl pl-10 pr-3 py-2.5 text-sm bg-neutral-950 text-white
+                      border border-white/10 focus:outline-none focus:border-orange-500/40 transition
+                      [&>option]:bg-neutral-950 [&>option]:text-white"
+                    value={filters.location}
+                    onChange={(e) =>
+                      setFilters((s) => ({ ...s, location: e.target.value }))
+                    }
+                  >
+                    <option value="">Tất cả khu vực</option>
+                    <option value="Indoor">Indoor</option>
+                    <option value="Outdoor">Outdoor</option>
+                    <option value="Patio">Patio</option>
+                    <option value="VIP Room">VIP Room</option>
+                  </select>
+                </div>
               </div>
 
-              {/* 3. SORT TABLES */}
-              <div className="flex items-center bg-neutral-900/50 border border-white/10 rounded-xl px-3 py-2">
-                <span className="text-xs text-gray-500 mr-2">Sắp xếp:</span>
+              {/* Sort */}
+              <div className="md:col-span-5">
+                <label className="text-xs text-gray-400 mb-1 block">Sắp xếp</label>
                 <select
-                  className="bg-transparent text-sm text-gray-300 outline-none cursor-pointer [&>option]:bg-neutral-900"
+                  className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white
+                    border border-white/10 focus:outline-none focus:border-orange-500/40 transition
+                    [&>option]:bg-neutral-950 [&>option]:text-white"
                   value={filters.sort}
                   onChange={(e) =>
-                    setFilters({ ...filters, sort: e.target.value })
+                    setFilters((s) => ({ ...s, sort: e.target.value }))
                   }
                 >
                   <option value="name_asc">Tên (A-Z)</option>
@@ -441,120 +470,126 @@ const TableManagement = () => {
                   <option value="oldest">Cũ nhất</option>
                 </select>
               </div>
-              <button
-                onClick={openCreate}
-                className="ml-auto bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white px-5 py-2 rounded-xl flex items-center gap-2 shadow-lg transition-all font-bold text-sm"
-              >
-                <Plus size={18} /> Thêm Bàn
-              </button>
+
+              <div className="md:col-span-12 text-xs text-gray-500">
+                Tip: Click card để mở panel chi tiết bên phải. Card inactive sẽ mờ đi.
+              </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Content */}
-          <div className="flex-1 p-6">
-            {loading ? (
-              <div className="text-center py-20 text-gray-500">
-                Đang tải dữ liệu...
-              </div>
-            ) : (
-              // Grid Responsive: Tự co lại khi mở Panel bên phải
-              <div
-                className={`grid gap-6 ${
-                  selectedTable
-                    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      {/* Content layout */}
+      <div className="mt-6 flex gap-4">
+        {/* Left grid */}
+        <div className={`min-w-0 flex-1 ${selectedTable ? "pr-0" : ""}`}>
+          {loading ? (
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-10 text-center text-gray-500">
+              Đang tải dữ liệu...
+            </div>
+          ) : (
+            <div
+              className={`grid gap-4 ${selectedTable
+                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                 }`}
-              >
-                {tables.map((table) => (
-                  <div
-                    key={table.id}
-                    onClick={() => setSelectedTable(table)}
-                    className={`group relative bg-neutral-900/50 border rounded-2xl p-6 cursor-pointer transition-all hover:border-orange-500/30 hover:bg-neutral-800/80
-                                ${
-                                  selectedTable?.id === table.id
-                                    ? "border-orange-500 ring-1 ring-orange-500 bg-neutral-800"
-                                    : "border-white/5"
-                                }
-                                ${
-                                  table.status === "inactive"
-                                    ? "opacity-60 grayscale"
-                                    : ""
-                                }
-                            `}
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg shadow-inner ${
-                            table.status === "active"
-                              ? "bg-orange-500/10 text-orange-500"
-                              : "bg-gray-800 text-gray-500"
+            >
+              {tables.map((table) => (
+                <div
+                  key={table.id}
+                  onClick={() => setSelectedTable(table)}
+                  className={`group relative rounded-2xl border p-5 cursor-pointer transition
+                    bg-white/5 border-white/10 hover:bg-white/10 hover:border-orange-500/20
+                    ${selectedTable?.id === table.id
+                      ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
+                      : ""
+                    }
+                    ${table.status === "inactive" ? "opacity-60 grayscale" : ""}
+                  `}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg
+                          ${table.status === "active"
+                            ? "bg-orange-500/10 text-orange-300 border border-orange-500/20"
+                            : "bg-white/5 text-gray-400 border border-white/10"
                           }`}
-                        >
-                          {table.table_number.replace(/\D/g, "")}
+                      >
+                        {String(table.table_number || "").replace(/\D/g, "") || "—"}
+                      </div>
+
+                      <div>
+                        <div className="text-white font-black text-lg">
+                          {table.table_number}
                         </div>
-                        <div>
-                          <h3 className="font-bold text-white text-lg">
-                            {table.table_number}
-                          </h3>
-                          <span
-                            className={`text-[10px] uppercase tracking-wider font-bold ${
-                              table.status === "active"
-                                ? "text-green-400"
-                                : "text-red-400"
+                        <div
+                          className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${table.status === "active" ? "text-green-400" : "text-red-400"
                             }`}
-                          >
-                            {table.status === "active" ? "Online" : "Offline"}
-                          </span>
+                        >
+                          {table.status === "active" ? "Online" : "Offline"}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="space-y-1 mb-4 text-sm text-gray-400">
-                      <div className="flex items-center gap-2">
-                        <Users size={14} className="text-orange-500" />{" "}
-                        {table.capacity} khách
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-orange-500" />{" "}
-                        {table.location}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-4 border-t border-white/5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEdit(table);
-                        }}
-                        className="flex-1 py-1.5 bg-white/5 rounded hover:bg-white/10 text-gray-300 flex justify-center"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleStatus(table);
-                        }}
-                        className={`flex-1 py-1.5 rounded flex justify-center hover:bg-white/10 ${
-                          table.status === "active"
-                            ? "text-red-400 bg-red-500/10"
-                            : "text-green-400 bg-green-500/10"
-                        }`}
-                      >
-                        <Power size={16} />
-                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+
+                  <div className="mt-4 space-y-1 text-sm text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <Users size={14} className="text-orange-400" />
+                      {table.capacity} khách
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin size={14} className="text-orange-400" />
+                      {table.location || "—"}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-2 pt-4 border-t border-white/10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEdit(table);
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl
+                        bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition"
+                      title="Edit"
+                    >
+                      <Edit size={16} />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStatus(table);
+                      }}
+                      className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border transition
+                        ${table.status === "active"
+                          ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
+                          : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
+                        }`}
+                      title={table.status === "active" ? "Tắt bàn" : "Bật bàn"}
+                    >
+                      <Power size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {!tables.length ? (
+                <div className="col-span-full rounded-2xl bg-white/5 border border-white/10 p-10 text-center">
+                  <div className="text-white font-black">Chưa có bàn</div>
+                  <div className="text-gray-400 text-sm mt-1">
+                    Bấm “Thêm bàn” để tạo mới.
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
 
-        {/* --- RIGHT COLUMN: DETAILS PANEL --- */}
+        {/* Right detail panel */}
         {selectedTable && (
-          <div className="w-96 shrink-0 h-full border-l border-white/10 bg-neutral-900 shadow-2xl relative z-20 transition-all duration-300">
+          <div className="w-95 shrink-0 rounded-2xl border border-white/10 bg-neutral-900/60 overflow-hidden">
             <TableDetailPanel
               table={selectedTable}
               onClose={() => setSelectedTable(null)}
@@ -562,165 +597,143 @@ const TableManagement = () => {
             />
           </div>
         )}
+      </div>
 
-        {/* --- MODAL FORM (Create/Edit) --- */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-9999">
-            <div className="bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
-              <div className="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-white/5">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  {isEditing ? (
-                    <Edit size={18} className="text-orange-500" />
-                  ) : (
-                    <Plus size={18} className="text-orange-500" />
-                  )}
-                  {isEditing ? "Cập Nhật Bàn" : "Thêm Bàn Mới"}
-                </h3>
+      {/* MODAL FORM (Create/Edit) */}
+      {showModal && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setShowModal(false)}
+          />
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-3xl border border-white/10 bg-neutral-950 overflow-hidden">
+              <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+                <div className="text-white font-black">
+                  {isEditing ? "Cập nhật bàn" : "Thêm bàn mới"}
+                </div>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-white"
+                  className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-200"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                <div className="space-y-4">
-                  {/* --- INPUT SỐ BÀN --- */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">
-                      Số bàn / Tên
-                    </label>
-                    <input
-                      name="table_number"
-                      type="text"
-                      placeholder="VD: T-01"
-                      // Thêm logic border màu đỏ nếu có lỗi
-                      className={`w-full px-4 py-2.5 bg-black/40 border rounded-xl text-white outline-none transition-all ${
-                        errors.table_number
-                          ? "border-red-500 focus:border-red-500"
-                          : "border-white/10 focus:border-orange-500"
+              <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <div>
+                  <label className="text-xs text-gray-400">Số bàn / Tên</label>
+                  <input
+                    name="table_number"
+                    type="text"
+                    placeholder="VD: T-01"
+                    className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
+                      ${errors.table_number
+                        ? "border-red-500/60 focus:border-red-500"
+                        : "border-white/10 focus:border-orange-500/40"
                       }`}
-                      value={formData.table_number}
+                    value={formData.table_number}
+                    onChange={(e) => {
+                      handleChange(e);
+                      if (errors.table_number)
+                        setErrors((s) => ({ ...s, table_number: "" }));
+                    }}
+                  />
+                  {errors.table_number ? (
+                    <div className="text-xs text-red-300 mt-1">
+                      {errors.table_number}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-400">Sức chứa</label>
+                    <input
+                      name="capacity"
+                      type="number"
+                      className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
+                        ${errors.capacity
+                          ? "border-red-500/60 focus:border-red-500"
+                          : "border-white/10 focus:border-orange-500/40"
+                        }`}
+                      value={formData.capacity}
                       onChange={(e) => {
                         handleChange(e);
-                        // Xóa lỗi ngay khi user bắt đầu nhập lại
-                        if (errors.table_number)
-                          setErrors({ ...errors, table_number: "" });
+                        if (errors.capacity)
+                          setErrors((s) => ({ ...s, capacity: "" }));
                       }}
                     />
-                    {/* Hiển thị message lỗi */}
-                    {errors.table_number && (
-                      <p className="text-red-500 text-xs mt-1 italic">
-                        {errors.table_number}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* --- INPUT SỨC CHỨA --- */}
-                    <div>
-                      <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">
-                        Sức chứa
-                      </label>
-                      <input
-                        name="capacity"
-                        type="number"
-                        className={`w-full px-4 py-2.5 bg-black/40 border rounded-xl text-white outline-none transition-all ${
-                          errors.capacity
-                            ? "border-red-500 focus:border-red-500"
-                            : "border-white/10 focus:border-orange-500"
-                        }`}
-                        value={formData.capacity}
-                        onChange={(e) => {
-                          handleChange(e);
-                          if (errors.capacity)
-                            setErrors({ ...errors, capacity: "" });
-                        }}
-                      />
-                      {errors.capacity && (
-                        <p className="text-red-500 text-xs mt-1 italic">
-                          {errors.capacity}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* --- SELECT VỊ TRÍ --- */}
-                    <div>
-                      <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">
-                        Vị trí
-                      </label>
-                      <select
-                        name="location"
-                        className={`w-full px-4 py-2.5 bg-black/40 border rounded-xl text-white outline-none transition-all appearance-none ${
-                          errors.location
-                            ? "border-red-500 focus:border-red-500"
-                            : "border-white/10 focus:border-orange-500"
-                        }`}
-                        value={formData.location}
-                        onChange={(e) => {
-                          handleChange(e);
-                          if (errors.location)
-                            setErrors({ ...errors, location: "" });
-                        }}
-                      >
-                        <option value="" className="bg-neutral-900">
-                          Chọn...
-                        </option>
-                        <option value="Indoor" className="bg-neutral-900">
-                          Indoor
-                        </option>
-                        <option value="Outdoor" className="bg-neutral-900">
-                          Outdoor
-                        </option>
-                        <option value="Patio" className="bg-neutral-900">
-                          Patio
-                        </option>
-                        <option value="VIP Room" className="bg-neutral-900">
-                          VIP Room
-                        </option>
-                      </select>
-                      {errors.location && (
-                        <p className="text-red-500 text-xs mt-1 italic">
-                          {errors.location}
-                        </p>
-                      )}
-                    </div>
+                    {errors.capacity ? (
+                      <div className="text-xs text-red-300 mt-1">
+                        {errors.capacity}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">
-                      Ghi chú
-                    </label>
-                    <textarea
-                      name="description"
-                      rows="3"
-                      className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-white focus:border-orange-500 outline-none resize-none"
-                      value={formData.description}
-                      onChange={handleChange}
-                    />
+                    <label className="text-xs text-gray-400">Vị trí</label>
+                    <select
+                      name="location"
+                      className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
+                        [&>option]:bg-neutral-950 [&>option]:text-white
+                        ${errors.location
+                          ? "border-red-500/60 focus:border-red-500"
+                          : "border-white/10 focus:border-orange-500/40"
+                        }`}
+                      value={formData.location}
+                      onChange={(e) => {
+                        handleChange(e);
+                        if (errors.location)
+                          setErrors((s) => ({ ...s, location: "" }));
+                      }}
+                    >
+                      <option value="">Chọn...</option>
+                      <option value="Indoor">Indoor</option>
+                      <option value="Outdoor">Outdoor</option>
+                      <option value="Patio">Patio</option>
+                      <option value="VIP Room">VIP Room</option>
+                    </select>
+                    {errors.location ? (
+                      <div className="text-xs text-red-300 mt-1">
+                        {errors.location}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
-                <div className="pt-2 flex gap-3">
+
+                <div>
+                  <label className="text-xs text-gray-400">Ghi chú</label>
+                  <textarea
+                    name="description"
+                    rows="3"
+                    className="mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border border-white/10 focus:border-orange-500/40 transition resize-none"
+                    value={formData.description}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-2">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-3 border border-white/10 rounded-xl text-gray-400 hover:bg-white/5"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition"
                   >
-                    Hủy
+                    Huỷ
                   </button>
+
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-orange-500/20"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition font-bold"
                   >
-                    {isEditing ? "Lưu Thay Đổi" : "Tạo Mới"}
+                    {isEditing ? "Lưu thay đổi" : "Tạo mới"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
