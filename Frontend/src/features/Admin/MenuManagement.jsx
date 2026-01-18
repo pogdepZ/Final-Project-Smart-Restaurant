@@ -21,6 +21,8 @@ import CreateCategoryModal from "./components/CreateCategoryModal";
 import CreateMenuItemModal from "./components/CreateMenuItemModal";
 import EditMenuItemModal from "./components/EditMenuItemModal";
 import ConfirmModal from "../../Components/ConfirmModal";
+import CategoryManagerPanel from "./components/CategoryManagerPanel";
+import ModifierManagerPanel from "./components/ModifierManagerPanel";
 import { adminMenuApi } from "../../services/adminMenuApi";
 
 const STATUS_META = {
@@ -84,6 +86,44 @@ export default function MenuManagement() {
 
   const { toggle: toggleChef, isLoading: toggleLoading } = useToggleChefRecommended();
 
+  const toggleStatus = async (it, nextChecked) => {
+    const id = it.id;
+    const prevStatus = it.status; // "available" | "unavailable" | "sold_out"
+    const nextStatus = nextChecked ? "available" : "unavailable";
+
+    // optimistic
+    setUiItems((cur) =>
+      cur.map((x) => (x.id === id ? { ...x, status: nextStatus } : x))
+    );
+    setStatusMap((m) => ({ ...m, [id]: true }));
+
+    try {
+      // ✅ Option A: nếu bạn có endpoint updateMenuItem
+      // await adminMenuApi.updateMenuItem(id, { status: nextStatus });
+
+      // ✅ Option B: nếu bạn có endpoint riêng
+      // await adminMenuApi.updateStatus(id, nextStatus);
+
+      // ✅ Option C: nếu BE đang dùng PUT/PATCH chung:
+      await adminMenuApi.updateMenuItem(id, { status: nextStatus });
+
+      toast.success(`Đã đổi status: ${nextStatus}`);
+    } catch (err) {
+      // rollback
+      setUiItems((cur) =>
+        cur.map((x) => (x.id === id ? { ...x, status: prevStatus } : x))
+      );
+      toast.error(err?.response?.data?.message || "Đổi status thất bại");
+    } finally {
+      setStatusMap((m) => {
+        const clone = { ...m };
+        delete clone[id];
+        return clone;
+      });
+    }
+  };
+
+
   const params = useMemo(
     () => ({
       q,
@@ -97,7 +137,11 @@ export default function MenuManagement() {
     [q, categoryId, status, chefOnly, sort, page, limit]
   );
 
-  const { categories, isLoading: catLoading } = useAdminMenuCategories();
+  const {
+    categories,
+    isLoading: catLoading,
+    refetch: refetchCategories,
+  } = useAdminMenuCategories();
   const { data, isLoading, error, refetch } = useAdminMenuItems(params);
 
   const items = data?.items ?? [];
@@ -109,8 +153,15 @@ export default function MenuManagement() {
     setUiItems(items);
   }, [items]);
 
+  useEffect(() => {
+    if (categoryId === "ALL") return;
+    const exists = categories.some((c) => c.id === categoryId);
+    if (!exists) setCategoryId("ALL");
+  }, [categories, categoryId]);
+
   // ✅ loading theo từng item
   const [togglingMap, setTogglingMap] = useState({}); // { [id]: true/false }
+  const [statusMap, setStatusMap] = useState({});
 
   const totalPages = pagination.totalPages || 1;
 
@@ -155,8 +206,8 @@ export default function MenuManagement() {
 
           <button
             onClick={() => setOpenCreateCategory(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl 
-               bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition"
           >
             + Category
           </button>
@@ -218,7 +269,11 @@ export default function MenuManagement() {
                       setCategoryId(e.target.value);
                       resetPage();
                     }}
-                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition"
+                    className="w-full rounded-xl pl-10 pr-3 py-2.5 text-sm
+                              bg-neutral-950 text-white
+                              border border-white/10
+                              focus:outline-none focus:border-orange-500/40 transition
+                              [&>option]:bg-neutral-950 [&>option]:text-white"
                   >
                     <option value="ALL">Tất cả</option>
                     {categories.map((c) => (
@@ -241,11 +296,16 @@ export default function MenuManagement() {
                       setStatus(e.target.value);
                       resetPage();
                     }}
-                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition"
+                    className="w-full rounded-xl pl-10 pr-3 py-2.5 text-sm
+                              bg-neutral-950 text-white
+                              border border-white/10
+                              focus:outline-none focus:border-orange-500/40 transition
+                              [&>option]:bg-neutral-950 [&>option]:text-white"
                   >
                     <option value="ALL">Tất cả</option>
                     <option value="available">Available</option>
                     <option value="unavailable">Unavailable</option>
+                    <option value="sold_out">Sold out</option>
                   </select>
                 </div>
               </div>
@@ -261,7 +321,11 @@ export default function MenuManagement() {
                       setSort(e.target.value);
                       resetPage();
                     }}
-                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition"
+                    className="w-full rounded-xl pl-10 pr-3 py-2.5 text-sm
+                              bg-neutral-950 text-white
+                              border border-white/10
+                              focus:outline-none focus:border-orange-500/40 transition
+                              [&>option]:bg-neutral-950 [&>option]:text-white"
                   >
                     <option value="NEWEST">Mới nhất</option>
                     <option value="OLDEST">Cũ nhất</option>
@@ -333,9 +397,24 @@ export default function MenuManagement() {
                       <div className="text-xs text-gray-400 mt-1">{it.categoryName || "—"}</div>
                     </td>
 
-                    <td className="py-3 px-3 align-top">
-                      <StatusPill status={it.status} />
+                    <td
+                      className="py-3 px-3 align-top"
+                      onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal khi toggle
+                    >
+                      <div className="flex items-center gap-3">
+
+                        <div className="flex items-center gap-2">
+                          <ToggleSwitch
+                            checked={it.status === "available"}
+                            disabled={!!statusMap[it.id] || it.status === "sold_out"} // sold_out thì khoá
+                            onChange={(nextChecked) => toggleStatus(it, nextChecked)}
+                            label="Status"
+                          />
+                          <StatusPill status={it.status} />
+                        </div>
+                      </div>
                     </td>
+
 
                     {/* ✅ cột Chef = toggle mượt */}
                     <td className="py-3 px-3 align-top">
@@ -459,6 +538,13 @@ export default function MenuManagement() {
         />
       </div>
 
+      <CategoryManagerPanel
+        onReloadMenuItems={refetch}
+        onReloadCategories={refetchCategories}
+      />
+
+      <ModifierManagerPanel onReload={refetch} />
+
       {/* Modal */}
       <AdminMenuItemDetailModal
         open={!!detailItem}
@@ -470,11 +556,13 @@ export default function MenuManagement() {
       <CreateCategoryModal
         open={openCreateCategory}
         onClose={() => setOpenCreateCategory(false)}
-        onSuccess={() => {
+        onSuccess={async () => {
           setOpenCreateCategory(false);
-          refetch(); // reload menu
+          await refetchCategories(); // ✅ reload categories (filter + create item)
+          refetch();                 // ✅ reload menu items nếu bạn muốn
         }}
       />
+
 
       <CreateMenuItemModal
         open={openCreateItem}

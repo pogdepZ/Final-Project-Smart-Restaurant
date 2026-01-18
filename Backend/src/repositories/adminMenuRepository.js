@@ -471,6 +471,16 @@ async function replaceMenuItemGroups(menuItemId, groupIds = []) {
   }
 }
 
+async function moveItemsToCategory(fromCategoryId, toCategoryId) {
+  const sql = `
+    UPDATE menu_items
+    SET category_id = $2, updated_at = NOW()
+    WHERE category_id = $1 AND is_deleted = false
+  `;
+  await db.query(sql, [fromCategoryId, toCategoryId]);
+  return true;
+}
+
 module.exports = {
   listCategories,
   countItems,
@@ -487,4 +497,5 @@ module.exports = {
   softDeleteItem,
   menuItemExists,
   replaceMenuItemGroups,
+  moveItemsToCategory,
 };

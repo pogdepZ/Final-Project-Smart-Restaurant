@@ -21,7 +21,6 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// ✅ bạn tạo file này hoặc đổi sang service bạn đang dùng
 import { dashboardApi } from "../../services/dashboardApi";
 import { toast } from "react-toastify";
 
@@ -32,7 +31,7 @@ function stringToColor(str) {
   }
 
   const h = Math.abs(hash) % 360;
-  return `hsl(${h}, 60%, 50%)`; // đẹp, nổi, không quá gắt
+  return `hsl(${h}, 60%, 50%)`;
 }
 
 function buildRange(period) {
@@ -239,12 +238,13 @@ export default function AdminDashboard() {
 
         <div className="flex items-center gap-3">
           {/* period selector */}
-          <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm">
+          <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm ">
             <span className="text-gray-400">Doanh thu:</span>
             <select
               value={revenuePeriod}
               onChange={(e) => setRevenuePeriod(e.target.value)}
-              className="bg-transparent outline-none text-white"
+              className="bg-transparent outline-none text-white
+              focus:outline-none focus:border-orange-500/40 transition [&>option]:bg-neutral-900 [&>option]:text-white"
             >
               {PERIODS.map((p) => (
                 <option key={p.value} value={p.value} className="text-black">
@@ -423,7 +423,8 @@ export default function AdminDashboard() {
               <select
                 value={popularItemsPeriod}
                 onChange={(e) => setPopularItemsPeriod(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 text-sm"
+                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 text-sm
+                focus:outline-none focus:border-orange-500/40 transition [&>option]:bg-neutral-900 [&>option]:text-white"
               >
                 {PERIODS.map((p) => (
                   <option key={p.value} value={p.value} className="text-black">
@@ -491,7 +492,8 @@ export default function AdminDashboard() {
               <select
                 value={peakHoursPeriod}
                 onChange={(e) => setPeakHoursPeriod(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 text-sm"
+                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 text-sm
+                focus:outline-none focus:border-orange-500/40 transition [&>option]:bg-neutral-900 [&>option]:text-white"
               >
                 {PERIODS.map((p) => (
                   <option key={p.value} value={p.value} className="text-black">

@@ -30,8 +30,9 @@ import DashBoard from "../features/Admin/Dashboard";
 import MenuManagement from "../features/Admin/MenuManagement";
 import TableManagement from "../features/Admin/TableManagement";
 import OrderManagement from "../features/Admin/OrderManagement";
-import UserManagement from "../features/Admin/UserManagement";
 import Reports from "../features/Admin/Reports";
+import AccountsManagement from "../features/Admin/AccountsManagement";
+import AdminProfile from "../features/Admin/AdminProfile";
 import Settings from "../features/Admin/Settings"; // (NEW) Cài đặt nhà hàng
 
 // Waiter
@@ -163,8 +164,6 @@ const routers = [
             path: "menu",
             element: <MenuManagement />,
           },
-          // (Option) Thêm route con nếu muốn edit chi tiết
-          // { path: "menu/edit/:id", element: <EditMenuItem /> },
           {
             path: "tables",
             element: <TableManagement />,
@@ -174,17 +173,12 @@ const routers = [
             element: <OrderManagement />,
           },
           {
-            path: "users",
-            element: <UserManagement />,
+            path: "accounts",
+            element: <AccountsManagement />,
           },
           {
-            path: "reports",
-            element: <Reports />,
-          },
-          // (NEW) Cài đặt thông tin nhà hàng, thuế, giờ mở cửa
-          {
-            path: "settings",
-            element: <Settings />,
+            path: "profile",
+            element: <AdminProfile />,
           },
         ],
       },

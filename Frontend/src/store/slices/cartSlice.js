@@ -1,3 +1,4 @@
+// src/store/slices/cartSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { cartApi } from "../../services/cartApi";
 
@@ -12,16 +13,39 @@ const safeParse = (raw, fallback) => {
 };
 
 const getInitialCart = () => safeParse(localStorage.getItem(LS_KEY), []);
-
 const persist = (items) => localStorage.setItem(LS_KEY, JSON.stringify(items));
 
-// lấy option id an toàn
+/** Lấy option id an toàn */
 const getOptionId = (m) =>
   m?.option_id || m?.id || m?.modifier_option_id || m?.modifierOptionId || null;
 
-// ✅ lineKey ổn định
-export const buildLineKey = (itemId, modifiers = []) => {
-  const ids = (modifiers || [])
+/** ✅ Normalize modifiers: luôn trả về Array */
+const normalizeModifiers = (mods) => {
+  if (!mods) return [];
+  if (Array.isArray(mods)) return mods;
+
+  // mods là JSON string: "[]", "[{...}]"
+  if (typeof mods === "string") {
+    try {
+      const parsed = JSON.parse(mods);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // mods là object đơn: { ... } -> bọc thành mảng
+  if (typeof mods === "object") return [mods];
+
+  return [];
+};
+
+/** ✅ itemId thống nhất: ưu tiên menuItemId nếu có */
+const getItemId = (item) => item?.menuItemId || item?.menu_item_id || item?.id;
+
+/** ✅ lineKey ổn định */
+export const buildLineKey = (itemId, modifiers) => {
+  const ids = normalizeModifiers(modifiers)
     .map(getOptionId)
     .filter(Boolean)
     .sort()
@@ -29,8 +53,8 @@ export const buildLineKey = (itemId, modifiers = []) => {
   return `${itemId}::${ids}`;
 };
 
-const calcModifierExtra = (modifiers = []) =>
-  (modifiers || []).reduce(
+const calcModifierExtra = (modifiers) =>
+  normalizeModifiers(modifiers).reduce(
     (sum, m) => sum + Number(m?.price ?? m?.price_adjustment ?? 0),
     0,
   );
@@ -51,9 +75,11 @@ const calcTotals = (items) => {
   return { totalItems, totalPrice };
 };
 
+/** ✅ init: normalize modifiers + build lineKey đúng */
 const initialItems = getInitialCart().map((i) => {
-  const modifiers = i.modifiers || [];
-  const lineKey = i.lineKey || buildLineKey(i.id, modifiers);
+  const modifiers = normalizeModifiers(i.modifiers);
+  const itemId = getItemId(i);
+  const lineKey = i.lineKey || buildLineKey(itemId, modifiers);
   return { ...i, modifiers, lineKey };
 });
 
@@ -111,22 +137,27 @@ const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    // ✅ ADD: cộng đúng quantity (không phải +1 cứng)
+    /** ✅ ADD: cộng đúng quantity (không phải +1 cứng) */
     addToCartLocal: (state, action) => {
       const item = action.payload || {};
-      const modifiers = item.modifiers || [];
+      const modifiers = normalizeModifiers(item.modifiers);
       const qtyToAdd = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
 
-      const lineKey = item.lineKey || buildLineKey(item.id, modifiers);
+      const itemId = getItemId(item);
+      if (!itemId) return;
+
+      const lineKey = item.lineKey || buildLineKey(itemId, modifiers);
       const existing = state.items.find((i) => i.lineKey === lineKey);
 
       if (existing) {
         existing.quantity += qtyToAdd;
-        // update note nếu muốn (tuỳ bạn)
         if (typeof item.note === "string") existing.note = item.note;
       } else {
         state.items.push({
           ...item,
+          // đảm bảo có id dùng cho buildLineKey về sau
+          id: item.id ?? itemId,
+          menuItemId: item.menuItemId ?? itemId,
           modifiers,
           lineKey,
           quantity: qtyToAdd,
@@ -139,17 +170,20 @@ const cartSlice = createSlice({
       persist(state.items);
     },
 
-    // ✅ UPDATE 1 LINE: đổi modifiers/qty/note -> tạo lineKey mới, merge nếu trùng
+    /** ✅ UPDATE 1 LINE: đổi modifiers/qty/note -> tạo lineKey mới, merge nếu trùng */
     updateCartLineLocal: (state, action) => {
       const { fromLineKey, next } = action.payload || {};
-      if (!fromLineKey || !next?.id) return;
+      if (!fromLineKey) return;
 
       const idx = state.items.findIndex((i) => i.lineKey === fromLineKey);
       if (idx === -1) return;
 
-      const nextModifiers = next.modifiers || [];
+      const nextItemId = getItemId(next);
+      if (!nextItemId) return;
+
+      const nextModifiers = normalizeModifiers(next.modifiers);
       const nextQty = Number(next.quantity) > 0 ? Number(next.quantity) : 1;
-      const nextLineKey = buildLineKey(next.id, nextModifiers);
+      const nextLineKey = buildLineKey(nextItemId, nextModifiers);
 
       // remove old line
       const old = state.items[idx];
@@ -161,13 +195,15 @@ const cartSlice = createSlice({
         existing.quantity += nextQty;
         existing.note = next.note || existing.note || "";
         existing.modifiers = nextModifiers;
-        existing.price = Number(next.price ?? existing.price ?? 0);
-        existing.name = next.name ?? existing.name;
-        existing.image = next.image ?? existing.image;
+        if (next.price != null) existing.price = Number(next.price);
+        if (next.name != null) existing.name = next.name;
+        if (next.image != null) existing.image = next.image;
       } else {
         state.items.push({
           ...old, // giữ các field cũ nếu thiếu
           ...next,
+          id: old.id ?? next.id ?? nextItemId,
+          menuItemId: old.menuItemId ?? next.menuItemId ?? nextItemId,
           modifiers: nextModifiers,
           quantity: nextQty,
           lineKey: nextLineKey,
@@ -247,6 +283,7 @@ const cartSlice = createSlice({
         state.syncError = null;
         state.cartId = action.payload?.cart?.id || null;
 
+        // Sau sync thì clear local cart
         state.items = [];
         state.totalItems = 0;
         state.totalPrice = 0;

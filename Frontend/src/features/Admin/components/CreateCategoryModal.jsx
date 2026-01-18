@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, Layers } from "lucide-react";
 import { adminMenuApi } from "../../../services/adminMenuApi";
+import { toast } from "react-toastify";
 
 export default function CreateCategoryModal({ open, onClose, onSuccess }) {
   const [name, setName] = useState("");
@@ -45,9 +46,11 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
         status,
       });
       onSuccess?.();
+      toast.success("Thêm category thành công");
       reset();
     } catch (e) {
       setError(e?.response?.data?.message || "Tạo category thất bại.");
+      toast.error(e?.response?.data?.message || "Tạo category thất bại.")
     } finally {
       setLoading(false);
     }
@@ -127,7 +130,8 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition"
+                  className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition
+                  [&>option]:bg-neutral-900 [&>option]:text-white"
                 >
                   <option value="active">active</option>
                   <option value="inactive">inactive</option>

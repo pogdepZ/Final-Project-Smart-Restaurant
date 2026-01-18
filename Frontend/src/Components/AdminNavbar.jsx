@@ -6,7 +6,8 @@ import {
   ClipboardList,
   UtensilsCrossed,
   Users,
-  Settings,
+  User,
+  ShieldUser,
   LogOut,
   Menu as MenuIcon,
   X,
@@ -19,7 +20,7 @@ const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
   { to: "/admin/menu", label: "Menu", icon: UtensilsCrossed },
-  { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/accounts", label: "Accounts", icon: Users },
   { to: "/admin/tables", label: "Tables", icon: MdOutlineTableBar },
   // { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
@@ -56,12 +57,12 @@ export default function AdminNavbar() {
           {/* Brand */}
           <Link to="/admin" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Shield className="text-white" size={18} />
+              <ShieldUser className="text-white" size={24} />
             </div>
             <div className="leading-tight">
-              <div className="text-white font-black tracking-wide">Admin</div>
+              <div className="text-white font-black tracking-wide font-display">Lumière Bistro</div>
               <div className="text-[10px] text-gray-400 uppercase tracking-[0.3em]">
-                Console
+                Admin
               </div>
             </div>
           </Link>
@@ -80,6 +81,11 @@ export default function AdminNavbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
+            <Link to="/admin/profile" className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-neutral-800 border border-orange-500/30 flex items-center justify-center text-orange-500">
+                <User size={24} />
+              </div>
+            </Link>
             <button
               onClick={logout}
               className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all active:scale-95"

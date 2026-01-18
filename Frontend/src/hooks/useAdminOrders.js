@@ -1,43 +1,32 @@
+// src/hooks/useAdminOrders.js
 import { useCallback, useEffect, useState } from "react";
-import { adminOrdersApi } from "../services/adminOrdersApi";
 import { toast } from "react-toastify";
+import { adminOrdersApi } from "../services/adminOrdersApi"; // bạn map đúng service
 
-export function useAdminOrders(filters = {}) {
-  const [data, setData] = useState({ orders: [], pagination: null });
+export function useAdminOrders(params) {
+  const [data, setData] = useState(null);
   const [isLoading, setLoading] = useState(true);
-  const [error, setError] = useState();
+  const [error, setError] = useState("");
 
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-
-      const res = await adminOrdersApi.getOrders(filters);
-
-      setData({
-        orders: res.orders || [],
-        pagination: res.pagination || null,
-      });
+      setError("");
+      const res = await adminOrdersApi.getOrders(params);
+      setData(res);
     } catch (e) {
-      console.error("getOrders error:", e);
-      const message =
-        e?.message ||
-        e?.response?.data?.message ||
-        "Không tải được danh sách order";
-      setError(message);
-      toast.error(`${message}`);
+      const msg =
+        e?.response?.data?.message || e?.message || "Không tải được orders";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, [JSON.stringify(filters)]); // eslint-disable-line
+  }, [JSON.stringify(params)]); // quick way, hoặc dùng deps tường minh
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
-  return {
-    data,
-    isLoading,
-    error,
-    refetch: fetchOrders,
-  };
+  return { data, isLoading, error, refetch: fetchOrders };
 }
