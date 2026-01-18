@@ -4,7 +4,7 @@ import { adminMenuApi } from "../../../services/adminMenuApi";
 import MultiSelectCombobox from "../../../Components/MultiSelectCombobox";
 import ScrollArea from "../../../Components/ScrollArea";
 import { toast } from "react-toastify";
-import ScrollArea from "../../../Components/ScrollArea";
+// import ScrollArea from "../../../Components/ScrollArea";
 
 export default function EditMenuItemModal({
   open,

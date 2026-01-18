@@ -80,6 +80,20 @@ class TableSessionRepository {
     );
     return result.rows[0] || null;
   }
+
+  // Tìm session active của user và bàn
+  async findActiveByUserAndTable(userId) {
+    const result = await db.query(
+      `SELECT ts.*, t.table_number, t.status as table_status
+       FROM table_sessions ts
+       JOIN tables t ON ts.table_id = t.id
+       WHERE ts.user_id = $1 AND ts.status = 'active'`,
+      [userId]
+    );
+
+    console.log("findActiveByUserAndTable result:", result.rows[0]);
+    return result.rows[0] || null;
+  }
 }
 
 module.exports = new TableSessionRepository();

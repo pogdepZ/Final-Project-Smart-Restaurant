@@ -9,6 +9,7 @@ router.get('/my-tables', protect, tableController.getMyTables);
 
 router.get('/validate-session', tableSessionController.validateSession);
 
+router.get('/find-session-active', tableSessionController.findSessionActive);
 
 //router.post('/verify', tableController.verifyQR);
 router.get('/', tableController.getTables)

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Lock, Unlock, CheckCircle, AlertCircle, Utensils } from "lucide-react";
 import { tableApi } from "../../services/tableApi";
+import { toast } from "react-toastify";
 
 const ScanQR = () => {
   const { tableCode } = useParams();
@@ -22,6 +23,25 @@ const ScanQR = () => {
   useEffect(() => {
     const checkAndCreateSession = async () => {
       try {
+        // Kiểm tra xem người dùng có bàn hay chưa
+        const existingTableSession = await tableApi.findSessionActive(user?.id);
+
+        console.log("existingTableSession:", existingTableSession);
+
+        if(existingTableSession.hasSession && existingTableSession.sessions) {
+          if(existingTableSession.sessions.tableId === tableCode) {
+            // Nếu có rồi thì chuyển thẳng vào menu
+            toast.success(`Bạn đã có phiên làm việc với bàn ${existingTableSession.sessions.tableNumber}. Đang chuyển đến thực đơn...`);
+            handleLoginSuccess(existingTableSession.sessions);
+            return;
+          } else {
+            // Nếu có nhưng khác bàn thì báo lỗi
+            setStatus("error");
+            setErrorMessage(`Bạn đã có phiên làm việc với bàn ${existingTableSession.sessions.tableNumber}. Vui lòng kết thúc phiên làm việc hoặc thông báo cho nhân viên trước khi sử dụng bàn khác.`);
+            return;
+          }
+        }
+
         // Gọi API để kiểm tra bàn và tạo session mới
         const response = await tableApi.checkAndCreateSession(
           tableCode,
