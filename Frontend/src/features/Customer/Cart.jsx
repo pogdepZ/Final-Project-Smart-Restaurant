@@ -87,6 +87,12 @@ const Cart = () => {
     );
 
     if (isValidSession && isValidSession.data .valid === false) {
+      localStorage.removeItem("qrToken");
+      localStorage.removeItem("sessionToken");
+      localStorage.removeItem("tableSessionId");
+      localStorage.removeItem("tableCode");
+      localStorage.removeItem("tableNumber");
+      localStorage.removeItem("tableSession");
       toast.warning("Phiên bàn đã hết hạn, vui lòng quét lại QR để đặt món!");
       navigate(tableCode ? `/menu/${tableCode}` : "/scan");
       return;

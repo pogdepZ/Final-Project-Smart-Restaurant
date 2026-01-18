@@ -127,7 +127,9 @@ export default function OrderDetailModal({
                     ? "bg-red-900/10 border-red-500/20 opacity-60" // Style cho món bị từ chối
                     : item.status === "preparing"
                       ? "bg-green-900/10 border-green-500/20" // Style cho món đã nhận
-                      : "bg-neutral-900/50 border-white/5 hover:border-white/10" // Style Pending
+                      : item.status === "ready"
+                      ? "bg-green-900/10 border-green-500/20" // Style ready
+                      : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
                 }`}
               >
                 <div className="flex-1">
@@ -163,6 +165,11 @@ export default function OrderDetailModal({
                         <CheckCircle2 size={12} /> Đã nhận
                       </span>
                     )}
+                    {item.status === "ready" && (
+                      <span className="text-xs text-green-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 size={12} /> Đã hoàn thành
+                      </span>
+                    )}
                     {item.status === "rejected" && (
                       <span className="text-xs text-red-400 font-bold flex items-center gap-1">
                         <XCircle size={12} /> Đã từ chối
@@ -182,7 +189,8 @@ export default function OrderDetailModal({
                   {/* ACTION BUTTONS (Chỉ hiện khi item đang Pending và Đơn chưa hoàn thành) */}
                   {(item.status === "received" || !item.status) &&
                     order.status !== "completed" &&
-                    order.status !== "rejected" && (
+                    order.status !== "rejected" &&
+                    order.status !== "ready" && (
                       <div className="flex gap-2 mt-1">
                         <button
                           onClick={() => handleItemAction(item.id, "rejected")}
