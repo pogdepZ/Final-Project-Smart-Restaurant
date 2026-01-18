@@ -11,7 +11,7 @@ import {
 import axiosClient from "../../store/axiosClient";
 import { useSocket } from "../../context/SocketContext";
 import { useNotificationSound } from "../../hooks/useNotificationSound";
-import { formatMoneyVND } from "../../utils/orders";
+// import { formatMoneyVND } from "../../utils/orders";
 
 import KitchenOrderCard from "../../Components/KitchenOrderCard";
 import KitchenOrderDetailModal from "../../Components/KitchenOrderDetailModal";
@@ -125,6 +125,40 @@ export default function KitchenPage() {
     }
   };
 
+  // Cập nhật status từng item
+  const handleUpdateItemStatus = async (orderId, itemId, status) => {
+    try {
+      await axiosClient.patch(`/orders/items/${itemId}`, { status });
+
+      // Cập nhật local state
+      setOrders((prev) =>
+        prev.map((order) => {
+          if (order.id !== orderId) return order;
+          return {
+            ...order,
+            items: order.items.map((item) =>
+              item.id === itemId ? { ...item, status } : item,
+            ),
+          };
+        }),
+      );
+
+      // Cập nhật selected order nếu đang mở
+      if (selected?.id === orderId) {
+        setSelected((prev) => ({
+          ...prev,
+          items: prev.items.map((item) =>
+            item.id === itemId ? { ...item, status } : item,
+          ),
+        }));
+      }
+
+      toast.success("Đã cập nhật món! ✅");
+    } catch (e) {
+      toast.error("Lỗi cập nhật món");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       {/* Header */}
@@ -212,6 +246,7 @@ export default function KitchenPage() {
                 onView={() => setSelected(o)}
                 onComplete={() => handleUpdateStatus(o.id, "ready")}
                 onStart={() => toast.info("Bắt đầu nấu...")}
+                onUpdateItemStatus={handleUpdateItemStatus}
               />
             ))}
           </div>
@@ -223,6 +258,7 @@ export default function KitchenPage() {
           order={selected}
           onClose={() => setSelected(null)}
           onComplete={() => handleUpdateStatus(selected.id, "ready")}
+          onUpdateItemStatus={handleUpdateItemStatus}
         />
       )}
     </div>
