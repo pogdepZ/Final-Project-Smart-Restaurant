@@ -86,7 +86,7 @@ const Cart = () => {
       sessionToken,
     );
 
-    if (isValidSession && isValidSession.valid === false) {
+    if (isValidSession && isValidSession.data .valid === false) {
       toast.warning("Phiên bàn đã hết hạn, vui lòng quét lại QR để đặt món!");
       navigate(tableCode ? `/menu/${tableCode}` : "/scan");
       return;

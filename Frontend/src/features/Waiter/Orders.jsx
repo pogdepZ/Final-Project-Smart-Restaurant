@@ -168,6 +168,17 @@ export default function WaiterOrdersPage() {
   // Actions
   const handleUpdateStatus = async (orderId, status) => {
     try {
+      if(status === "rejected") {
+        // kiểm tra xem có item nào đã được chuẩn bị không
+        const order = orders.find((o) => o.id === orderId);
+        const hasPreparingItems = order.items.some(
+          (item) => item.status === "preparing" || item.status === "completed",
+        );
+        if (hasPreparingItems) {
+          toast.error("Không thể hủy đơn đã có món được chuẩn bị.");
+          return;
+        }
+      }  
       await axiosClient.patch(`/orders/${orderId}`, { status });
       toast.success(
         status === "preparing" ? "Đã nhận đơn & Chuyển bếp" : "Đã cập nhật",
