@@ -6,6 +6,8 @@ exports.checkAndCreateSession = async (req, res) => {
     const { tableCode } = req.params;
     const { userId } = req.body;
 
+    console.log(req.body);
+
     const result = await tableSessionService.checkAndCreateSession(
       tableCode,
       userId

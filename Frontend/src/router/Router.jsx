@@ -56,37 +56,83 @@ const routers = [
     element: <PublicRoute />,
     children: [
       {
-        path: "/signin",
-        element: <SignIn />,
+        path: "/",
+        element: <CustomerLayout />,
+        children: [
+          {
+            index: true,
+            element: <LandingPage />,
+          },
+          {
+            path: "/signin",
+            element: <SignIn />,
+          },
+
+          {
+            path: "/signup",
+            element: <SignUp />,
+          },
+
+          {
+            path: "/scan/:tableCode",
+            element: <ScanQR />,
+          },
+          {
+            path: "/verify-email",
+            element: <VerifyEmail />,
+          },
+          {
+            path: "/menu/:tableCode",
+            element: <Menu />,
+          },
+          {
+            path: "/cart/:tableCode",
+            element: <Cart />,
+          },
+          {
+            path: "/forgot",
+            element: <Forgot />,
+          },
+          {
+            path: "/reset-password",
+            element: <ResetPassword />,
+          },
+          {
+            path: "order/status",
+            element: <OrderStatus />,
+          },
+          {
+            path: "order-tracking",
+            element: <OrderTrackingPage />,
+          },
+          {
+            path: "orders/:id",
+            element: <OrderDetail />,
+          },
+          {
+            path: "bill",
+            element: <Bill />,
+          },
+          {
+            path: "booking",
+            element: <Booking />,
+          },
+          {
+            path: "cart",
+            element: <Cart />,
+          },
+
+          {
+            path: "order/status",
+            element: <OrderStatus />,
+          },
+          {
+            path: "menu",
+            element: <Menu />,
+          },
+        ],
       },
-      {
-        path: "/signup",
-        element: <SignUp />,
-      },
-      {
-        path: "/scan/:tableCode",
-        element: <ScanQR />,
-      },
-      {
-        path: "/verify-email",
-        element: <VerifyEmail />,
-      },
-      {
-        path: "/menu/:tableCode",
-        element: <Menu />,
-      },
-      {
-        path: "/cart/:tableCode",
-        element: <Cart />,
-      },
-      {
-        path: "/forgot",
-        element: <Forgot />,
-      },
-      {
-        path: "/reset-password",
-        element: <ResetPassword />,
-      },
+
       // Trang báo lỗi không có quyền truy cập
       {
         path: "/unauthorized",
@@ -98,39 +144,11 @@ const routers = [
   // ===== CUSTOMER (Main Layout) =====
   {
     path: "/",
-    element: <ProtectedRoute/>,
+    element: <ProtectedRoute />,
     children: [
       {
         element: <CustomerLayout />,
         children: [
-          {
-            index: true, // Mặc định khi vào "/"
-            element: <LandingPage />,
-          },
-          {
-            path: "cart",
-            element: <Cart />,
-          },
-          {
-            path: "menu",
-            element: <Menu />,
-          },
-          {
-            path: "order/status",
-            element: <OrderStatus />,
-          },
-          {
-            path: "bill",
-            element: <Bill />,
-          },
-          {
-            path: "booking",
-            element: <Booking />,
-          },
-          {
-            path: "orders/:id",
-            element: <OrderDetail />,
-          },
           {
             path: "history",
             element: <OrderHistory />,
@@ -138,10 +156,6 @@ const routers = [
           {
             path: "profile",
             element: <UserProfile />,
-          },
-          {
-            path: "order-tracking",
-            element: <OrderTrackingPage />,
           },
         ],
       },

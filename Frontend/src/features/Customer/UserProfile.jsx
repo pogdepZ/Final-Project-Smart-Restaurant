@@ -63,6 +63,14 @@ const UserProfile = () => {
     );
   }
 
+  const sliceName = (name) => {
+    if (!name) return "";
+
+    const words = name.trim().split(/\s+/); // tách theo khoảng trắng
+    const lastWord = words[words.length - 1]; // lấy từ cuối
+    return lastWord[0].toUpperCase(); // lấy chữ cái đầu và in hoa
+  };
+
   const handleSaveProfile = async ({ name, preferences, avatarFile }) => {
     setSaving(true);
     try {
@@ -155,7 +163,7 @@ const UserProfile = () => {
               />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-white/40 text-xs">
-                No Avatar
+                {sliceName(user.name)}
               </div>
             )}
           </div>

@@ -341,23 +341,25 @@ exports.findByTableId = async (tableId) => {
       o.payment_status,
       ('ORD-' || to_char(o.created_at, 'YYYYMMDD') || '-' || right(replace(o.id::text,'-',''), 6)) AS code,
       t.table_number,
-      COALESCE(
+        COALESCE(
           json_agg(
-              json_build_object(
-                  'id', oi.id,
-                  'item_name', oi.item_name,
-                  'quantity', oi.quantity,
-                  'price', oi.price,
-                  'subtotal', oi.subtotal,
-                  'note', oi.note,
-                  'status', oi.status
-              )
+            json_build_object(
+              'id', oi.id,
+              'item_name', oi.item_name,
+              'quantity', oi.quantity,
+              'price', oi.price,
+              'subtotal', oi.subtotal,
+              'note', oi.note,
+              'status', oi.status,
+              'image_url', mi.image_url
+            )
           ) FILTER (WHERE oi.id IS NOT NULL), '[]'
-      ) as items
-    FROM orders o
-    LEFT JOIN tables t ON o.table_id = t.id
-    LEFT JOIN order_items oi ON o.id = oi.order_id
-    WHERE o.table_id = $1
+        ) as items
+      FROM orders o
+      LEFT JOIN tables t ON o.table_id = t.id
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
+      WHERE o.table_id = $1
       AND o.payment_status <> 'paid'
       AND o.created_at > NOW() - INTERVAL '24 hours'
     GROUP BY o.id, t.table_number
@@ -370,16 +372,15 @@ exports.findByTableId = async (tableId) => {
 };
 
 
-exports.findUnpaidByUserId = async (userId, tableId, sessionId) => {
+exports.findUnpaidByUserId = async (tableId, sessionId) => {
   const query = `
     SELECT * FROM orders
-    WHERE user_id = $1
-      AND table_id = $2
+    WHERE table_id = $1
       AND payment_status = 'unpaid'
-      AND session_id = $3
+      AND session_id = $2 
     ORDER BY created_at DESC
     LIMIT 1
   `;  
-  const result = await db.query(query, [userId, tableId, sessionId]);
+  const result = await db.query(query, [tableId, sessionId]);
   return result.rows[0] || null;
 }

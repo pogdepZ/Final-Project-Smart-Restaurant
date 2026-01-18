@@ -65,7 +65,7 @@ const OrderTrackingPage = () => {
           name: item.item_name || item.name,
           quantity: item.quantity || item.qty,
           status: mapItemStatus(item.status),
-          image: item.image || "",
+          image: item.image_url || "",
         })),
       }));
 
