@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useRef, useState } from "react";
 import { X, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
 import { adminMenuApi } from "../../../services/adminMenuApi";
 import MultiSelectCombobox from "../../../Components/MultiSelectCombobox";
+import ScrollArea from "../../../Components/ScrollArea";
 import { toast } from "react-toastify";
 import ScrollArea from "../../../Components/ScrollArea";
 
@@ -63,6 +64,7 @@ export default function EditMenuItemModal({
         setError("");
 
         setLoadingGroups(true);
+
         const [groupsRes, detailRes] = await Promise.all([
           adminMenuApi.getModifierGroups({ status: "active" }),
           adminMenuApi.getMenuItemDetail(item.id),
@@ -169,7 +171,7 @@ export default function EditMenuItemModal({
         prepTimeMinutes: Number(form.prepTimeMinutes || 0),
         status: form.status,
         description: form.description,
-        imageUrl: form.imageUrl,
+        imageUrl: form.imageUrl, // ✅ URL từ upload
       };
 
       await adminMenuApi.updateMenuItem(item.id, payload);
@@ -180,6 +182,7 @@ export default function EditMenuItemModal({
         ...payload,
         modifierGroupIds: selectedGroupIds,
       });
+
       onClose?.();
       toast.success("Chỉnh sửa thành công");
     } catch (e) {

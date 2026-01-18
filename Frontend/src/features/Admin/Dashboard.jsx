@@ -21,7 +21,6 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// ✅ bạn tạo file này hoặc đổi sang service bạn đang dùng
 import { dashboardApi } from "../../services/dashboardApi";
 import { toast } from "react-toastify";
 
@@ -32,7 +31,7 @@ function stringToColor(str) {
   }
 
   const h = Math.abs(hash) % 360;
-  return `hsl(${h}, 60%, 50%)`; // đẹp, nổi, không quá gắt
+  return `hsl(${h}, 60%, 50%)`;
 }
 
 function buildRange(period) {
