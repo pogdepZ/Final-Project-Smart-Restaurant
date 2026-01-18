@@ -18,7 +18,7 @@ import KitchenOrderDetailModal from "../../Components/KitchenOrderDetailModal";
 export default function KitchenPage() {
   const socket = useSocket();
   const { play: playNotificationSound } = useNotificationSound(
-    "/sounds/kitchen-order.mp3"
+    "/sounds/kitchen-order.mp3",
   );
 
   const [orders, setOrders] = useState([]);
@@ -83,7 +83,7 @@ export default function KitchenPage() {
         (o) =>
           o.id.toLowerCase().includes(q) ||
           (o.table_number || "").toLowerCase().includes(q) ||
-          (o.items || []).some((it) => it.item_name?.toLowerCase().includes(q))
+          (o.items || []).some((it) => it.item_name?.toLowerCase().includes(q)),
       );
     }
 
@@ -92,7 +92,7 @@ export default function KitchenPage() {
       const items = order.items || [];
       const maxPrepTime = Math.max(
         ...items.map((it) => it.prep_time_minutes || 15),
-        15
+        15,
       );
       const elapsedMins = (now - new Date(order.created_at).getTime()) / 60000;
       const isUrgent = elapsedMins >= maxPrepTime;

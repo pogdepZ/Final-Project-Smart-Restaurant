@@ -75,7 +75,7 @@ axiosClient.interceptors.response.use(
         if (!originalRequest.skipLoading) {
           startLoading();
         }
-        const result = await axiosClient.post("/auth/refresh", null, {
+        const result = await axiosClient.post("/auth/refresh", {} , {
           skipLoading: true,
         });
         const newAccessToken = result.accessToken;

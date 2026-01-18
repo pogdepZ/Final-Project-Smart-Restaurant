@@ -70,7 +70,7 @@ exports.createOrder = async (data, io) => {
           // Tương tự, cần modifierRepo để lấy giá
           const modResult = await client.query(
             "SELECT * FROM modifier_options WHERE id = $1",
-            [modOptionId]
+            [modOptionId],
           );
           // Hoặc dùng modifierRepo.findOptionById(modOptionId) nếu đã viết
 
@@ -251,7 +251,7 @@ exports.updateItemStatus = async (itemId, status) => {
   if (status === "rejected") {
     await orderRepo.decreaseOrderTotal(
       updatedItem.order_id,
-      updatedItem.subtotal
+      updatedItem.subtotal,
     );
   }
 
@@ -334,7 +334,7 @@ exports.getOrdersByTableToken = async (tableToken) => {
   return orders;
 };
 
-exports.getUnpaidOrderByUserId = async ( tableId, sessionId) => {
+exports.getUnpaidOrderByUserId = async (tableId, sessionId) => {
   // console.log("Fetching unpaid order for:", { userId, tableId, sessionId });
   const order = await orderRepo.findUnpaidByUserId(tableId, sessionId);
   return order;
