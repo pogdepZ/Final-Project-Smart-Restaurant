@@ -170,31 +170,36 @@ export default function AccountsManagement() {
     return list;
   }, [tab]);
 
-  // Toggle verify (demo): nếu bạn có endpoint verify/unverify
-  const [togglingVerifyMap, setTogglingVerifyMap] = useState({}); // { [id]: true }
+  const [togglingActiveMap, setTogglingActiveMap] = useState({}); // { [id]: true }
 
-  const toggleVerify = async (u, nextChecked) => {
+  const toggleActive = async (u, nextChecked) => {
     const id = u.id;
-    const prev = !!u.is_verified;
+    const prev = !!u.is_actived;
 
     // optimistic
-    setUiAccounts((cur) => cur.map((x) => (x.id === id ? { ...x, is_verified: nextChecked } : x)));
-    setTogglingVerifyMap((m) => ({ ...m, [id]: true }));
+    setUiAccounts((cur) =>
+      cur.map((x) => (x.id === id ? { ...x, is_actived: nextChecked } : x))
+    );
+    setTogglingActiveMap((m) => ({ ...m, [id]: true }));
 
     try {
-      await adminAccountApi.setVerified(id, nextChecked);
-      toast.success(nextChecked ? "Đã verify" : "Đã bỏ verify");
+      await adminAccountApi.setActived(id, nextChecked);
+      toast.success(nextChecked ? "Đã kích hoạt tài khoản" : "Đã vô hiệu hoá tài khoản");
     } catch (e) {
-      setUiAccounts((cur) => cur.map((x) => (x.id === id ? { ...x, is_verified: prev } : x)));
-      toast.error(e?.response?.data?.message || "Đổi verify thất bại");
+      // rollback
+      setUiAccounts((cur) =>
+        cur.map((x) => (x.id === id ? { ...x, is_actived: prev } : x))
+      );
+      toast.error(e?.response?.data?.message || "Đổi trạng thái thất bại");
     } finally {
-      setTogglingVerifyMap((m) => {
+      setTogglingActiveMap((m) => {
         const clone = { ...m };
         delete clone[id];
         return clone;
       });
     }
   };
+
 
   // Delete (optional): chỉ gợi ý vì staff/admin cần cẩn thận
   const requestDelete = (u) => {
@@ -418,9 +423,10 @@ export default function AccountsManagement() {
           <table className="w-full min-w-245">
             <thead className="bg-neutral-950/60 border-b border-white/10">
               <tr className="text-left text-xs text-gray-400">
-                <th className="py-3 pr-3 pl-4 w-[40%]">User</th>
+                <th className="py-3 pr-3 pl-4 w-[25%]">User</th>
                 <th className="py-3 px-3 w-[15%]">Role</th>
                 <th className="py-3 px-3 w-[15%]">Verified</th>
+                <th className="py-3 px-3 w-[15%]">Active</th>
                 <th className="py-3 px-3 w-[15%]">Actions</th>
                 <th className="py-3 pl-3 pr-4 text-right w-[15%]">Created</th>
               </tr>
@@ -440,21 +446,34 @@ export default function AccountsManagement() {
                       <div className="text-xs text-gray-400 mt-1">{u.email}</div>
                     </td>
 
-                    <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
+                    <td className="py-3 px-3 align-top">
                       <RolePill role={u.role} />
+                    </td>
+
+                    <td className="py-3 px-3 align-top">
+                      <VerifyPill isVerified={!!u.is_verified} />
                     </td>
 
                     <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-3">
                         <ToggleSwitch
-                          checked={!!u.is_verified}
-                          disabled={!!togglingVerifyMap[u.id]}
-                          onChange={(next) => toggleVerify(u, next)}
-                          label="Verify"
+                          checked={!!u.is_actived}
+                          disabled={!!togglingActiveMap[u.id]}
+                          onChange={(next) => toggleActive(u, next)}
+                          label="Active"
                         />
-                        <VerifyPill isVerified={!!u.is_verified} />
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold
+                          ${u.is_actived
+                              ? "bg-green-500/10 text-green-200 border-green-500/20"
+                              : "bg-red-500/10 text-red-200 border-red-500/20"
+                            }`}
+                        >
+                          {u.is_actived ? "Active" : "Inactive"}
+                        </span>
                       </div>
                     </td>
+
 
                     <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex items-center gap-2 justify-end">
@@ -487,7 +506,7 @@ export default function AccountsManagement() {
 
               {!loading && uiAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center">
+                  <td colSpan={6} className="py-10 text-center">
                     <div className="text-white font-bold">Không có account phù hợp</div>
                     <div className="text-gray-400 text-sm mt-1">
                       Thử đổi filter hoặc từ khóa tìm kiếm.

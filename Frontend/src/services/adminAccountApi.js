@@ -12,10 +12,9 @@ export const adminAccountApi = {
     return axiosClient.post("/admin/accounts/staff", body);
   },
 
-  // PATCH /admin/accounts/:id/verified  body: { is_verified: true/false }
-  setVerified(id, isVerified) {
-    return axiosClient.patch(`/admin/accounts/${id}/verified`, {
-      is_verified: isVerified,
+  setActived(id, isActived) {
+    return axiosClient.patch(`/admin/accounts/${id}/actived`, {
+      isActived,
     });
   },
 
