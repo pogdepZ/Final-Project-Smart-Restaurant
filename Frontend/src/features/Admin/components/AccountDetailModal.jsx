@@ -16,7 +16,15 @@ function Row({ label, value }) {
 }
 
 function AvatarBlock({ name, avatarUrl }) {
-  const initial = useMemo(() => (name?.trim()?.[0] || "U").toUpperCase(), [name]);
+  const initial = useMemo(() => {
+    if (!name) return "U";
+
+    const parts = name.trim().split(/\s+/); // tách theo khoảng trắng
+    const lastWord = parts[parts.length - 1];
+
+    return lastWord[0]?.toUpperCase() || "U";
+  }, [name]);
+
   const [imgOk, setImgOk] = useState(!!avatarUrl);
 
   useEffect(() => {

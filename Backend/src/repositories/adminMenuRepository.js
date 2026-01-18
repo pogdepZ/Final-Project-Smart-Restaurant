@@ -92,7 +92,7 @@ async function countItems(filters) {
 
 async function listItems(
   filters,
-  { limit = 20, offset = 0, sort = "NEWEST" } = {}
+  { limit = 20, offset = 0, sort = "NEWEST" } = {},
 ) {
   const { whereSql, params } = buildItemWhere(filters);
 
@@ -183,13 +183,23 @@ async function getItemById(id) {
       mi.price,
       mi.prep_time_minutes,
       mi.status,
-      mi.image_url,
+
+      -- 👇 lấy ảnh primary
+      p.url AS image_url,
+
       mi.is_chef_recommended,
       mi.is_deleted,
       mi.created_at,
       mi.updated_at
     FROM menu_items mi
-    JOIN menu_categories mc ON mc.id = mi.category_id
+    JOIN menu_categories mc 
+      ON mc.id = mi.category_id
+
+    -- 👇 join sang bảng ảnh
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = mi.id 
+     AND p.is_primary = true
+
     WHERE mi.id = $1
     LIMIT 1
   `;
@@ -437,7 +447,7 @@ async function softDeleteItem(id) {
 async function menuItemExists(menuItemId) {
   const { rows } = await db.query(
     `SELECT 1 FROM menu_items WHERE id = $1 LIMIT 1`,
-    [menuItemId]
+    [menuItemId],
   );
   return rows.length > 0;
 }
@@ -449,7 +459,7 @@ async function replaceMenuItemGroups(menuItemId, groupIds = []) {
     // xoá mapping cũ
     await db.query(
       `DELETE FROM menu_item_modifier_groups WHERE menu_item_id = $1`,
-      [menuItemId]
+      [menuItemId],
     );
 
     // insert mapping mới (nếu có)
@@ -459,7 +469,7 @@ async function replaceMenuItemGroups(menuItemId, groupIds = []) {
         INSERT INTO menu_item_modifier_groups (menu_item_id, group_id)
         SELECT $1, UNNEST($2::uuid[])
         `,
-        [menuItemId, groupIds]
+        [menuItemId, groupIds],
       );
     }
 
@@ -481,6 +491,147 @@ async function moveItemsToCategory(fromCategoryId, toCategoryId) {
   return true;
 }
 
+async function listPhotosByMenuItem(menuItemId) {
+  const { rows } = await db.query(
+    `
+    SELECT id, menu_item_id, url, is_primary, created_at
+    FROM menu_item_photos
+    WHERE menu_item_id = $1
+    ORDER BY is_primary DESC, created_at ASC
+    `,
+    [menuItemId],
+  );
+  return rows;
+}
+
+// Insert nhiều ảnh (không set primary)
+async function insertPhotos(menuItemId, urls = []) {
+  if (!urls.length) return [];
+
+  // ($1, $2), ($1, $3), ...
+  const valuesSql = urls.map((_, i) => `($1, $${i + 2})`).join(", ");
+
+  const { rows } = await db.query(
+    `
+    INSERT INTO menu_item_photos(menu_item_id, url)
+    VALUES ${valuesSql}
+    RETURNING id, menu_item_id, url, is_primary, created_at
+    `,
+    [menuItemId, ...urls],
+  );
+
+  return rows;
+}
+
+// Lấy 1 photo để validate ownership
+async function getPhotoById(photoId) {
+  const { rows } = await db.query(
+    `
+    SELECT id, menu_item_id, url, is_primary, created_at
+    FROM menu_item_photos
+    WHERE id = $1
+    `,
+    [photoId],
+  );
+  return rows[0] || null;
+}
+
+// Set primary: transaction để đảm bảo chỉ 1 primary
+async function setPrimaryPhotoTx(menuItemId, photoId) {
+  try {
+    await db.query("BEGIN");
+
+    // Set all false
+    await db.query(
+      `
+      UPDATE menu_item_photos
+      SET is_primary = false
+      WHERE menu_item_id = $1
+      `,
+      [menuItemId],
+    );
+
+    // Set selected true
+    const { rows } = await db.query(
+      `
+      UPDATE menu_item_photos
+      SET is_primary = true
+      WHERE id = $1 AND menu_item_id = $2
+      RETURNING id, menu_item_id, url, is_primary, created_at
+      `,
+      [photoId, menuItemId],
+    );
+
+    await db.query("COMMIT");
+    return rows[0] || null;
+  } catch (e) {
+    await db.query("ROLLBACK");
+    throw e;
+  } finally {
+  }
+}
+
+// Khi chưa có ảnh primary, set ảnh đầu tiên làm primary (optional helper)
+async function ensureHasPrimaryTx(menuItemId) {
+  try {
+    await db.query("BEGIN");
+
+    const { rows: hasPrimary } = await db.query(
+      `
+      SELECT 1
+      FROM menu_item_photos
+      WHERE menu_item_id = $1 AND is_primary = true
+      LIMIT 1
+      `,
+      [menuItemId],
+    );
+
+    if (hasPrimary.length) {
+      await db.query("COMMIT");
+      return null;
+    }
+
+    // set ảnh cũ nhất (created_at ASC) làm primary
+    const { rows } = await db.query(
+      `
+      WITH picked AS (
+        SELECT id
+        FROM menu_item_photos
+        WHERE menu_item_id = $1
+        ORDER BY created_at ASC
+        LIMIT 1
+      )
+      UPDATE menu_item_photos p
+      SET is_primary = true
+      FROM picked
+      WHERE p.id = picked.id
+      RETURNING p.id, p.menu_item_id, p.url, p.is_primary, p.created_at
+      `,
+      [menuItemId],
+    );
+
+    await db.query("COMMIT");
+    return rows[0] || null;
+  } catch (e) {
+    await db.query("ROLLBACK");
+    throw e;
+  } finally {
+  }
+}
+
+// Delete photo
+async function deletePhoto(photoId, menuItemId) {
+  const { rows } = await db.query(
+    `
+    DELETE FROM menu_item_photos
+    WHERE id = $1 AND menu_item_id = $2
+    RETURNING id, menu_item_id, url, is_primary
+    `,
+    [photoId, menuItemId],
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   listCategories,
   countItems,
@@ -498,4 +649,10 @@ module.exports = {
   menuItemExists,
   replaceMenuItemGroups,
   moveItemsToCategory,
+  listPhotosByMenuItem,
+  insertPhotos,
+  getPhotoById,
+  setPrimaryPhotoTx,
+  ensureHasPrimaryTx,
+  deletePhoto,
 };

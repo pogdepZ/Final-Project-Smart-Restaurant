@@ -20,7 +20,7 @@ router.get(
   "/categories",
   protect,
   adminOnly,
-  adminMenuController.getCategories
+  adminMenuController.getCategories,
 );
 
 // Items (paging + filter)
@@ -29,7 +29,7 @@ router.get(
   "/items/:id",
   protect,
   adminOnly,
-  adminMenuController.getMenuItemDetail
+  adminMenuController.getMenuItemDetail,
 );
 
 router.post("/items", protect, adminOnly, adminMenuController.createMenuItem);
@@ -37,20 +37,20 @@ router.patch(
   "/items/:id",
   protect,
   adminOnly,
-  adminMenuController.updateMenuItem
+  adminMenuController.updateMenuItem,
 );
 router.patch(
   "/items/:id/chef",
   protect,
   staffOnly,
-  adminMenuController.toggleChefRecommended
+  adminMenuController.toggleChefRecommended,
 );
 
 router.patch(
   "/items/:id/delete",
   protect,
   adminOnly,
-  adminMenuController.deleteMenuItem
+  adminMenuController.deleteMenuItem,
 );
 
 // Categories
@@ -58,12 +58,12 @@ router.post(
   "/categories",
   protect,
   adminOnly,
-  adminMenuController.createCategory
+  adminMenuController.createCategory,
 );
 
 router.put(
   "/items/:id/modifier-groups",
-  adminMenuController.setMenuItemModifierGroups
+  adminMenuController.setMenuItemModifierGroups,
 );
 
 // POST /admin/categories
@@ -74,7 +74,7 @@ router.patch(
   "/categories/:id",
   protect,
   adminOnly,
-  adminCategoryController.update
+  adminCategoryController.update,
 );
 
 // DELETE /admin/categories/:id  (soft delete + check order)
@@ -82,14 +82,35 @@ router.patch(
   "/categories/:id/delete",
   protect,
   adminOnly,
-  adminCategoryController.remove
+  adminCategoryController.remove,
 );
 
 router.get(
   "/list-categories",
   protect,
   adminOnly,
-  adminCategoryController.list
+  adminCategoryController.list,
+);
+
+router.get("/menu-items/:id/photos", adminMenuController.getPhotos);
+
+// Upload nhiều ảnh
+router.post(
+  "/menu-items/:id/photos",
+  upload.array("images", 10),
+  adminMenuController.uploadPhotos,
+);
+
+// Set primary
+router.patch(
+  "/menu-items/:id/photos/:photoId/primary",
+  adminMenuController.setPrimary,
+);
+
+// Delete 1 ảnh (optional)
+router.delete(
+  "/menu-items/:id/photos/:photoId",
+  adminMenuController.deletePhoto,
 );
 
 module.exports = router;

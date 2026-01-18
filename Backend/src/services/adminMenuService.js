@@ -185,7 +185,7 @@ exports.deleteMenuItem = async (id) => {
   const locked = await repo.hasItemInLockedOrders(id);
   if (locked) {
     const err = new Error(
-      "Không thể xoá: món này đang tồn tại trong order đã CANCELLED hoặc COMPLETED."
+      "Không thể xoá: món này đang tồn tại trong order đã CANCELLED hoặc COMPLETED.",
     );
     err.status = 409;
     throw err;
@@ -198,7 +198,7 @@ exports.deleteMenuItem = async (id) => {
 const isUuid = (s) =>
   typeof s === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    s
+    s,
   );
 
 exports.setMenuItemModifierGroups = async (menuItemId, body) => {
@@ -230,4 +230,74 @@ exports.setMenuItemModifierGroups = async (menuItemId, body) => {
   await repo.replaceMenuItemGroups(menuItemId, groupIds);
 
   return { menuItemId, groupIds };
+};
+
+const toUiPhoto = (p) => ({
+  id: p.id,
+  menuItemId: p.menu_item_id,
+  url: p.url,
+  isPrimary: !!p.is_primary,
+  createdAt: p.created_at,
+});
+
+exports.getMenuItemPhotos = async (menuItemId) => {
+  const photos = await repo.listPhotosByMenuItem(menuItemId);
+  return photos.map(toUiPhoto);
+};
+
+// Upload thêm ảnh: insert + nếu chưa có primary thì set primary cho ảnh đầu
+exports.addMenuItemPhotos = async (menuItemId, urls = []) => {
+  if (!urls.length) return [];
+
+  await repo.insertPhotos(menuItemId, urls);
+
+  // nếu menu item chưa có ảnh primary -> tự set primary
+  await repo.ensureHasPrimaryTx(menuItemId);
+
+  const photos = await repo.listPhotosByMenuItem(menuItemId);
+  return photos.map(toUiPhoto);
+};
+
+// Set ảnh primary
+exports.setPrimaryPhoto = async (menuItemId, photoId) => {
+  const photo = await repo.getPhotoById(photoId);
+  if (!photo) {
+    const err = new Error("Photo not found");
+    err.status = 404;
+    throw err;
+  }
+
+  if (photo.menu_item_id !== menuItemId) {
+    const err = new Error("Photo does not belong to this menu item");
+    err.status = 400;
+    throw err;
+  }
+
+  const updated = await repo.setPrimaryPhotoTx(menuItemId, photoId);
+  if (!updated) {
+    const err = new Error("Cannot set primary photo");
+    err.status = 400;
+    throw err;
+  }
+
+  const photos = await repo.listPhotosByMenuItem(menuItemId);
+  return photos.map(toUiPhoto);
+};
+
+// Xoá ảnh: nếu xoá ảnh primary thì auto chọn ảnh khác làm primary (nếu còn)
+exports.removePhoto = async (menuItemId, photoId) => {
+  const deleted = await repo.deletePhoto(photoId, menuItemId);
+  if (!deleted) {
+    const err = new Error("Photo not found");
+    err.status = 404;
+    throw err;
+  }
+
+  // nếu vừa xoá ảnh primary, đảm bảo còn ảnh khác thì set primary lại
+  if (deleted.is_primary) {
+    await repo.ensureHasPrimaryTx(menuItemId);
+  }
+
+  const photos = await repo.listPhotosByMenuItem(menuItemId);
+  return photos.map(toUiPhoto);
 };

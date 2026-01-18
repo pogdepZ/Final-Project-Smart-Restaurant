@@ -87,10 +87,72 @@ exports.setMenuItemModifierGroups = async (req, res) => {
   try {
     const data = await service.setMenuItemModifierGroups(
       req.params.id,
-      req.body
+      req.body,
     );
     return res.json({ message: "Updated modifier groups", ...data });
   } catch (e) {
     return sendError(res, e, "Server error");
+  }
+};
+
+// GET /admin/menu-items/:id/photos
+exports.getPhotos = async (req, res, next) => {
+  try {
+    const menuItemId = req.params.id;
+    const photos = await service.getMenuItemPhotos(menuItemId);
+    return res.json({ photos });
+  } catch (e) {
+    return next(e);
+  }
+};
+
+// POST /admin/menu-items/:id/photos  (upload.array("images", 10))
+exports.uploadPhotos = async (req, res, next) => {
+  try {
+    const menuItemId = req.params.id;
+
+    // multer-cloudinary sẽ trả file info ở req.files
+    const files = req.files || [];
+    if (!files.length) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    // CloudinaryStorage trả URL ở file.path
+    const urls = files.map((f) => f.path).filter(Boolean);
+
+    const photos = await service.addMenuItemPhotos(menuItemId, urls);
+
+    return res.status(201).json({
+      message: "Uploaded",
+      photos,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+// PATCH /admin/menu-items/:id/photos/:photoId/primary
+exports.setPrimary = async (req, res, next) => {
+  try {
+    const menuItemId = req.params.id;
+    const photoId = req.params.photoId;
+
+    const photos = await service.setPrimaryPhoto(menuItemId, photoId);
+    return res.json({ photos });
+  } catch (e) {
+    return next(e);
+  }
+};
+
+// DELETE /admin/menu-items/:id/photos/:photoId
+exports.deletePhoto = async (req, res, next) => {
+  try {
+    const menuItemId = req.params.id;
+    const photoId = req.params.photoId;
+
+    const photos = await service.removePhoto(menuItemId, photoId);
+    return res.json({ photos });
+  } catch (e) {
+    return next(e);
   }
 };
