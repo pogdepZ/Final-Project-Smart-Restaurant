@@ -3,9 +3,12 @@ import axiosClient from "../store/axiosClient";
 
 // Kiểm tra bàn và tạo session mới khi quét QR
 export const checkAndCreateSession = async (tableCode, userId = null) => {
-  const response = await axiosClient.post(`/tables/${tableCode}/create-session`, {
-    userId,
-  });
+  const response = await axiosClient.post(
+    `/tables/${tableCode}/create-session`,
+    {
+      userId,
+    },
+  );
   return response.data;
 };
 
@@ -35,7 +38,7 @@ export const validateSession = async (tableCode, sessionToken) => {
     params: { tableCode, sessionToken },
   });
   return response.data;
-}
+};
 
 export const tableApi = {
   getTables: (params) => axiosClient.get("/tables", { params }),
@@ -55,6 +58,33 @@ export const tableApi = {
   // verifyBookingAndActivateSession,
   endTableSession,
   validateSession,
+
+  // ===== Waiters =====
+  async getWaiters() {
+    const res = await axiosClient.get("/admin/tables/waiters");
+    return res?.items ? res.items : Array.isArray(res) ? res : [];
+  },
+
+  // ===== Assignments =====
+  async getTableAssignmentsByWaiter(waiterId) {
+    if (!waiterId) throw new Error("Missing waiterId");
+    const res = await axiosClient.get(`/admin/tables/table-assignments/${waiterId}`);
+    return {
+      tableIds: (res?.tableIds || []).map(String),
+      waiter: res?.waiter || null,
+    };
+  },
+
+  async saveTableAssignmentsByWaiter(waiterId, tableIds = []) {
+    if (!waiterId) throw new Error("Missing waiterId");
+    const res = await axiosClient.put(`/admin/tables/table-assignments/${waiterId}`, {
+      tableIds,
+    });
+    return {
+      message: res?.message,
+      tableIds: (res?.tableIds || tableIds).map(String),
+    };
+  },
 };
 
 export default tableApi;
