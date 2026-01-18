@@ -38,7 +38,7 @@ export const validateSession = async (tableCode, sessionToken) => {
     params: { tableCode, sessionToken },
   });
   return response;
-}
+};
 
 export const findSessionActive = async (userId) => {
   const response = await axiosClient.get(`/tables/find-session-active`, {
@@ -65,6 +65,7 @@ export const tableApi = {
   // verifyBookingAndActivateSession,
   endTableSession,
   validateSession,
+  findSessionActive,
 
   // ===== Waiters =====
   async getWaiters() {
@@ -75,7 +76,9 @@ export const tableApi = {
   // ===== Assignments =====
   async getTableAssignmentsByWaiter(waiterId) {
     if (!waiterId) throw new Error("Missing waiterId");
-    const res = await axiosClient.get(`/admin/tables/table-assignments/${waiterId}`);
+    const res = await axiosClient.get(
+      `/admin/tables/table-assignments/${waiterId}`,
+    );
     return {
       tableIds: (res?.tableIds || []).map(String),
       waiter: res?.waiter || null,
@@ -84,9 +87,12 @@ export const tableApi = {
 
   async saveTableAssignmentsByWaiter(waiterId, tableIds = []) {
     if (!waiterId) throw new Error("Missing waiterId");
-    const res = await axiosClient.put(`/admin/tables/table-assignments/${waiterId}`, {
-      tableIds,
-    });
+    const res = await axiosClient.put(
+      `/admin/tables/table-assignments/${waiterId}`,
+      {
+        tableIds,
+      },
+    );
     return {
       message: res?.message,
       tableIds: (res?.tableIds || tableIds).map(String),

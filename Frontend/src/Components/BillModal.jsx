@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import {
   X,
   Printer,
@@ -6,11 +6,17 @@ import {
   Banknote,
   FileDown,
   QrCode,
+  Wallet,
+  Loader2,
 } from "lucide-react";
 import { billApi } from "../services/billApi";
+import { stripeApi } from "../services/stripeApi";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import { formatMoneyVND } from "../utils/orders";
+
+// Lazy load Stripe components - chỉ load khi cần thanh toán Stripe
+const StripePaymentWrapper = lazy(() => import("./StripePaymentWrapper"));
 
 // CẤU HÌNH TÀI KHOẢN NGÂN HÀNG
 const BANK_INFO = {
@@ -18,6 +24,27 @@ const BANK_INFO = {
   ACCOUNT_NO: "0909123456",
   TEMPLATE: "compact",
   ACCOUNT_NAME: "NHA HANG SMART",
+};
+
+// Stripe Promise - sẽ load khi cần (dynamic import)
+let stripePromiseCache = null;
+let loadStripeModule = null;
+
+const getStripe = async () => {
+  if (!stripePromiseCache) {
+    try {
+      // Dynamic import để không load Stripe SDK khi không cần
+      if (!loadStripeModule) {
+        const stripeJs = await import("@stripe/stripe-js");
+        loadStripeModule = stripeJs.loadStripe;
+      }
+      const config = await stripeApi.getConfig();
+      stripePromiseCache = loadStripeModule(config.publishableKey);
+    } catch (err) {
+      console.error("Failed to load Stripe config:", err);
+    }
+  }
+  return stripePromiseCache;
 };
 
 const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
@@ -28,6 +55,12 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(true);
   const [qrBankUrl, setQrBankUrl] = useState("");
+
+  // Stripe states
+  const [stripePromise, setStripePromise] = useState(null);
+  const [clientSecret, setClientSecret] = useState("");
+  const [showStripeForm, setShowStripeForm] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
 
   // 1. Fetch Bill Preview
   useEffect(() => {
@@ -59,7 +92,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
       const url = `https://img.vietqr.io/image/${BANK_INFO.BANK_ID}-${
         BANK_INFO.ACCOUNT_NO
       }-${BANK_INFO.TEMPLATE}.png?amount=${amount}&addInfo=${encodeURIComponent(
-        description
+        description,
       )}&accountName=${encodeURIComponent(BANK_INFO.ACCOUNT_NAME)}`;
       setQrBankUrl(url);
     }
@@ -177,7 +210,9 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
 
       // IN CÁC CỘT SỐ LIỆU (SL - Đơn Giá - Thành Tiền)
       // Tính đơn giá (nếu API không trả về price gốc thì lấy subtotal / qty)
-      const unitPrice = item.price_base ? item.price_base : item.subtotal / item.qty;
+      const unitPrice = item.price_base
+        ? item.price_base
+        : item.subtotal / item.qty;
 
       doc.text(String(item.qty), COL_QTY_X, y, { align: "right" });
       doc.text(formatCurrencyPDF(unitPrice), COL_PRICE_UNIT_X, y, {
@@ -199,13 +234,15 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
           // Tên Topping
           const modName = `+ ${removeAccents(mod.name)}`;
           const modLines = doc.splitTextToSize(modName, 35); // Wrap text nếu tên dài
-          
+
           doc.text(modLines, MARGIN + 2, y); // Thụt đầu dòng 2mm
 
           // Giá Topping (In vào cột Đơn giá)
           const modPrice = Number(mod.price);
           if (modPrice > 0) {
-              doc.text(`+${formatCurrencyPDF(modPrice)}`, COL_PRICE_UNIT_X, y, { align: "right" });
+            doc.text(`+${formatCurrencyPDF(modPrice)}`, COL_PRICE_UNIT_X, y, {
+              align: "right",
+            });
           }
 
           y += modLines.length * 3.5; // Tăng y theo số dòng topping
@@ -216,14 +253,14 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
       }
       // 3. In Note (Nếu có)
       if (item.note) {
-          doc.setFontSize(8);
-          doc.setFont("helvetica", "italic");
-          const noteText = `Note: ${removeAccents(item.note)}`;
-          const noteLines = doc.splitTextToSize(noteText, 35);
-          doc.text(noteLines, MARGIN + 2, y);
-          y += noteLines.length * 3.5;
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(9);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        const noteText = `Note: ${removeAccents(item.note)}`;
+        const noteLines = doc.splitTextToSize(noteText, 35);
+        doc.text(noteLines, MARGIN + 2, y);
+        y += noteLines.length * 3.5;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
       }
 
       y += 1.5; // Khoảng cách giữa các món
@@ -298,11 +335,44 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     }
   };
 
+  // Khởi tạo Stripe Payment Intent
+  const handleInitStripe = async () => {
+    if (!billData) return;
+
+    setStripeLoading(true);
+    try {
+      // 1. Load Stripe
+      const stripe = await getStripe();
+      if (!stripe) {
+        throw new Error("Không thể kết nối Stripe");
+      }
+      setStripePromise(stripe);
+
+      // 2. Tạo Payment Intent
+      const result = await stripeApi.createPaymentIntent(tableId, {
+        discount_type: discountType,
+        discount_value: Number(discountValue),
+      });
+
+      if (result.clientSecret) {
+        setClientSecret(result.clientSecret);
+        setShowStripeForm(true);
+      } else {
+        throw new Error("Không thể tạo phiên thanh toán");
+      }
+    } catch (err) {
+      console.error("Stripe init error:", err);
+      toast.error(err.message || "Lỗi khởi tạo Stripe");
+    } finally {
+      setStripeLoading(false);
+    }
+  };
+
   const handleCheckout = async () => {
     if (!billData) return;
     if (
       !window.confirm(
-        `Xác nhận thanh toán ${formatMoneyVND(billData.final_amount)}?`
+        `Xác nhận thanh toán ${formatMoneyVND(billData.final_amount)}?`,
       )
     )
       return;
@@ -474,22 +544,31 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
               <label className="text-xs font-bold text-gray-400 uppercase block">
                 Thanh toán bằng
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {[
-                  { id: "cash", icon: <Banknote size={16} /> },
-                  { id: "card", icon: <CreditCard size={16} /> },
-                  { id: "transfer", icon: <QrCode size={16} /> },
+                  {
+                    id: "cash",
+                    icon: <Banknote size={16} />,
+                    label: "Tiền mặt",
+                  },
+                  { id: "card", icon: <CreditCard size={16} />, label: "Thẻ" },
+                  { id: "transfer", icon: <QrCode size={16} />, label: "QR" },
+                  { id: "stripe", icon: <Wallet size={16} />, label: "Stripe" },
                 ].map((m) => (
                   <button
                     key={m.id}
-                    onClick={() => setPaymentMethod(m.id)}
-                    className={`flex-1 flex items-center justify-center p-2 rounded-lg border transition-all ${
+                    onClick={() => {
+                      setPaymentMethod(m.id);
+                      setShowStripeForm(false);
+                    }}
+                    className={`flex-1 min-w-[60px] flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
                       paymentMethod === m.id
                         ? "bg-orange-600 text-white border-orange-500"
                         : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
                     }`}
                   >
                     {m.icon}
+                    <span className="text-[10px] mt-1">{m.label}</span>
                   </button>
                 ))}
               </div>
@@ -523,6 +602,69 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
               </div>
             </div>
           )}
+
+          {/* Stripe Checkout Section */}
+          {paymentMethod === "stripe" && !showStripeForm && (
+            <div className="flex flex-col items-center animate-in zoom-in-95 duration-300 p-4 bg-white/5 rounded-xl border border-white/10">
+              <Wallet size={48} className="text-purple-500 mb-3" />
+              <h4 className="text-white font-bold mb-2">
+                Thanh toán qua Stripe
+              </h4>
+              <p className="text-gray-400 text-sm text-center mb-4">
+                Hỗ trợ Visa, Mastercard, Apple Pay, Google Pay
+              </p>
+              <button
+                onClick={handleInitStripe}
+                disabled={stripeLoading}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+              >
+                {stripeLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Đang khởi tạo...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard size={18} />
+                    Tiếp tục với Stripe
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Stripe Payment Form */}
+          {paymentMethod === "stripe" &&
+            showStripeForm &&
+            stripePromise &&
+            clientSecret && (
+              <div className="animate-in zoom-in-95 duration-300">
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center p-8 text-orange-500">
+                      <Loader2 className="animate-spin mr-2" size={24} />
+                      <span>Đang tải form thanh toán...</span>
+                    </div>
+                  }
+                >
+                  <StripePaymentWrapper
+                    stripePromise={stripePromise}
+                    clientSecret={clientSecret}
+                    amount={billData.final_amount}
+                    tableId={tableId}
+                    tableName={tableName}
+                    onSuccess={(result) => {
+                      if (onPaymentSuccess) onPaymentSuccess();
+                      onClose();
+                    }}
+                    onCancel={() => {
+                      setShowStripeForm(false);
+                      setClientSecret("");
+                    }}
+                  />
+                </Suspense>
+              </div>
+            )}
 
           {/* Totals */}
           <div className="space-y-2 bg-black/40 p-4 rounded-xl border border-white/5">
@@ -565,13 +707,20 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
             <Printer size={20} />
           </button>
 
-          <button
-            onClick={handleCheckout}
-            disabled={loading}
-            className="flex-1 bg-linear-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-xl font-bold shadow-lg shadow-green-900/20 disabled:opacity-50 transition-all"
-          >
-            {loading ? "Đang xử lý..." : "XÁC NHẬN THANH TOÁN"}
-          </button>
+          {/* Ẩn nút checkout khi đang dùng Stripe form */}
+          {!(paymentMethod === "stripe" && showStripeForm) && (
+            <button
+              onClick={handleCheckout}
+              disabled={loading || paymentMethod === "stripe"}
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-xl font-bold shadow-lg shadow-green-900/20 disabled:opacity-50 transition-all"
+            >
+              {loading
+                ? "Đang xử lý..."
+                : paymentMethod === "stripe"
+                  ? "Sử dụng Stripe ở trên"
+                  : "XÁC NHẬN THANH TOÁN"}
+            </button>
+          )}
         </div>
       </div>
     </div>
