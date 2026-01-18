@@ -21,6 +21,12 @@ const Navbar = () => {
   const cartCount = useSelector(selectTotalItems);
   const tableNumber = "T05";
 
+  // Check qrToken in localStorage
+  const [hasQrToken, setHasQrToken] = useState(false);
+  useEffect(() => {
+    setHasQrToken(!!localStorage.getItem("qrToken"));
+  }, []);
+
   // --- HÀM ĐÓNG MENU ---
   const closeMenu = () => {
     setIsMobileMenuOpen(false);
@@ -65,7 +71,9 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-8">
             <NavLink to="/" label="Trang chủ" />
             <NavLink to="/menu" label="Thực đơn" />
-            <NavLink to="/booking" label="Sơ đồ bàn" icon={<MapPin size={16} />} />
+            {!hasQrToken && (
+              <NavLink to="/booking" label="Sơ đồ bàn" icon={<MapPin size={16} />} />
+            )}
             <NavLink to="/order-tracking" label="Đơn của bạn" icon={<MapPin size={16} />} />
           </div>
 
@@ -161,7 +169,9 @@ const Navbar = () => {
         <div className="flex flex-col gap-2">
           <MobileLink to="/" label="Trang chủ" onClick={closeMenu} />
           <MobileLink to="/menu" label="Thực đơn" onClick={closeMenu} />
-          <MobileLink to="/booking" label="Sơ đồ bàn / Đặt chỗ" onClick={closeMenu} />
+          {!hasQrToken && (
+            <MobileLink to="/booking" label="Sơ đồ bàn / Đặt chỗ" onClick={closeMenu} />
+          )}
           <MobileLink to="/cart" label="Giỏ hàng của bạn" onClick={closeMenu} />
           {isLoggedIn && <MobileLink to="/history" label="Lịch sử đơn hàng" onClick={closeMenu} />}
         </div>
@@ -184,12 +194,24 @@ const Navbar = () => {
   );
 };
 
-const NavLink = ({ to, label, icon }) => (
-  <Link to={to} className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-orange-500 transition-colors">
-    {icon}
-    {label}
-  </Link>
-);
+const NavLink = ({ to, label, icon }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  return (
+    <Link
+      to={to}
+      className={
+        `flex items-center gap-2 text-sm font-medium transition-colors ` +
+        (isActive
+          ? 'text-orange-500 font-bold'
+          : 'text-gray-400 hover:text-orange-500')
+      }
+    >
+      {icon}
+      {label}
+    </Link>
+  );
+};
 
 const MobileLink = ({ to, label, onClick }) => (
   <Link

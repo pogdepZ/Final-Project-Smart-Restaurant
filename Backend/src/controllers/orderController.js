@@ -130,12 +130,12 @@ exports.getOrderTracking = async (req, res) => {
 
 exports.getUnpaidOrderByUserId = async (req, res) => {
   try {
-    // console.log("getUnpaidOrderByUserId called with:", req.query);
-    const { userId, tableId, sessionId } = req.query;
-    if (!userId || !tableId || !sessionId) {
+    console.log("getUnpaidOrderByUserId called with:", req.query);
+    const { tableId, sessionId } = req.query;
+    if ( !tableId || !sessionId) {
       return res.status(201).json({ success:false, message: "Thiếu thông tin cần thiết" });
     } 
-    const order = await orderService.getUnpaidOrderByUserId(userId, tableId, sessionId);
+    const order = await orderService.getUnpaidOrderByUserId(tableId, sessionId);
     if (!order) {
       return res.status(201).json({ success:false, message: "Bạn không có đơn hàng nào cần được thanh toán!" });
     }

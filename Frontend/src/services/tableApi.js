@@ -37,6 +37,13 @@ export const validateSession = async (tableCode, sessionToken) => {
   const response = await axiosClient.get(`/tables/validate-session`, {
     params: { tableCode, sessionToken },
   });
+  return response;
+}
+
+export const findSessionActive = async (userId) => {
+  const response = await axiosClient.get(`/tables/find-session-active`, {
+    params: { userId },
+  });
   return response.data;
 };
 

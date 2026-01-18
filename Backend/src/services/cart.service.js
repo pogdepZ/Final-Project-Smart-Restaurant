@@ -428,16 +428,34 @@ async function syncCartByTableId(
       throw err;
     }
 
-    // 1) Tạo order với sessionId
-    const order = await createOrderTx(client, {
-      tableId,
-      userId,
-      guestName,
-      note,
-      sessionId,
-    });
+    // 1) Kiểm tra đã có order 'received' tại bàn này (và sessionId nếu có) chưa
+    let order;
+    let orderRes;
+    if (sessionId) {
+      orderRes = await client.query(
+        `select * from public.orders where table_id = $1 and session_id = $2 and status = 'received' order by created_at desc limit 1`,
+        [tableId, sessionId]
+      );
+    } else {
+      orderRes = await client.query(
+        `select * from public.orders where table_id = $1 and status = 'received' order by created_at desc limit 1`,
+        [tableId]
+      );
+    }
+    if (orderRes.rows[0]) {
+      order = orderRes.rows[0];
+    } else {
+      // Nếu chưa có thì tạo mới
+      order = await createOrderTx(client, {
+        tableId,
+        userId,
+        guestName,
+        note,
+        sessionId,
+      });
+    }
 
-    // 2) Insert từng item
+    // 2) Insert từng item vào order này
     for (const it of items || []) {
       if (!it?.menuItemId) {
         const err = new Error("MISSING_MENU_ITEM_ID");
@@ -521,12 +539,10 @@ async function syncCartByTableId(
     GROUP BY o.id, t.table_number, u.name;
 
       `,
-      [order.id], // <--- SỬA LỖI: Dùng order.id (biến ở bước 1) thay vì newOrder.id
+      [order.id],
     );
 
     const orderToSend = fullOrderRes.rows[0];
-
-    // console.log("Emitting new_order event via Socket.io:", orderToSend);
 
     if (io && orderToSend) {
       // Gửi event new_order
