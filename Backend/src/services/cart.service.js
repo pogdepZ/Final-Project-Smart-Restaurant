@@ -444,13 +444,13 @@ async function syncCartByTableId(
     let orderRes;
     if (sessionId) {
       orderRes = await client.query(
-        `select * from public.orders where table_id = $1 and session_id = $2 and (status = 'received' or status = 'preparing' or status = 'rejected') order by created_at desc limit 1`,
+        `select * from public.orders where table_id = $1 and session_id = $2 and (status = 'received' or status = 'preparing' or status = 'rejected' or status = 'ready') order by created_at desc limit 1`,
         [tableId, sessionId],
       );
 
       // chuyển trạng thái order 'completed' hoặc 'preparing' thành 'received' nếu có
       await client.query(
-        `update public.orders set status = 'received' where table_id = $1 and session_id = $2 and (status = 'completed' or status = 'preparing' or status = 'rejected')`,
+        `update public.orders set status = 'received' where table_id = $1 and session_id = $2 and (status = 'completed' or status = 'preparing' or status = 'rejected' or status = 'ready')`,
         [tableId, sessionId],
       );
     } else {
