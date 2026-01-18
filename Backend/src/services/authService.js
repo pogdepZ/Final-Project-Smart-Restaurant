@@ -57,7 +57,7 @@ exports.googleLogin = async ({ credential }) => {
   const accessToken = jwt.sign(
     { id: user.id, role: user.role, name: user.name },
     config.auth.accessTokenSecret,
-    { expiresIn: "30m" }
+    { expiresIn: "10s" }
   );
 
   const refreshToken = jwt.sign(
