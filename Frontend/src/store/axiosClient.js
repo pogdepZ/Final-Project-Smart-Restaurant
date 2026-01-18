@@ -1,5 +1,6 @@
-import axios from 'axios';
-import { logout, setCredentials } from './slices/authSlice';
+import axios from "axios";
+import { logout, setCredentials } from "./slices/authSlice";
+import { startLoading, completeLoading } from "../context/LoadingBarContext";
 
 let accessToken = null;
 
@@ -20,8 +21,14 @@ const axiosClient = axios.create({
 });
 
 // Thêm interceptor để tự động gắn token vào header Authorization
+// và hiển thị loading bar
 axiosClient.interceptors.request.use(
   (config) => {
+    // Bắt đầu loading bar (trừ khi config.skipLoading = true)
+    if (!config.skipLoading) {
+      startLoading();
+    }
+
     console.log("Request interceptor called");
     console.log(store);
     if (store) {
@@ -33,15 +40,29 @@ axiosClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    completeLoading();
     return Promise.reject(error);
-  }
+  },
 );
 
 // Thêm interceptor để xử lý lỗi 403 và làm mới token tự động
+// và hoàn thành loading bar
 axiosClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    // Hoàn thành loading bar khi response thành công
+    if (!response.config?.skipLoading) {
+      completeLoading();
+    }
+    return response.data;
+  },
   async (error) => {
     const originalRequest = error.config;
+
+    // Hoàn thành loading bar khi có lỗi
+    if (!originalRequest?.skipLoading) {
+      completeLoading();
+    }
+
     if (!store) return Promise.reject(error);
     if (
       error.response?.status === 401 &&
@@ -50,15 +71,20 @@ axiosClient.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-        const result = await axiosClient.post("/auth/refresh");
+        // Bắt đầu loading lại cho refresh request
+        if (!originalRequest.skipLoading) {
+          startLoading();
+        }
+        const result = await axiosClient.post("/auth/refresh", null, {
+          skipLoading: true,
+        });
         const newAccessToken = result.accessToken;
         const user = result.user;
         store.dispatch(
-          setCredentials({ accessToken: newAccessToken, user: user })
+          setCredentials({ accessToken: newAccessToken, user: user }),
         );
-        axiosClient.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${newAccessToken}`;
+        axiosClient.defaults.headers.common["Authorization"] =
+          `Bearer ${newAccessToken}`;
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return axiosClient(originalRequest);
       } catch (refreshError) {
@@ -67,7 +93,7 @@ axiosClient.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosClient;

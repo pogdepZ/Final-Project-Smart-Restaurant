@@ -1,17 +1,17 @@
 import { useRoutes } from "react-router-dom";
 import "./App.css";
-import './index.css'
+import "./index.css";
 import routers from "./router/Router";
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import useQRScanner from "./hooks/useQRScanner";
-
+import { LoadingBarProvider } from "./context/LoadingBarContext";
 
 function App() {
   const element = useRoutes(routers);
   useQRScanner();
   return (
-    <>
+    <LoadingBarProvider>
       {element}
       <ToastContainer
         position="bottom-right"
@@ -25,7 +25,7 @@ function App() {
         pauseOnHover
         theme="dark"
       />
-    </>
+    </LoadingBarProvider>
   );
 }
 

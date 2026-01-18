@@ -30,12 +30,12 @@ class TableSessionService {
 
     // 3. Kiểm tra session hiện tại
     const existingSession = await tableSessionRepository.findActiveByTableId(
-      table.id
+      table.id,
     );
 
     if (existingSession) {
       // Session đã tồn tại, check xem userid đúng hay không
-        console.log(existingSession.user_id, userId);
+      console.log(existingSession.user_id, userId);
 
       if (
         userId &&
@@ -87,7 +87,23 @@ class TableSessionService {
     };
   }
 
-  
+  async findSessionActive(userId) {
+    // 2. Tìm session active của user và bàn
+    const session = await tableSessionRepository.findActiveByUserAndTable(userId);
+    if (session) {
+      return {
+        hasSession: true,
+        sessions: {
+          id: session.id,
+          sessionToken: session.session_token,
+          tableId: session.table_id,
+          tableNumber: session.table_number,
+          startedAt: session.started_at,
+        },
+      };
+    }
+    return { hasSession: false };
+  }
 
   // Kết thúc session
   async endSession(tableCode, sessionId) {
@@ -108,7 +124,7 @@ class TableSessionService {
     const endedSession = await tableSessionRepository.endSession(sessionId);
 
     // 3. Cập nhật trạng thái bàn về 'active' (available)
-    await tableRepository.updateStatus(session.table_id, 'active');
+    await tableRepository.updateStatus(session.table_id, "active");
 
     return {
       message: "Đã kết thúc session",
@@ -119,9 +135,8 @@ class TableSessionService {
   // Validate session token
   async validateSession(tableCode, sessionToken) {
     // 1. Tìm session theo token
-    const session = await tableSessionRepository.findBySessionToken(
-      sessionToken
-    );
+    const session =
+      await tableSessionRepository.findBySessionToken(sessionToken);
 
     if (!session) {
       return {

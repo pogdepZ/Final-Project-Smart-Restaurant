@@ -26,6 +26,26 @@ exports.checkAndCreateSession = async (req, res) => {
   }
 };
 
+exports.findSessionActive = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const result = await tableSessionService.findSessionActive(
+      userId
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error in findSessionActive:", err);
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || "Lỗi server",
+    });
+  }
+};
+
+
 // Xác thực mã đặt bàn và kích hoạt session
 exports.verifyBookingAndActivateSession = async (req, res) => {
   try {
