@@ -25,6 +25,7 @@ exports.findUsers = async ({ whereSql, values, orderBy, limit, offset }) => {
       u.email,
       u.role,
       u.is_verified,
+      u.is_actived,
       u.created_at,
       u.avatar_url,
       u.preferences
@@ -85,5 +86,16 @@ exports.deleteById = async (id) => {
     RETURNING id, name, email, role
   `;
   const res = await db.query(sql, [id]);
+  return res.rows?.[0] || null;
+};
+
+exports.updateActived = async ({ id, is_actived }) => {
+  const sql = `
+    UPDATE public.users
+    SET is_actived = $2
+    WHERE id = $1
+    RETURNING id, name, email, role, is_verified, is_actived, created_at
+  `;
+  const res = await db.query(sql, [id, is_actived]);
   return res.rows?.[0] || null;
 };
