@@ -75,6 +75,18 @@ export default function ModifierManagerPanel({ onReload }) {
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="px-4 py-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Tìm theo tên group..."
+                className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm
+              text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
+              />
+            </div>
+          </div>
           <button
             onClick={() => setOpenCreate(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
@@ -91,20 +103,6 @@ export default function ModifierManagerPanel({ onReload }) {
             <RefreshCcw size={16} />
             Refresh
           </button>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="px-4 py-3 border-b border-white/10">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Tìm theo tên group..."
-            className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm
-              text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
-          />
         </div>
       </div>
 
