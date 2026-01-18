@@ -13,6 +13,7 @@ const {
 const upload = require("../../config/cloudinary");
 
 const adminMenuController = require("../../controllers/adminMenuController");
+const adminCategoryController = require("../../controllers/adminCategoryController");
 
 // Categories
 router.get(
@@ -63,6 +64,32 @@ router.post(
 router.put(
   "/items/:id/modifier-groups",
   adminMenuController.setMenuItemModifierGroups
+);
+
+// POST /admin/categories
+router.post("/categories", protect, adminOnly, adminCategoryController.create);
+
+// PATCH /admin/categories/:id
+router.patch(
+  "/categories/:id",
+  protect,
+  adminOnly,
+  adminCategoryController.update
+);
+
+// DELETE /admin/categories/:id  (soft delete + check order)
+router.patch(
+  "/categories/:id/delete",
+  protect,
+  adminOnly,
+  adminCategoryController.remove
+);
+
+router.get(
+  "/list-categories",
+  protect,
+  adminOnly,
+  adminCategoryController.list
 );
 
 module.exports = router;

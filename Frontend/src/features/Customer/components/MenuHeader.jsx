@@ -65,7 +65,7 @@ export default function MenuHeader({
         </div>
 
         {/* --- DÒNG 2: SORT & FILTER --- */}
-        <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto mb-2 md:mb-3">
+        <div className="flex items-center justify-between gap-3 mt-3 max-w-5xl mx-auto mb-2 md:mb-3">
           
           {/* Sort Dropdown */}
           <div className="flex items-center gap-2">

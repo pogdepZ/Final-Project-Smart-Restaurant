@@ -206,7 +206,8 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition"
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition
+                    [&>option]:bg-neutral-900 [&>option]:text-white"
                   >
                     <option value="ALL">Chọn category</option>
                     {categories.map((c) => (
@@ -222,7 +223,8 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition"
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition
+                    [&>option]:bg-neutral-900 [&>option]:text-white"
                   >
                     {ITEM_STATUS.map((s) => (
                       <option key={s.value} value={s.value}>

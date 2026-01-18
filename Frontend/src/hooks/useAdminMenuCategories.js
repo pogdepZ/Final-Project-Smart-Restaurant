@@ -2,28 +2,35 @@ import { useCallback, useEffect, useState } from "react";
 import { adminMenuApi } from "../services/adminMenuApi";
 import { toast } from "react-toastify";
 
-export function useAdminMenuCategories() {
+export function useAdminMenuCategories({ status = "ALL" } = {}) {
   const [categories, setCategories] = useState([]);
   const [isLoading, setLoading] = useState(true);
-  const [error, setError] = useState();
+  const [error, setError] = useState("");
 
   const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await adminMenuApi.getCategories();
-      setCategories(res.categories || []);
+      setError("");
+
+      // ✅ chỉ lấy category chưa bị xoá
+      const res = await adminMenuApi.getListCategories({
+        status: status !== "ALL" ? status : undefined,
+        includeDeleted: false,
+      });
+
+      setCategories(res?.categories || res || []);
     } catch (e) {
       console.error("useAdminMenuCategories error:", e);
       const message =
-        e?.message ||
         e?.response?.data?.message ||
+        e?.message ||
         "Không tải được categories.";
       setError(message);
-      toast.error(`${message}`);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [status]);
 
   useEffect(() => {
     fetchCategories();

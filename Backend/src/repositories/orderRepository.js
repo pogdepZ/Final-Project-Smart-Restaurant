@@ -6,8 +6,15 @@ exports.createOrder = async (
   { table_id, guest_name, total_amount, note }
 ) => {
   const result = await client.query(
-    `INSERT INTO orders (table_id, guest_name, total_amount, note, status, payment_status) 
-             VALUES ($1, $2, $3, $4, 'received', 'unpaid') RETURNING *`,
+    `INSERT INTO orders (
+        table_id, guest_name, total_amount, note, status, payment_status, created_at, updated_at
+     ) 
+     VALUES (
+        $1, $2, $3, $4, 'received', 'unpaid', 
+        NOW(),
+        NOW()
+     ) 
+     RETURNING *`,
     [table_id, guest_name || "Khách lẻ", total_amount, note]
   );
   return result.rows[0];
@@ -61,6 +68,7 @@ exports.getAll = async ({ status }) => {
                   'subtotal', oi.subtotal,
                   'note', oi.note,
                   'status', oi.status,
+                  'prep_time_minutes', COALESCE(mi.prep_time_minutes, 15),
                   'modifiers', (
                       -- Sub-query lấy modifiers của từng item
                       SELECT COALESCE(
@@ -78,6 +86,7 @@ exports.getAll = async ({ status }) => {
     FROM orders o
     LEFT JOIN tables t ON o.table_id = t.id
     LEFT JOIN order_items oi ON o.id = oi.order_id
+    LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
   `;
 
   const params = [];
@@ -130,7 +139,7 @@ exports.getById = async (id) => {
     WHERE o.id = $1
     GROUP BY o.id, t.table_number
   `;
-  
+
   const result = await db.query(query, [id]);
   return result.rows[0];
 };
@@ -156,22 +165,30 @@ exports.updateStatus = async (id, { status, payment_status }) => {
   return result.rows[0];
 };
 
-
 // 2. Thêm hàm updateItemStatus
 exports.updateItemStatus = async (itemId, status) => {
-    const result = await db.query(
-        `UPDATE order_items SET status = $1 WHERE id = $2 RETURNING *`,
-        [status, itemId]
-    );
-    return result.rows[0];
+  const result = await db.query(
+    `UPDATE order_items SET status = $1 WHERE id = $2 RETURNING *`,
+    [status, itemId]
+  );
+  return result.rows[0];
 };
 
 // 3. Hàm trừ tiền đơn hàng (Khi từ chối món)
 exports.decreaseOrderTotal = async (orderId, amount) => {
-    await db.query(
-        `UPDATE orders SET total_amount = total_amount - $1 WHERE id = $2`,
-        [amount, orderId]
-    );
+  await db.query(
+    `UPDATE orders SET total_amount = total_amount - $1 WHERE id = $2`,
+    [amount, orderId]
+  );
+};
+
+// 4. Hàm cập nhật status của tất cả items trong một order
+exports.updateAllItemsStatusByOrderId = async (orderId, itemStatus) => {
+  const result = await db.query(
+    `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status != 'rejected' RETURNING *`,
+    [itemStatus, orderId]
+  );
+  return result.rows;
 };
 
 exports.findManyByUserId = async (userId, { page, limit }) => {
@@ -309,3 +326,60 @@ exports.findOneByIdAndUserId = async (orderId, userId) => {
 
   return rs.rows[0] || null;
 };
+
+// Lấy đơn hàng theo table ID
+exports.findByTableId = async (tableId) => {
+  const query = `
+    SELECT 
+      o.id, 
+      o.status, 
+      o.total_amount, 
+      o.created_at, 
+      o.guest_name, 
+      o.note, 
+      o.table_id,
+      o.payment_status,
+      ('ORD-' || to_char(o.created_at, 'YYYYMMDD') || '-' || right(replace(o.id::text,'-',''), 6)) AS code,
+      t.table_number,
+      COALESCE(
+          json_agg(
+              json_build_object(
+                  'id', oi.id,
+                  'item_name', oi.item_name,
+                  'quantity', oi.quantity,
+                  'price', oi.price,
+                  'subtotal', oi.subtotal,
+                  'note', oi.note,
+                  'status', oi.status
+              )
+          ) FILTER (WHERE oi.id IS NOT NULL), '[]'
+      ) as items
+    FROM orders o
+    LEFT JOIN tables t ON o.table_id = t.id
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    WHERE o.table_id = $1
+      AND o.payment_status <> 'paid'
+      AND o.created_at > NOW() - INTERVAL '24 hours'
+    GROUP BY o.id, t.table_number
+    ORDER BY o.created_at DESC
+    LIMIT 10
+  `;
+
+  const result = await db.query(query, [tableId]);
+  return result.rows;
+};
+
+
+exports.findUnpaidByUserId = async (userId, tableId, sessionId) => {
+  const query = `
+    SELECT * FROM orders
+    WHERE user_id = $1
+      AND table_id = $2
+      AND payment_status = 'unpaid'
+      AND session_id = $3
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;  
+  const result = await db.query(query, [userId, tableId, sessionId]);
+  return result.rows[0] || null;
+}

@@ -32,6 +32,10 @@ export const SocketProvider = ({ children }) => {
       } else if (user.role === "kitchen") {
         // Bếp chỉ cần tham gia phòng bếp
         newSocket.emit("join_kitchen");
+      } else if(user.role === "customer") {
+        // Khách hàng tham gia phòng khách
+        const tableCode = localStorage.getItem("tableCode");
+        newSocket.emit("join_table", { tableCode: tableCode, userId: user.id });
       }
     });
 

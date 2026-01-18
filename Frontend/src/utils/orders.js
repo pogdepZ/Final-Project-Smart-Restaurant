@@ -6,11 +6,14 @@ export function formatMoneyVND(v) {
   return new Intl.NumberFormat("vi-VN").format(v || 0) + "₫";
 }
 
-export function formatTime(ts) {
-  const d = new Date(ts);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mo = String(d.getMonth() + 1).padStart(2, "0");
-  return `${hh}:${mm} • ${dd}/${mo}`;
+export function formatTime(timestamp) {
+  if (!timestamp) return "—";
+  
+  const date = new Date(timestamp);
+  
+  return date.toLocaleTimeString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

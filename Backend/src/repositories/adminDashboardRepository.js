@@ -44,7 +44,7 @@ exports.topOrderedDishes = async (limit = 5) => {
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
     LEFT JOIN menu_items mi ON mi.id = oi.menu_item_id
-    WHERE o.payment_status = 'paid'
+    WHERE o.status NOT IN ('pending', 'cancelled')
       AND date_trunc('month', o.created_at) = date_trunc('month', NOW())
       AND mi.id IS NOT NULL
     GROUP BY mi.id, mi.name, mi.category_id
@@ -85,7 +85,14 @@ exports.topRatedDishes = async (limit = 5) => {
 };
 
 // tuỳ bạn: chỉ tính completed/paid
-const ORDER_OK = ["completed", "COMPLETED"];
+const ORDER_OK = [
+  "completed",
+  "COMPLETED",
+  "ready",
+  "READY",
+  "preparing",
+  "PREPARING",
+];
 
 exports.revenueAndOrders = async ({ from, to }) => {
   const { rows } = await db.query(
@@ -168,7 +175,12 @@ exports.popularItems = async ({ from, to, limit }) => {
   return rows.map((r) => ({ name: r.name, quantity: Number(r.quantity) || 0 }));
 };
 
-exports.getRevenue = async ({ fromISO, toISO, statuses = ["completed"], paymentStatus = "paid" }) => {
+exports.getRevenue = async ({
+  fromISO,
+  toISO,
+  statuses = ["completed"],
+  paymentStatus = "paid",
+}) => {
   const sql = `
     SELECT COALESCE(SUM(o.total_amount), 0) AS total
     FROM orders o

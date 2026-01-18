@@ -83,7 +83,7 @@ exports.getMyTables = async (req, res) => {
   try {
     const waiterId = req.user.id; // Lấy từ Token
     const tables = await tableService.getByWaiterId(waiterId);
-    console.log("Assigned tables:", tables);
+    // console.log("Assigned tables:", tables);
     res.json(tables);
   } catch (err) {
     console.error(err);

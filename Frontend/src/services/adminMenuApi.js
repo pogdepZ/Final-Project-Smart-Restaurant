@@ -51,4 +51,16 @@ export const adminMenuApi = {
       groupIds,
     });
   },
+
+  getListCategories: (params) =>
+    axiosClient.get("/admin/menu/list-categories", { params }),
+
+  createCategory: (payload) =>
+    axiosClient.post("/admin/menu/categories", payload),
+
+  updateCategory: (id, payload) =>
+    axiosClient.patch(`/admin/menu/categories/${id}`, payload),
+
+  deleteCategory: (id, payload) =>
+    axiosClient.patch(`/admin/menu/categories/${id}/delete`, payload),
 };
