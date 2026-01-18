@@ -4,6 +4,7 @@ import { adminMenuApi } from "../../../services/adminMenuApi";
 import MultiSelectCombobox from "../../../Components/MultiSelectCombobox";
 import ScrollArea from "../../../Components/ScrollArea";
 import { toast } from "react-toastify";
+import ScrollArea from "../../../Components/ScrollArea";
 
 export default function EditMenuItemModal({
   open,
@@ -42,14 +43,13 @@ export default function EditMenuItemModal({
     }));
   }, [modifierGroups]);
 
+  // ✅ khóa scroll page ngoài khi mở modal
   useEffect(() => {
     if (!open) return;
-
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden"; // khoá scroll
-
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = original || "auto"; // trả lại như cũ
+      document.body.style.overflow = prev || "";
     };
   }, [open]);
 
@@ -62,6 +62,7 @@ export default function EditMenuItemModal({
       try {
         setLoading(true);
         setError("");
+
         setLoadingGroups(true);
 
         const [groupsRes, detailRes] = await Promise.all([
@@ -113,10 +114,9 @@ export default function EditMenuItemModal({
 
   const onFileChange = async (e) => {
     const file = e.target.files?.[0];
-    e.target.value = ""; // chọn lại cùng file vẫn trigger
+    e.target.value = "";
     if (!file) return;
 
-    // validate client-side (optional)
     const okTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!okTypes.includes(file.type)) {
       toast.error("Chỉ hỗ trợ JPG / PNG / WEBP");
@@ -133,16 +133,15 @@ export default function EditMenuItemModal({
 
       const res = await adminMenuApi.uploadMenuImage(file);
 
-      // axiosClient có thể return data luôn
+      // ⚠️ axiosClient của bạn có interceptor return response.data
       const data = res?.data ? res.data : res;
 
-      // tuỳ BE trả field nào:
+      // Cloudinary thường trả mấy field này
       const url =
         data?.imageUrl ||
         data?.url ||
         data?.secure_url ||
-        data?.result?.secure_url ||
-        data?.path; // multer-storage-cloudinary hay dùng .path
+        data?.result?.secure_url;
 
       if (!url) {
         toast.error("Upload xong nhưng không nhận được URL ảnh");
@@ -150,7 +149,7 @@ export default function EditMenuItemModal({
       }
 
       setForm((s) => ({ ...s, imageUrl: url }));
-      toast.success("Đã upload ảnh mới");
+      toast.success("Đã upload ảnh");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Upload ảnh thất bại");
     } finally {
@@ -158,9 +157,7 @@ export default function EditMenuItemModal({
     }
   };
 
-  const removeImage = () => {
-    setForm((s) => ({ ...s, imageUrl: "" }));
-  };
+  const removeImage = () => setForm((s) => ({ ...s, imageUrl: "" }));
 
   const submit = async () => {
     try {
@@ -190,7 +187,9 @@ export default function EditMenuItemModal({
       toast.success("Chỉnh sửa thành công");
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || "Update thất bại");
-      toast.error(e?.response?.data?.message || e?.message || "Chỉnh sửa thất bại");
+      toast.error(
+        e?.response?.data?.message || e?.message || "Chỉnh sửa thất bại"
+      );
     } finally {
       setLoading(false);
     }
@@ -205,6 +204,7 @@ export default function EditMenuItemModal({
 
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-neutral-950 overflow-hidden">
+          {/* header */}
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
             <div className="text-white font-black">Edit menu item</div>
             <button
@@ -216,14 +216,24 @@ export default function EditMenuItemModal({
             </button>
           </div>
 
+          {/* ✅ body scrollable */}
           <ScrollArea>
-            <div className="max-h-[75vh] p-5 space-y-3">
+            {/* đặt max-height để chỉ cuộn trong modal */}
+            <div className="max-h-[70vh] overflow-auto p-5 space-y-3">
+              {error ? (
+                <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
+                  {error}
+                </div>
+              ) : null}
+
               <div>
                 <label className="text-xs text-gray-400">Tên món</label>
                 <input
                   className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                   value={form.name}
-                  onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, name: e.target.value }))
+                  }
                   disabled={disabledAll}
                 />
               </div>
@@ -233,15 +243,16 @@ export default function EditMenuItemModal({
                   <label className="text-xs text-gray-400">Category</label>
                   <select
                     className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
-                  [&>option]:bg-neutral-900 [&>option]:text-white"
+                    [&>option]:bg-neutral-900 [&>option]:text-white"
                     value={form.categoryId ?? ""}
-                    onChange={(e) => setForm((s) => ({ ...s, categoryId: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, categoryId: e.target.value }))
+                    }
                     disabled={disabledAll}
                   >
                     <option value="">
                       {item?.categoryName ? `${item.categoryName}` : "-- chọn --"}
                     </option>
-
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -254,9 +265,11 @@ export default function EditMenuItemModal({
                   <label className="text-xs text-gray-400">Status</label>
                   <select
                     className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
-                  [&>option]:bg-neutral-900 [&>option]:text-white"
+                    [&>option]:bg-neutral-900 [&>option]:text-white"
                     value={form.status}
-                    onChange={(e) => setForm((s) => ({ ...s, status: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, status: e.target.value }))
+                    }
                     disabled={disabledAll}
                   >
                     <option value="available">available</option>
@@ -273,7 +286,9 @@ export default function EditMenuItemModal({
                     type="number"
                     className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                     value={form.price}
-                    onChange={(e) => setForm((s) => ({ ...s, price: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, price: e.target.value }))
+                    }
                     disabled={disabledAll}
                   />
                 </div>
@@ -283,19 +298,21 @@ export default function EditMenuItemModal({
                     type="number"
                     className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                     value={form.prepTimeMinutes}
-                    onChange={(e) => setForm((s) => ({ ...s, prepTimeMinutes: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, prepTimeMinutes: e.target.value }))
+                    }
                     disabled={disabledAll}
                   />
                 </div>
               </div>
 
-              {/* ✅ Ảnh: upload + preview */}
+              {/* Image preview + upload */}
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                <div className="flex items-center justify-between">
+                  <div>
                     <div className="text-white font-bold">Ảnh món</div>
                     <div className="text-xs text-gray-400 mt-0.5">
-                      Dùng upload để đổi ảnh (JPG/PNG/WEBP, tối đa 5MB)
+                      Upload ảnh mới để thay đổi (JPG/PNG/WEBP, tối đa 5MB)
                     </div>
                   </div>
 
@@ -307,13 +324,13 @@ export default function EditMenuItemModal({
                     onChange={onFileChange}
                   />
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={onPickFile}
                       disabled={disabledAll}
                       className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl
-                      bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition disabled:opacity-60"
+                        bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition disabled:opacity-60"
                     >
                       <Upload size={16} />
                       {uploadingImage ? "Đang upload..." : "Upload"}
@@ -324,7 +341,7 @@ export default function EditMenuItemModal({
                       onClick={removeImage}
                       disabled={disabledAll || !form.imageUrl}
                       className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl
-                      bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition disabled:opacity-60"
+                        bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition disabled:opacity-60"
                       title="Remove image"
                     >
                       <Trash2 size={16} />
@@ -335,16 +352,23 @@ export default function EditMenuItemModal({
 
                 <div className="mt-3">
                   {form.imageUrl ? (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-3">
                       <div className="w-24 h-24 rounded-2xl border border-white/10 bg-neutral-950 overflow-hidden shrink-0">
                         <img
                           src={form.imageUrl}
                           alt="menu"
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
                         />
                       </div>
-                      <div className="text-xs text-gray-500">
-                        Ảnh sẽ được lưu khi bạn bấm <span className="text-gray-200 font-semibold">Lưu</span>.
+
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs text-gray-400">Preview</div>
+                        <div className="mt-2 text-xs text-gray-500">
+                          Upload ảnh mới sẽ tự thay thế.
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -352,7 +376,9 @@ export default function EditMenuItemModal({
                       <div className="w-10 h-10 rounded-2xl bg-neutral-950/60 border border-white/10 flex items-center justify-center">
                         <ImageIcon size={18} className="text-gray-400" />
                       </div>
-                      Chưa có ảnh. Bấm <span className="text-gray-200 font-semibold">Upload</span> để thêm.
+                      Chưa có ảnh. Bấm{" "}
+                      <span className="text-gray-200 font-semibold">Upload</span>{" "}
+                      để thêm.
                     </div>
                   )}
                 </div>
@@ -367,7 +393,9 @@ export default function EditMenuItemModal({
                       Chọn các nhóm tuỳ chọn (Size, Topping, Spicy…)
                     </div>
                   </div>
-                  {loadingGroups ? <div className="text-xs text-gray-500">Đang tải...</div> : null}
+                  {loadingGroups ? (
+                    <div className="text-xs text-gray-500">Đang tải...</div>
+                  ) : null}
                 </div>
 
                 <div className="mt-3">
@@ -387,15 +415,16 @@ export default function EditMenuItemModal({
                   className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                   rows={3}
                   value={form.description}
-                  onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, description: e.target.value }))
+                  }
                   disabled={disabledAll}
                 />
               </div>
-
-              {/* ✅ bỏ input Image URL */}
             </div>
           </ScrollArea>
 
+          {/* footer */}
           <div className="px-5 py-4 border-t border-white/10 flex justify-end gap-2">
             <button
               type="button"
