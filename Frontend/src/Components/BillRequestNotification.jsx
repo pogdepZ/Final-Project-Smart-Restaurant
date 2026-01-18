@@ -33,7 +33,7 @@ const BillRequestNotification = () => {
     const handleNewRequest = (data) => {
       if (data.type === "new") {
         setRequests((prev) => [...prev, data.request]);
-        // Play sound notification
+        // Play sound notification 
         const audio = new Audio("/notification.mp3");
         audio.play().catch(() => {});
         toast.info(`Bàn ${data.request.table_number} yêu cầu thanh toán!`, {
