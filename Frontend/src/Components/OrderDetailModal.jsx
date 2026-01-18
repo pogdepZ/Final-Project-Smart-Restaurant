@@ -37,7 +37,7 @@ export default function OrderDetailModal({
         status,
       });
 
-      toast.success(status === "accepted" ? "Đã nhận món" : "Đã từ chối món");
+      toast.success(status === "preparing" ? "Đã nhận món" : "Đã từ chối món");
 
       // 2. Cập nhật State nội bộ để UI đổi màu ngay lập tức
       setOrder((prev) => ({
@@ -125,7 +125,7 @@ export default function OrderDetailModal({
                 className={`flex justify-between items-start p-4 rounded-xl border transition-all ${
                   item.status === "rejected"
                     ? "bg-red-900/10 border-red-500/20 opacity-60" // Style cho món bị từ chối
-                    : item.status === "accepted"
+                    : item.status === "preparing"
                       ? "bg-green-900/10 border-green-500/20" // Style cho món đã nhận
                       : "bg-neutral-900/50 border-white/5 hover:border-white/10" // Style Pending
                 }`}
@@ -158,7 +158,7 @@ export default function OrderDetailModal({
 
                   {/* Item Status Badge */}
                   <div className="ml-10 mt-2">
-                    {item.status === "accepted" && (
+                    {item.status === "preparing" && (
                       <span className="text-xs text-green-400 font-bold flex items-center gap-1">
                         <CheckCircle2 size={12} /> Đã nhận
                       </span>
@@ -180,9 +180,9 @@ export default function OrderDetailModal({
                   </div>
 
                   {/* ACTION BUTTONS (Chỉ hiện khi item đang Pending và Đơn chưa hoàn thành) */}
-                  {(item.status === "pending" || !item.status) &&
+                  {(item.status === "received" || !item.status) &&
                     order.status !== "completed" &&
-                    order.status !== "cancelled" && (
+                    order.status !== "rejected" && (
                       <div className="flex gap-2 mt-1">
                         <button
                           onClick={() => handleItemAction(item.id, "rejected")}
@@ -192,7 +192,7 @@ export default function OrderDetailModal({
                           <Ban size={16} />
                         </button>
                         <button
-                          onClick={() => handleItemAction(item.id, "accepted")}
+                          onClick={() => handleItemAction(item.id, "preparing")}
                           className="p-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg border border-green-500/20 transition-colors"
                           title="Nhận món này"
                         >
