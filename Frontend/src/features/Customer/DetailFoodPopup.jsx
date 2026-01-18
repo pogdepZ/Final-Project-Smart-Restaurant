@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { menuApi } from "../../services/menuApi";
+import { formatMoneyVND } from "../../utils/orders";
 
 const REVIEWS_PAGE_SIZE = 5;
 
@@ -124,11 +125,11 @@ export default function FoodDetailPopup({
 
   const canOrder = useMemo(
     () => !food?.status || food?.status === "available",
-    [food?.status]
+    [food?.status],
   );
   const canReview = useMemo(
     () => !food?.status || food?.status === "available",
-    [food?.status]
+    [food?.status],
   );
   const statusMeta = useMemo(() => statusLabel(food?.status), [food?.status]);
 
@@ -377,7 +378,7 @@ export default function FoodDetailPopup({
       if (!optId) return;
 
       const group = detail.modifier_groups.find((g) =>
-        (g.options || []).some((o) => o.id === optId)
+        (g.options || []).some((o) => o.id === optId),
       );
 
       if (!group) return;
@@ -421,7 +422,7 @@ export default function FoodDetailPopup({
   const optionById = useMemo(() => {
     const map = new Map();
     groups.forEach((g) =>
-      (g.options || []).forEach((o) => map.set(o.id, { ...o, group: g }))
+      (g.options || []).forEach((o) => map.set(o.id, { ...o, group: g })),
     );
     return map;
   }, [groups]);
@@ -467,12 +468,12 @@ export default function FoodDetailPopup({
 
   const extraPrice = useMemo(
     () => selectedModifiers.reduce((s, m) => s + Number(m.price || 0), 0),
-    [selectedModifiers]
+    [selectedModifiers],
   );
 
   const unitPrice = useMemo(
     () => Number(detail?.price ?? food?.price ?? 0) + extraPrice,
-    [detail?.price, food?.price, extraPrice]
+    [detail?.price, food?.price, extraPrice],
   );
 
   const totalPrice = useMemo(() => unitPrice * qty, [unitPrice, qty]);
@@ -550,7 +551,7 @@ export default function FoodDetailPopup({
       setReviewsHasMore(
         meta && typeof meta.hasMore === "boolean"
           ? meta.hasMore
-          : (data?.length || 0) === REVIEWS_PAGE_SIZE
+          : (data?.length || 0) === REVIEWS_PAGE_SIZE,
       );
     } catch (e) {
       toast.error(e?.message || "Gửi đánh giá thất bại");
@@ -621,7 +622,7 @@ export default function FoodDetailPopup({
 
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="text-2xl font-black text-orange-500">
-                ${Number(detail?.price ?? food?.price ?? 0).toFixed(2)}
+                {formatMoneyVND(Number(detail?.price ?? food?.price ?? 0))}
               </span>
               <div className="h-4 w-px bg-white/20 mx-2" />
               <div className="flex items-center text-yellow-500 gap-1 text-sm">
@@ -688,8 +689,8 @@ export default function FoodDetailPopup({
                               {g.selection_type === "single"
                                 ? "Chọn 1"
                                 : max > 0
-                                ? `Chọn tối đa ${max}`
-                                : "Chọn nhiều"}
+                                  ? `Chọn tối đa ${max}`
+                                  : "Chọn nhiều"}
                             </div>
                           </div>
                         </div>
@@ -697,14 +698,14 @@ export default function FoodDetailPopup({
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           {(g.options || []).map((o) => {
                             const price = Number(
-                              o.price ?? o.price_adjustment ?? 0
+                              o.price ?? o.price_adjustment ?? 0,
                             );
                             const isSingle = g.selection_type === "single";
                             const isPicked = isSingle
                               ? singlePick[g.id] === o.id
                               : multiPick[g.id]
-                              ? Array.from(multiPick[g.id]).includes(o.id)
-                              : false;
+                                ? Array.from(multiPick[g.id]).includes(o.id)
+                                : false;
 
                             const onPick = () => {
                               if (isSingle) {
@@ -741,8 +742,8 @@ export default function FoodDetailPopup({
                                 </div>
                                 <div className="text-[11px] mt-1 font-extrabold text-orange-300">
                                   {price > 0
-                                    ? `+ $${price.toFixed(2)}`
-                                    : "+ $0.00"}
+                                    ? `+ ${formatMoneyVND(price)}`
+                                    : "+ 0₫"}
                                 </div>
                               </button>
                             );
@@ -796,7 +797,7 @@ export default function FoodDetailPopup({
                     Đơn giá (gồm option)
                   </div>
                   <div className="text-xl font-black text-orange-500">
-                    ${unitPrice.toFixed(2)}
+                    {formatMoneyVND(unitPrice)}
                   </div>
                 </div>
               </div>
@@ -807,8 +808,8 @@ export default function FoodDetailPopup({
                 disabled={!canOrder}
                 className="w-full mt-2 px-5 py-4 rounded-2xl font-black text-white bg-linear-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:opacity-50"
               >
-                {mode === "edit" ? "Cập nhật" : "Thêm vào giỏ"} • $
-                {totalPrice.toFixed(2)}
+                {mode === "edit" ? "Cập nhật" : "Thêm vào giỏ"} •{" "}
+                {formatMoneyVND(totalPrice)}
               </button>
             </section>
 
@@ -846,7 +847,7 @@ export default function FoodDetailPopup({
                           {it.name}
                         </div>
                         <div className="text-[11px] text-orange-400 font-extrabold mt-1">
-                          ${Number(it.price || 0).toFixed(2)}
+                          {formatMoneyVND(Number(it.price || 0))}
                         </div>
                       </div>
                     </button>

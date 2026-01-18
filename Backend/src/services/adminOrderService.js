@@ -9,7 +9,7 @@ function mapOrderRow(r) {
   return {
     id: r.id,
     code: r.code,
-    status: r.status, // received|preparing|ready|completed|cancelled
+    status: r.status, // received|preparing|ready|completed|rejected
     paymentStatus: r.payment_status, // unpaid|paid
     createdAt: r.created_at,
     updatedAt: r.updated_at,

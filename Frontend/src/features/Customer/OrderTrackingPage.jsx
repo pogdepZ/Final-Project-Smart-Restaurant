@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import { orderApi } from "../../services/orderApi";
 import { useSocket } from "../../context/SocketContext";
 import OrderItemStatus from "../../components/customer/OrderItemStatus";
+import { formatMoneyVND } from "../../utils/orders";
 
 // Map status từ backend sang UI status
 const mapItemStatus = (status) => {
@@ -74,7 +75,7 @@ const OrderTrackingPage = () => {
       // Auto-select đơn hàng đang active
       if (!selectedOrderId) {
         const activeOrder = mappedOrders.find(
-          (o) => !["completed", "cancelled"].includes(o.status),
+          (o) => !["completed", "rejected"].includes(o.status),
         );
         if (activeOrder) {
           setSelectedOrderId(activeOrder.id);
@@ -138,7 +139,7 @@ const OrderTrackingPage = () => {
         autoClose: 3000,
       });
       fetchOrders();
-    }
+    };
 
     socket.on("order_status_update", handleOrderStatusUpdate);
     socket.on("order_item_status_update", handleOrderItemStatusUpdate);

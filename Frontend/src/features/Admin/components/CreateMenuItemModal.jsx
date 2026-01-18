@@ -12,7 +12,12 @@ const ITEM_STATUS = [
   { value: "sold_out", label: "sold_out" },
 ];
 
-export default function CreateMenuItemModal({ open, onClose, onSuccess, categories = [] }) {
+export default function CreateMenuItemModal({
+  open,
+  onClose,
+  onSuccess,
+  categories = [],
+}) {
   const firstCat = useMemo(() => categories?.[0]?.id || "ALL", [categories]);
 
   const [categoryId, setCategoryId] = useState(firstCat);
@@ -38,7 +43,6 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
       subLabel: `${g.selectionType} • ${g.isRequired ? "required" : "optional"} • min ${g.minSelections} / max ${g.maxSelections}`,
     }));
   }, [modifierGroups]);
-
 
   useEffect(() => {
     if (!open) return;
@@ -67,8 +71,6 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
     })();
   }, [open]);
 
-
-
   if (!open) return null;
 
   const handleUploadImage = async () => {
@@ -81,18 +83,21 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
       const res = await adminMenuApi.uploadMenuImage(imageFile);
 
       // tùy BE trả về: { url } hoặc { secure_url }...
-      const url = res?.url || res?.secure_url || res?.data?.url || res?.data?.secure_url;
+      const url =
+        res?.url || res?.secure_url || res?.data?.url || res?.data?.secure_url;
 
-      if (!url) throw new Error("Upload thành công nhưng không nhận được URL ảnh.");
+      if (!url)
+        throw new Error("Upload thành công nhưng không nhận được URL ảnh.");
 
       setImageUrl(url);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || "Upload ảnh thất bại.");
+      setError(
+        e?.response?.data?.message || e?.message || "Upload ảnh thất bại.",
+      );
     } finally {
       setUploading(false);
     }
   };
-
 
   const reset = () => {
     setCategoryId(firstCat);
@@ -119,9 +124,11 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
     const trimmed = name.trim();
     const numPrice = Number(price);
 
-    if (!categoryId || categoryId === "ALL") return setError("Vui lòng chọn category.");
+    if (!categoryId || categoryId === "ALL")
+      return setError("Vui lòng chọn category.");
     if (!trimmed) return setError("Vui lòng nhập tên món.");
-    if (!Number.isFinite(numPrice) || numPrice <= 0) return setError("Giá phải là số > 0.");
+    if (!Number.isFinite(numPrice) || numPrice <= 0)
+      return setError("Giá phải là số > 0.");
     if (!status) return setError("Vui lòng chọn trạng thái.");
     if (isUploading) return setError("Ảnh đang upload, vui lòng chờ.");
     if (!imageUrl) return setError("Vui lòng upload ảnh món ăn trước khi tạo.");
@@ -144,7 +151,8 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
 
       // ✅ 2) lấy ID (tuỳ axios interceptor)
       const newId = created?.id || created?.data?.id;
-      if (!newId) throw new Error("Tạo món thành công nhưng không nhận được ID.");
+      if (!newId)
+        throw new Error("Tạo món thành công nhưng không nhận được ID.");
 
       // ✅ 3) gắn modifier groups
       if (selectedGroupIds?.length) {
@@ -161,10 +169,12 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
     }
   };
 
-
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={handleClose}
+      />
 
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl max-h-[90vh] rounded-3xl border border-white/10 bg-neutral-950 shadow-2xl overflow-hidden flex flex-col">
@@ -175,8 +185,12 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
                 <PlusSquare className="text-orange-500" size={18} />
               </div>
               <div>
-                <div className="text-white font-black leading-tight">Thêm món mới</div>
-                <div className="text-xs text-gray-400 mt-0.5">Tạo menu item và chọn category</div>
+                <div className="text-white font-black leading-tight">
+                  Thêm món mới
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">
+                  Tạo menu item và chọn category
+                </div>
               </div>
             </div>
 
@@ -202,7 +216,9 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Category *</label>
+                  <label className="text-xs text-gray-400 mb-1 block">
+                    Category *
+                  </label>
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
@@ -219,7 +235,9 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Status *</label>
+                  <label className="text-xs text-gray-400 mb-1 block">
+                    Status *
+                  </label>
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
@@ -236,7 +254,9 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Tên món *</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Tên món *
+                </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -246,7 +266,9 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Mô tả</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Mô tả
+                </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -258,7 +280,9 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-gray-400 mb-1 block">Giá *</label>
+                  <label className="text-xs text-gray-400 mb-1 block">
+                    Giá (VND) *
+                  </label>
                   <input
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
@@ -269,13 +293,17 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
                   <div className="text-xs text-gray-500 mt-1">
                     Preview:{" "}
                     <span className="text-gray-200 font-semibold">
-                      {Number.isFinite(Number(price)) ? formatVND(Number(price)) : "—"}
+                      {Number.isFinite(Number(price))
+                        ? formatVND(Number(price))
+                        : "—"}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Prep (phút)</label>
+                  <label className="text-xs text-gray-400 mb-1 block">
+                    Prep (phút)
+                  </label>
                   <input
                     type="number"
                     value={prepTimeMinutes}
@@ -288,12 +316,16 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-white font-bold">Modifiers cho món</div>
+                    <div className="text-white font-bold">
+                      Modifiers cho món
+                    </div>
                     <div className="text-xs text-gray-400 mt-0.5">
                       Chọn các nhóm tuỳ chọn (Size, Topping, Spicy…)
                     </div>
                   </div>
-                  {loadingGroups ? <div className="text-xs text-gray-500">Đang tải...</div> : null}
+                  {loadingGroups ? (
+                    <div className="text-xs text-gray-500">Đang tải...</div>
+                  ) : null}
                 </div>
 
                 <div className="mt-3">
@@ -320,9 +352,10 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
                 ) : null}
               </div>
 
-
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Ảnh món ăn</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Ảnh món ăn
+                </label>
 
                 <input
                   type="file"
@@ -370,20 +403,22 @@ export default function CreateMenuItemModal({ open, onClose, onSuccess, categori
                 ) : null}
               </div>
 
-
               <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                 <div>
                   <div className="text-white font-bold">Chef recommended</div>
-                  <div className="text-xs text-gray-400 mt-0.5">Đánh dấu món nổi bật</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    Đánh dấu món nổi bật
+                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setChefRecommended((v) => !v)}
-                  className={`px-4 py-2 rounded-xl border transition ${isChefRecommended
-                    ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
-                    : "bg-neutral-950/40 border-white/10 text-gray-200 hover:bg-white/10"
-                    }`}
+                  className={`px-4 py-2 rounded-xl border transition ${
+                    isChefRecommended
+                      ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
+                      : "bg-neutral-950/40 border-white/10 text-gray-200 hover:bg-white/10"
+                  }`}
                 >
                   {isChefRecommended ? "ON" : "OFF"}
                 </button>

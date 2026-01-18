@@ -33,7 +33,7 @@ const STATUS_META = {
     label: "Hoàn tất",
     className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
   },
-  cancelled: {
+  rejected: {
     label: "Đã hủy",
     className: "bg-red-500/10 text-red-300 border-red-500/20",
   },
@@ -289,7 +289,7 @@ export default function OrderManagement() {
                     <option value="preparing">Đang chuẩn bị</option>
                     <option value="ready">Sẵn sàng</option>
                     <option value="completed">Hoàn tất</option>
-                    <option value="cancelled">Đã hủy</option>
+                    <option value="rejected">Đã hủy</option>
                   </select>
                 </div>
               </div>

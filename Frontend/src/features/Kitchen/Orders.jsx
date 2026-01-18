@@ -11,6 +11,7 @@ import {
 import axiosClient from "../../store/axiosClient";
 import { useSocket } from "../../context/SocketContext";
 import { useNotificationSound } from "../../hooks/useNotificationSound";
+import { formatMoneyVND } from "../../utils/orders";
 
 import KitchenOrderCard from "../../Components/KitchenOrderCard";
 import KitchenOrderDetailModal from "../../Components/KitchenOrderDetailModal";

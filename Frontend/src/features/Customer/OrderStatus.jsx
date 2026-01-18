@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import RequestBillButton from "../../Components/RequestBillButton";
+import { formatMoneyVND } from "../../utils/orders";
 
 const OrderStatus = () => {
   const tableId = localStorage.getItem("tableId");

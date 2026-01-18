@@ -433,7 +433,7 @@ async function hasItemInLockedOrders(menuItemId) {
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
     WHERE oi.menu_item_id = $1
-      AND o.status IN ('cancelled', 'completed')
+      AND o.status IN ('rejected', 'completed')
     LIMIT 1
   `;
   const rs = await db.query(sql, [menuItemId]);

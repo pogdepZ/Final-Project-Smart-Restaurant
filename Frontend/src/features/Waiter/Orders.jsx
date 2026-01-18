@@ -268,7 +268,7 @@ export default function WaiterOrdersPage() {
                   {orders.filter((o) => o.status === "ready").length})
                 </option>
                 <option value="completed">💰 Đã xong</option>
-                <option value="cancelled">❌ Đã hủy</option>
+                <option value="rejected">❌ Đã hủy</option>
                 <option value="all">Tất cả</option>
               </select>
             </div>

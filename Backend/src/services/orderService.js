@@ -236,7 +236,7 @@ function getStatusMessage(status) {
     preparing: "🔥 Bếp đang chuẩn bị",
     ready: "✅ Đơn đã sẵn sàng!",
     completed: "💰 Thanh toán hoàn tất",
-    cancelled: "❌ Đơn đã bị hủy",
+    rejected: "❌ Đơn đã bị hủy",
   };
   return messages[status] || "📦 Cập nhật đơn hàng";
 }

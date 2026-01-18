@@ -25,14 +25,12 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import FoodDetailPopup from "./DetailFoodPopup";
 import tableApi from "../../services/tableApi";
-
-
-const money = (n) => `$${Number(n || 0).toFixed(2)}`;
+import { formatMoneyVND } from "../../utils/orders";
 
 const calcModifierExtra = (modifiers = []) =>
   (modifiers || []).reduce(
     (sum, m) => sum + Number(m.price || m.price_adjustment || 0),
-    0
+    0,
   );
 
 const Cart = () => {
@@ -83,9 +81,12 @@ const Cart = () => {
     const sessionToken = localStorage.getItem("sessionToken");
     const tableCode = localStorage.getItem("tableCode");
 
-    const isValidSession = await tableApi.validateSession(tableCode, sessionToken);
+    const isValidSession = await tableApi.validateSession(
+      tableCode,
+      sessionToken,
+    );
 
-    if(isValidSession && isValidSession.valid === false) {
+    if (isValidSession && isValidSession.valid === false) {
       toast.warning("Phiên bàn đã hết hạn, vui lòng quét lại QR để đặt món!");
       navigate(tableCode ? `/menu/${tableCode}` : "/scan");
       return;
@@ -102,16 +103,20 @@ const Cart = () => {
     const sessionId = localStorage.getItem("tableSessionId");
 
     // Lấy userId từ localStorage hoặc Redux store (nếu user đã đăng nhập)
-    const userId = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).id : null;
+    const userId = localStorage.getItem("user")
+      ? JSON.parse(localStorage.getItem("user")).id
+      : null;
 
     console.log("Checking out with:", { qrToken, sessionId, userId });
 
     try {
-      await dispatch(syncCartToDb({ 
-        qrToken, 
-        sessionId: sessionId,
-        userId 
-      })).unwrap();
+      await dispatch(
+        syncCartToDb({
+          qrToken,
+          sessionId: sessionId,
+          userId,
+        }),
+      ).unwrap();
       toast.success("Đã gửi đơn lên hệ thống!");
       navigate("/menu");
     } catch (e) {
@@ -145,9 +150,12 @@ const Cart = () => {
           <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-neutral-900 flex items-center justify-center">
             <ShoppingCart size={64} className="text-gray-600" />
           </div>
-          <h2 className="text-3xl font-black mb-3 text-gray-300">Giỏ hàng trống</h2>
+          <h2 className="text-3xl font-black mb-3 text-gray-300">
+            Giỏ hàng trống
+          </h2>
           <p className="text-gray-500 mb-8">
-            Bạn chưa thêm món nào vào giỏ hàng. Hãy khám phá thực đơn của chúng tôi!
+            Bạn chưa thêm món nào vào giỏ hàng. Hãy khám phá thực đơn của chúng
+            tôi!
           </p>
           <Link
             to={tableCode ? `/menu/${tableCode}` : "/menu"}
@@ -222,7 +230,8 @@ const Cart = () => {
                       </button>
                     </div>
 
-                    {Array.isArray(item.modifiers) && item.modifiers.length > 0 ? (
+                    {Array.isArray(item.modifiers) &&
+                    item.modifiers.length > 0 ? (
                       <div className="mt-2 text-xs text-gray-300 space-y-1">
                         {item.modifiers.map((m, i) => (
                           <div
@@ -231,10 +240,14 @@ const Cart = () => {
                           >
                             <span className="text-gray-400">
                               • {m.group_name ? `${m.group_name}: ` : ""}
-                              <span className="text-gray-200 font-semibold">{m.name}</span>
+                              <span className="text-gray-200 font-semibold">
+                                {m.name}
+                              </span>
                             </span>
                             <span className="text-orange-300 font-bold">
-                              {Number(m.price || 0) > 0 ? `+${money(m.price)}` : "+$0.00"}
+                              {Number(m.price || 0) > 0
+                                ? `+${formatMoneyVND(m.price)}`
+                                : "+0₫"}
                             </span>
                           </div>
                         ))}
@@ -255,10 +268,10 @@ const Cart = () => {
                   <div className="flex justify-between items-center mt-3">
                     <div className="flex flex-col">
                       <span className="text-xl font-black text-orange-500">
-                        {money(item.lineTotal)}
+                        {formatMoneyVND(item.lineTotal)}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {money(item.unit)} × {item.quantity}
+                        {formatMoneyVND(item.unit)} × {item.quantity}
                       </span>
                     </div>
 
@@ -290,23 +303,27 @@ const Cart = () => {
 
         {/* Summary */}
         <div className="mt-8 bg-neutral-900 rounded-2xl p-6 border border-white/5">
-          <h3 className="text-lg font-bold mb-4 text-gray-300">Chi tiết đơn hàng</h3>
+          <h3 className="text-lg font-bold mb-4 text-gray-300">
+            Chi tiết đơn hàng
+          </h3>
 
           <div className="flex justify-between text-gray-400">
             <span>Tổng món ({totalItems})</span>
-            <span className="font-semibold">{money(subtotal)}</span>
+            <span className="font-semibold">{formatMoneyVND(subtotal)}</span>
           </div>
 
           <div className="flex justify-between text-gray-400 mt-2">
             <span>Phí dịch vụ (10%)</span>
-            <span className="font-semibold">{money(serviceFee)}</span>
+            <span className="font-semibold">{formatMoneyVND(serviceFee)}</span>
           </div>
 
           <div className="h-px bg-white/10 my-3" />
 
           <div className="flex justify-between text-xl font-black">
             <span className="text-white">Tổng cộng</span>
-            <span className="text-orange-500">{money(grandTotal)}</span>
+            <span className="text-orange-500">
+              {formatMoneyVND(grandTotal)}
+            </span>
           </div>
 
           <button
@@ -348,7 +365,7 @@ const Cart = () => {
               updateCartLineLocal({
                 fromLineKey: editingItem.lineKey,
                 next: payload,
-              })
+              }),
             );
             setEditingItem(null);
             toast.success("Đã cập nhật tuỳ chọn món!");

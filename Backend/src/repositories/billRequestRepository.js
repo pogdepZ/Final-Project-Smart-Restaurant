@@ -38,7 +38,7 @@ class BillRequestRepository {
     return result.rows;
   }
 
-  // Cập nhật trạng thái (acknowledged, completed, cancelled)
+  // Cập nhật trạng thái (acknowledged, completed, rejected)
   async updateStatus(id, status, handledBy = null) {
     const result = await db.query(
       `UPDATE bill_requests 

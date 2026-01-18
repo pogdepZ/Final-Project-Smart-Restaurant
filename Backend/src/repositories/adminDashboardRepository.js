@@ -49,7 +49,7 @@ exports.topOrderedDishes = async (limit = 5) => {
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
     LEFT JOIN menu_items mi ON mi.id = oi.menu_item_id
-    WHERE o.status NOT IN ('pending', 'cancelled')
+    WHERE o.status NOT IN ('pending', 'rejected')
       AND date_trunc('month', o.created_at) = date_trunc('month', NOW())
       AND mi.id IS NOT NULL
     GROUP BY mi.id, mi.name, mi.category_id

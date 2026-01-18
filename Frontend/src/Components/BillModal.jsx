@@ -526,7 +526,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                 >
                   <option value="none">Không</option>
                   <option value="percent">%</option>
-                  <option value="fixed">$</option>
+                  <option value="fixed">VNĐ</option>
                 </select>
                 <input
                   type="number"

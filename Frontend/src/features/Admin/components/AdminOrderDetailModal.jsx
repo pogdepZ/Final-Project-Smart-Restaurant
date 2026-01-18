@@ -20,7 +20,7 @@ const STATUS_META = {
     label: "Hoàn tất",
     className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
   },
-  cancelled: {
+  rejected: {
     label: "Đã hủy",
     className: "bg-red-500/10 text-red-300 border-red-500/20",
   },

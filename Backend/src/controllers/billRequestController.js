@@ -60,7 +60,7 @@ exports.getRequestStatus = async (req, res) => {
 exports.cancelRequest = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await billRequestService.cancelRequest(id, "cancelled");
+    const result = await billRequestService.cancelRequest(id, "rejected");
     res.json({ success: true, request: result });
   } catch (err) {
     res.status(err.status || 500).json({ message: err.message });

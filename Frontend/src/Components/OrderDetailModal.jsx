@@ -176,7 +176,7 @@ export default function OrderDetailModal({
                   <div
                     className={`font-bold ${item.status === "rejected" ? "text-gray-600 line-through" : "text-white"}`}
                   >
-                    {formatMoneyVND(item.subtotal)}
+                    {formatMoneyVND(Number(item.subtotal))}
                   </div>
 
                   {/* ACTION BUTTONS (Chỉ hiện khi item đang Pending và Đơn chưa hoàn thành) */}
@@ -211,7 +211,7 @@ export default function OrderDetailModal({
           <div className="flex justify-between items-center mb-6">
             <span className="text-gray-400">Tổng cộng (Đã duyệt)</span>
             <span className="text-3xl font-black text-orange-500">
-              {formatMoneyVND(order.total_amount)}
+              {formatMoneyVND(Number(order.total_amount))}
             </span>
           </div>
 

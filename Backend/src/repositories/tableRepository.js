@@ -77,7 +77,7 @@ class TableRepository {
   // 6. Check Active Orders (Warning logic)
   async countActiveOrders(tableId) {
     const result = await db.query(
-      `SELECT COUNT(*) as count FROM orders WHERE table_id = $1 AND status NOT IN ('completed', 'cancelled')`,
+      `SELECT COUNT(*) as count FROM orders WHERE table_id = $1 AND status NOT IN ('completed', 'rejected')`,
       [tableId],
     );
     return parseInt(result.rows[0].count);

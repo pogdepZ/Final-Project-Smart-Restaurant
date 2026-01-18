@@ -181,11 +181,11 @@ exports.createCategory = async (body) => {
 };
 
 exports.deleteMenuItem = async (id) => {
-  // chặn xoá nếu item có trong order cancelled/completed
+  // chặn xoá nếu item có trong order rejected/completed
   const locked = await repo.hasItemInLockedOrders(id);
   if (locked) {
     const err = new Error(
-      "Không thể xoá: món này đang tồn tại trong order đã CANCELLED hoặc COMPLETED.",
+      "Không thể xoá: món này đang tồn tại trong order đã REJECTED hoặc COMPLETED.",
     );
     err.status = 409;
     throw err;
