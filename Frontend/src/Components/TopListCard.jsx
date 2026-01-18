@@ -57,7 +57,6 @@ export default function TopListCard({
               {/* Main */}
               <div className="col-span-7 min-w-0">
                 <div className="text-white font-bold truncate">{r.title}</div>
-                <div className="text-gray-500 text-xs truncate">{r.subtitle}</div>
               </div>
 
               {/* Value */}

@@ -15,7 +15,9 @@ function normalizeScope(scope) {
 }
 
 function mapSortToOrderBy(sort) {
-  const s = String(sort || "NEWEST").trim().toUpperCase();
+  const s = String(sort || "NEWEST")
+    .trim()
+    .toUpperCase();
   if (s === "OLDEST") return "u.created_at ASC";
   if (s === "NAME_ASC") return "u.name ASC";
   if (s === "NAME_DESC") return "u.name DESC";
@@ -159,7 +161,10 @@ exports.setVerified = async (id, is_verified) => {
 
   const next = !!is_verified;
 
-  const updated = await adminAccountRepo.updateVerified({ id, is_verified: next });
+  const updated = await adminAccountRepo.updateVerified({
+    id,
+    is_verified: next,
+  });
   if (!updated) {
     const err = new Error("Không tìm thấy user");
     err.statusCode = 404;
@@ -199,4 +204,34 @@ exports.deleteAccount = async (id, currentUser) => {
 
   const deleted = await adminAccountRepo.deleteById(id);
   return deleted;
+};
+
+exports.setActived = async ({ id, is_actived }) => {
+  if (!id) {
+    const err = new Error("Missing user id");
+    err.status = 400;
+    throw err;
+  }
+
+  if (typeof is_actived !== "boolean") {
+    const err = new Error("is_actived must be boolean");
+    err.status = 400;
+    throw err;
+  }
+
+  const basic = await adminAccountRepo.findByIdBasic(id);
+  if (!basic) {
+    const err = new Error("User not found");
+    err.status = 404;
+    throw err;
+  }
+
+  const updated = await adminAccountRepo.updateActived({ id, is_actived });
+  if (!updated) {
+    const err = new Error("Cannot update is_actived");
+    err.status = 400;
+    throw err;
+  }
+
+  return updated;
 };

@@ -43,6 +43,9 @@ const ScanQR = () => {
         }
 
         // Gọi API để kiểm tra bàn và tạo session mới
+
+        const sessionId = localStorage.getItem('')
+
         const response = await tableApi.checkAndCreateSession(
           tableCode,
           user?.id

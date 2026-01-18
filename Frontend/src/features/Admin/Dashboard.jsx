@@ -56,7 +56,6 @@ function buildRange(period) {
     end.setDate(1);
     end.setHours(0, 0, 0, 0);
   }
-
   const month = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
   return { from: start.toISOString(), to: end.toISOString(), month };
 }

@@ -9,7 +9,7 @@ export const cartApi = {
   removeItem: (cartItemId) => axiosClient.delete(`/cart/items/${cartItemId}`),
   clearCart: (cartId) => axiosClient.delete(`/cart/${cartId}/items`),
 
-  // ✅ NEW: sync local cart -> DB (chỉ gọi khi bấm Đặt món)
+  
   sync: (payload, qrToken) =>
     axiosClient.post(`/cart/sync`, payload, {
       headers: { "x-qr-token": qrToken },

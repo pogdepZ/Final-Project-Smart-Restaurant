@@ -63,4 +63,29 @@ export const adminMenuApi = {
 
   deleteCategory: (id, payload) =>
     axiosClient.patch(`/admin/menu/categories/${id}/delete`, payload),
+
+  getMenuItemPhotos(menuItemId) {
+    return axiosClient.get(`/admin/menu/menu-items/${menuItemId}/photos`);
+  },
+
+  uploadMenuItemPhotos(menuItemId, files = []) {
+    const form = new FormData();
+    files.forEach((f) => form.append("images", f)); // 👈 key = images
+
+    return axiosClient.post(`/admin/menu/menu-items/${menuItemId}/photos`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  setPrimaryMenuItemPhoto(menuItemId, photoId) {
+    return axiosClient.patch(
+      `/admin/menu/menu-items/${menuItemId}/photos/${photoId}/primary`,
+    );
+  },
+
+  deleteMenuItemPhoto(menuItemId, photoId) {
+    return axiosClient.delete(
+      `/admin/menu/menu-items/${menuItemId}/photos/${photoId}`,
+    );
+  },
 };

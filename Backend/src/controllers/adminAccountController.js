@@ -15,7 +15,7 @@ exports.createStaffAccount = async (req, res) => {
   try {
     const created = await adminAccountService.createStaffAccount(
       req.body,
-      req.user
+      req.user,
     );
     return res.status(201).json({ message: "Created", item: created });
   } catch (e) {
@@ -51,5 +51,26 @@ exports.deleteAccount = async (req, res) => {
     console.log("deleteAccount error:", e);
     const status = e.statusCode || 400;
     return res.status(status).json({ message: e.message || "Delete failed" });
+  }
+};
+
+exports.setActived = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    // FE gửi { isActived: true/false }
+    const { isActived } = req.body;
+
+    const updated = await adminAccountService.setActived({
+      id,
+      is_actived: isActived,
+    });
+
+    return res.json({
+      message: "Updated is_actived",
+      item: updated,
+    });
+  } catch (e) {
+    next(e);
   }
 };
