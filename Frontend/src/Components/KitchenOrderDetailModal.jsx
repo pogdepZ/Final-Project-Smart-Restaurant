@@ -1,6 +1,14 @@
-import React from "react";
-import { Clock, Table2, CheckCircle2, PlayCircle, X } from "lucide-react";
+import React, { useMemo } from "react";
+import {
+  Clock,
+  Table2,
+  CheckCircle2,
+  PlayCircle,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 import { formatTime, formatMoneyVND } from "../utils/orders";
+import OrderTimer from "./OrderTimer";
 
 export default function KitchenOrderDetailModal({
   order,
@@ -9,6 +17,25 @@ export default function KitchenOrderDetailModal({
   onComplete,
 }) {
   if (!order) return null;
+
+  const items = order.items || [];
+
+  // Tính prep time và trạng thái urgent
+  const { maxPrepTime, elapsed, isUrgent, overdueItems } = useMemo(() => {
+    const max = Math.max(...items.map((it) => it.prep_time_minutes || 15), 15);
+    const elapsedMins =
+      (Date.now() - new Date(order.created_at).getTime()) / 60000;
+    const overdue = items.filter(
+      (it) => elapsedMins >= (it.prep_time_minutes || 15)
+    );
+
+    return {
+      maxPrepTime: max,
+      elapsed: elapsedMins,
+      isUrgent: elapsedMins >= max,
+      overdueItems: overdue,
+    };
+  }, [order, items]);
 
   return (
     <div className="fixed inset-0 z-[60]">
@@ -20,7 +47,34 @@ export default function KitchenOrderDetailModal({
 
       {/* Modal Container */}
       <div className="absolute left-1/2 top-1/2 w-[95%] max-w-2xl -translate-x-1/2 -translate-y-1/2">
-        <div className="rounded-2xl bg-neutral-950 border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div
+          className={`rounded-2xl bg-neutral-950 border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
+            isUrgent
+              ? "border-red-500/50 ring-2 ring-red-500/20"
+              : "border-white/10"
+          }`}
+        >
+          {/* Urgent Banner */}
+          {isUrgent && (
+            <div className="px-5 py-3 bg-red-500/20 border-b border-red-500/30 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle
+                  size={18}
+                  className="text-red-400 animate-bounce"
+                />
+                <span className="text-red-400 text-sm font-bold uppercase tracking-wide">
+                  Đơn trễ - {overdueItems.length} món vượt thời gian!
+                </span>
+              </div>
+              <OrderTimer
+                createdAt={order.created_at}
+                estimatedMinutes={maxPrepTime}
+                size="small"
+                showLabel={false}
+              />
+            </div>
+          )}
+
           {/* Header */}
           <div className="p-5 border-b border-white/10 flex items-start justify-between gap-4 bg-white/5">
             <div>
@@ -35,6 +89,15 @@ export default function KitchenOrderDetailModal({
                   <Clock size={16} className="text-orange-500" />
                   <span>Thời gian đặt: {formatTime(order.created_at)}</span>
                 </div>
+
+                {/* Timer */}
+                {!isUrgent && (
+                  <OrderTimer
+                    createdAt={order.created_at}
+                    estimatedMinutes={maxPrepTime}
+                    size="default"
+                  />
+                )}
               </div>
             </div>
 
@@ -54,53 +117,83 @@ export default function KitchenOrderDetailModal({
                   Chi tiết món ăn
                 </div>
                 <div className="text-orange-500 font-bold text-sm">
-                  {(order.items || []).length} món
+                  {items.length} món
                 </div>
               </div>
 
               <div className="divide-y divide-white/5">
-                {(order.items || []).map((it, idx) => (
-                  <div
-                    key={idx}
-                    className="p-4 hover:bg-white/5 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Quantity Badge */}
-                      <div className="flex-shrink-0 w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-lg font-black text-white border border-white/10">
-                        {it.qty}
-                      </div>
+                {items.map((it, idx) => {
+                  const itemPrepTime = it.prep_time_minutes || 15;
+                  const itemOverdue = elapsed >= itemPrepTime;
+                  const overtimeMinutes = Math.floor(elapsed - itemPrepTime);
 
-                      <div className="flex-1 min-w-0">
-                        {/* Tên món */}
-                        <div className="text-lg font-bold text-gray-100 leading-tight">
-                          {it.name}
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-4 transition-colors ${
+                        itemOverdue ? "bg-red-500/10" : "hover:bg-white/5"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Quantity Badge */}
+                        <div
+                          className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg font-black border ${
+                            itemOverdue
+                              ? "bg-red-500/20 border-red-500/30 text-red-300"
+                              : "bg-white/10 border-white/10 text-white"
+                          }`}
+                        >
+                          {it.qty}
                         </div>
 
-                        {/* Modifiers (Topping/Size) */}
-                        {it.modifiers && it.modifiers.length > 0 && (
-                          <div className="mt-2 space-y-1">
-                            {it.modifiers.map((mod, mIdx) => (
-                              <div
-                                key={mIdx}
-                                className="text-sm text-gray-400 flex items-center gap-2"
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
-                                {mod.name}
-                              </div>
-                            ))}
+                        <div className="flex-1 min-w-0">
+                          {/* Tên món + Overdue indicator */}
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`text-lg font-bold leading-tight ${
+                                itemOverdue ? "text-red-300" : "text-gray-100"
+                              }`}
+                            >
+                              {it.name}
+                            </div>
+                            {itemOverdue && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold">
+                                <AlertTriangle size={10} />+{overtimeMinutes}m
+                              </span>
+                            )}
                           </div>
-                        )}
 
-                        {/* Ghi chú món (Item Note) */}
-                        {it.note && (
-                          <div className="mt-2 text-sm text-orange-400 italic bg-orange-500/10 px-2 py-1 rounded border border-orange-500/20 inline-block">
-                            Note: {it.note}
+                          {/* Prep time info */}
+                          <div className="mt-1 text-xs text-gray-500">
+                            Thời gian chuẩn bị: {itemPrepTime} phút
                           </div>
-                        )}
+
+                          {/* Modifiers (Topping/Size) */}
+                          {it.modifiers && it.modifiers.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {it.modifiers.map((mod, mIdx) => (
+                                <div
+                                  key={mIdx}
+                                  className="text-sm text-gray-400 flex items-center gap-2"
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
+                                  {mod.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Ghi chú món (Item Note) */}
+                          {it.note && (
+                            <div className="mt-2 text-sm text-orange-400 italic bg-orange-500/10 px-2 py-1 rounded border border-orange-500/20 inline-block">
+                              Note: {it.note}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -138,10 +231,14 @@ export default function KitchenOrderDetailModal({
               // Nếu đang nấu (preparing) -> Nút Hoàn thành
               <button
                 onClick={onComplete}
-                className="flex-1 px-6 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
+                className={`flex-1 px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 ${
+                  isUrgent
+                    ? "bg-red-500 hover:bg-red-600 text-white shadow-red-900/30 animate-pulse"
+                    : "bg-green-600 hover:bg-green-500 text-white shadow-green-900/20"
+                }`}
               >
                 <CheckCircle2 size={20} />
-                Hoàn thành đơn
+                {isUrgent ? "Hoàn thành ngay!" : "Hoàn thành đơn"}
               </button>
             )}
           </div>
