@@ -10,7 +10,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
-import { formatMoneyVND, formatTime } from "../utils/orders";
+import { calcTotal, formatMoneyVND, formatTime } from "../utils/orders";
 import axiosClient from "../store/axiosClient";
 import { toast } from "react-toastify";
 
@@ -211,7 +211,7 @@ export default function OrderDetailModal({
           <div className="flex justify-between items-center mb-6">
             <span className="text-gray-400">Tổng cộng (Đã duyệt)</span>
             <span className="text-3xl font-black text-orange-500">
-              {formatMoneyVND(Number(order.total_amount))}
+              {formatMoneyVND(Number(calcTotal(order)))}
             </span>
           </div>
 
