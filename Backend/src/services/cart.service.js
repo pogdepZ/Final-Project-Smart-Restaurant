@@ -53,9 +53,12 @@ async function listCartItems(client, cartId) {
         ci.modifiers,
         mi.name,
         mi.price,
-        mi.image_url as "imageUrl"
+        p.url as "imageUrl"
      from cart_items ci
      join menu_items mi on mi.id = ci.menu_item_id
+     left join menu_item_photos p 
+       on p.menu_item_id = mi.id 
+      and p.is_primary = true
      where ci.cart_id = $1
      order by ci.created_at asc`,
     [cartId],
@@ -438,7 +441,10 @@ async function syncCartByTableId(
       );
 
       // chuyển trạng thái order 'completed' hoặc 'preparing' thành 'received' nếu có
-      await client.query(`update public.orders set status = 'received' where table_id = $1 and session_id = $2 and (status = 'completed' or status = 'preparing')`, [tableId, sessionId]);
+      await client.query(
+        `update public.orders set status = 'received' where table_id = $1 and session_id = $2 and (status = 'completed' or status = 'preparing')`,
+        [tableId, sessionId],
+      );
     } else {
       orderRes = await client.query(
         `select * from public.orders where table_id = $1 and (status = 'received' or status = 'preparing') order by created_at desc limit 1`,

@@ -129,7 +129,7 @@ async function listItems(
         mi.price,
         mi.prep_time_minutes,
         mi.status,
-        mi.image_url,
+        p.url AS image_url,
         mi.is_chef_recommended,
         mi.is_deleted,
         mi.created_at,
@@ -137,10 +137,13 @@ async function listItems(
         COALESCE(SUM(oi.quantity), 0)::int AS sold_count
       FROM menu_items mi
       JOIN menu_categories mc ON mc.id = mi.category_id
+      LEFT JOIN menu_item_photos p 
+        ON p.menu_item_id = mi.id 
+       AND p.is_primary = true
       LEFT JOIN order_items oi ON oi.menu_item_id = mi.id
       LEFT JOIN orders o ON o.id = oi.order_id AND o.status = 'completed'
       ${whereSql}
-      GROUP BY mi.id, mc.name
+      GROUP BY mi.id, mc.name, p.url
       ${orderBy}
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `
@@ -154,7 +157,7 @@ async function listItems(
         mi.price,
         mi.prep_time_minutes,
         mi.status,
-        mi.image_url,
+        p.url AS image_url,
         mi.is_chef_recommended,
         mi.is_deleted,
         mi.created_at,
@@ -162,6 +165,9 @@ async function listItems(
         0::int AS sold_count
       FROM menu_items mi
       JOIN menu_categories mc ON mc.id = mi.category_id
+      LEFT JOIN menu_item_photos p 
+        ON p.menu_item_id = mi.id 
+       AND p.is_primary = true
       ${whereSql}
       ${orderBy}
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
@@ -227,16 +233,15 @@ async function createItem(payload) {
     price,
     prepTimeMinutes = 0,
     status,
-    imageUrl = null,
     isChefRecommended = false,
   } = payload;
 
   const sql = `
     INSERT INTO menu_items (
       category_id, name, description, price, prep_time_minutes,
-      status, image_url, is_chef_recommended, is_deleted
+      status, is_chef_recommended, is_deleted
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,false)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,false)
     RETURNING id
   `;
 
@@ -247,7 +252,6 @@ async function createItem(payload) {
     price,
     prepTimeMinutes,
     status,
-    imageUrl,
     isChefRecommended,
   ]);
 
@@ -271,7 +275,7 @@ async function updateItem(id, payload) {
   if (payload.prepTimeMinutes != null)
     set("prep_time_minutes", payload.prepTimeMinutes);
   if (payload.status != null) set("status", payload.status);
-  if (payload.imageUrl !== undefined) set("image_url", payload.imageUrl);
+  // image_url đã chuyển sang bảng menu_item_photos
   if (payload.isChefRecommended != null)
     set("is_chef_recommended", payload.isChefRecommended);
   if (payload.isDeleted != null) set("is_deleted", payload.isDeleted);
@@ -380,13 +384,17 @@ async function findMenuItems({
       mi.is_chef_recommended,
       mi.created_at,
       mc.name AS category_name,
+      p.url AS image_url,
       COALESCE(SUM(oi.quantity), 0) AS sold_count
     FROM menu_items mi
     JOIN menu_categories mc ON mc.id = mi.category_id
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = mi.id 
+     AND p.is_primary = true
     LEFT JOIN order_items oi ON oi.menu_item_id = mi.id
     LEFT JOIN orders o ON o.id = oi.order_id AND o.status = 'completed'
     ${where}
-    GROUP BY mi.id, mc.name
+    GROUP BY mi.id, mc.name, p.url
     ORDER BY ${orderBy}
     LIMIT $${idx++} OFFSET $${idx++}
   `;
