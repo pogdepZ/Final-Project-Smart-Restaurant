@@ -99,7 +99,7 @@ export const SocketProvider = ({ children }) => {
     }
 
     // Kết nối mới
-    const newSocket = io(process.env.VITE_APP_BASE_URL, {
+    const newSocket = io(import.meta.env.VITE_APP_BASE_URL, {
       transports: ["websocket"],
     });
 
