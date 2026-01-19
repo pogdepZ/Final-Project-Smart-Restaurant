@@ -99,8 +99,9 @@ export const SocketProvider = ({ children }) => {
     }
 
     // Kết nối mới
-    const newSocket = io(import.meta.env.VITE_APP_BASE_URL, {
+    const newSocket = io(SOCKET_URL, {
       transports: ["websocket"],
+      withCredentials: true,
     });
 
     setSocket(newSocket);
