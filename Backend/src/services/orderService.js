@@ -129,10 +129,10 @@ exports.createOrder = async (data, io) => {
 
     await client.query("COMMIT");
 
-    // E. Socket Realtime
-    if (io) {
-      io.to("kitchen_room").emit("new_order", newOrder);
-    }
+    // E. Socket Realtime - Thông báo cho kitchen VÀ admin
+    // Lấy full order data để gửi socket (bao gồm table_number)
+    const fullOrder = await orderRepo.getById(newOrder.id);
+    socketService.notifyNewOrder(fullOrder);
 
     return newOrder;
   } catch (err) {

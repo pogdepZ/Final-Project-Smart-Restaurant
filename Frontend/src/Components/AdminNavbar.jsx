@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { MdOutlineTableBar } from "react-icons/md";
+import AdminNotificationCenter from "./AdminNotificationCenter";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -60,7 +61,9 @@ export default function AdminNavbar() {
               <ShieldUser className="text-white" size={24} />
             </div>
             <div className="leading-tight">
-              <div className="text-white font-black tracking-wide font-display">Lumière Bistro</div>
+              <div className="text-white font-black tracking-wide font-display">
+                Lumière Bistro
+              </div>
               <div className="text-[10px] text-gray-400 uppercase tracking-[0.3em]">
                 Admin
               </div>
@@ -81,6 +84,9 @@ export default function AdminNavbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
+            {/* Notification Center */}
+            <AdminNotificationCenter />
+
             <Link to="/admin/profile" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-full bg-neutral-800 border border-orange-500/30 flex items-center justify-center text-orange-500">
                 <User size={24} />
@@ -111,15 +117,17 @@ export default function AdminNavbar() {
 
       {/* Mobile overlay */}
       <div
-        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm ${open ? "opacity-100 visible" : "opacity-0 invisible"
-          }`}
+        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm ${
+          open ? "opacity-100 visible" : "opacity-0 invisible"
+        }`}
         onClick={() => setOpen(false)}
       />
 
       {/* Mobile drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-80 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col md:hidden ${open ? "translate-x-0" : "translate-x-full"
-          }`}
+        className={`fixed top-0 right-0 h-full w-80 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col md:hidden ${
+          open ? "translate-x-0" : "translate-x-full"
+        }`}
       >
         <div className="mb-6">
           <div className="text-white font-black text-lg">Admin Menu</div>

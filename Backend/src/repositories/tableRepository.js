@@ -161,6 +161,15 @@ class TableRepository {
     );
     return result.rows[0];
   }
+
+  async checkHasGuests(tableId) {
+    const result = await db.query(
+      `SELECT COUNT(*) as count FROM table_sessions 
+       WHERE table_id = $1 AND ended_at IS NULL`,
+      [tableId],
+    );
+    return parseInt(result.rows[0].count) > 0;
+  }
 }
 
 module.exports = new TableRepository();
