@@ -58,11 +58,38 @@ export default function KitchenPage() {
     if (!socket) return;
 
     const handleUpdateOrder = (updatedOrder) => {
+      console.log(
+        "🍳 [Kitchen] Received order update via socket:",
+        updatedOrder,
+      );
+
       if (updatedOrder.status === "preparing") {
-        // console.log(">>>>>> updatedOrder in KitchenPage SOCKET:", updatedOrder);
+        // Filter chỉ lấy items có status = "preparing" (giống fetchOrders)
+        const preparingItems = (updatedOrder.items || []).filter(
+          (item) => item.status === "preparing",
+        );
+
+        // Nếu không còn item nào cần nấu thì bỏ qua
+        if (preparingItems.length === 0) {
+          console.log("🍳 [Kitchen] No preparing items, skip this order");
+          return;
+        }
+
+        const orderWithFilteredItems = {
+          ...updatedOrder,
+          items: preparingItems,
+        };
+
         setOrders((prev) => {
-          if (prev.find((o) => o.id === updatedOrder.id)) return prev;
-          return [updatedOrder, ...prev];
+          // Nếu đã có order này, cập nhật items
+          const existingIndex = prev.findIndex((o) => o.id === updatedOrder.id);
+          if (existingIndex !== -1) {
+            const newOrders = [...prev];
+            newOrders[existingIndex] = orderWithFilteredItems;
+            return newOrders;
+          }
+          // Nếu chưa có, thêm mới vào đầu danh sách
+          return [orderWithFilteredItems, ...prev];
         });
 
         // 🔔 Phát âm thanh thông báo
