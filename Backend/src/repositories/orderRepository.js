@@ -224,55 +224,6 @@ exports.updateAllItemsStatusByOrderId = async (orderId, itemStatus) => {
 exports.findManyByUserId = async (userId, { page, limit }) => {
   const offset = (page - 1) * limit;
 
-  // total
-  const totalRs = await db.query(
-    `select count(*)::int as total from orders where user_id = $1`,
-    [userId],
-  );
-  const total = totalRs.rows[0]?.total || 0;
-
-  // list orders + items
-  const rs = await db.query(
-    `
-    select
-      o.id,
-      o.status,
-      o.payment_status,
-      o.total_amount,
-      o.created_at,
-      t.table_number,
-      coalesce(
-        json_agg(
-          json_build_object(
-            'id', oi.id,
-            'item_name', oi.item_name,
-            'quantity', oi.quantity,
-            'price', oi.price,
-            'subtotal', oi.subtotal,
-            'status', oi.status,
-            'note', oi.note
-          )
-          order by oi.created_at asc
-        ) filter (where oi.id is not null),
-        '[]'::json
-      ) as items
-    from orders o
-    left join tables t on t.id = o.table_id
-    left join order_items oi on oi.order_id = o.id
-    where o.user_id = $1
-    group by o.id, t.table_number
-    order by o.created_at desc
-    limit $2 offset $3
-    `,
-    [userId, limit, offset],
-  );
-
-  return { rows: rs.rows || [], total };
-};
-
-exports.findManyByUserId = async (userId, { page, limit }) => {
-  const offset = (page - 1) * limit;
-
   const totalRs = await db.query(
     `select count(*)::int as total from orders where user_id = $1`,
     [userId],
@@ -281,36 +232,41 @@ exports.findManyByUserId = async (userId, { page, limit }) => {
 
   const rs = await db.query(
     `
-    select
-      o.id,
-      o.status,
-      o.payment_status,
-      o.total_amount,
-      o.note,
-      o.created_at,
-      t.table_number,
-      coalesce(
-        json_agg(
-          json_build_object(
-            'id', oi.id,
-            'item_name', oi.item_name,
-            'quantity', oi.quantity,
-            'price', oi.price,
-            'subtotal', oi.subtotal,
-            'status', oi.status,
-            'note', oi.note
-          )
-          order by oi.id asc
-        ) filter (where oi.id is not null),
-        '[]'::json
-      ) as items
-    from orders o
-    left join tables t on t.id = o.table_id
-    left join order_items oi on oi.order_id = o.id
-    where o.user_id = $1
-    group by o.id, t.table_number
-    order by o.created_at desc
-    limit $2 offset $3
+        select
+        o.id,
+        o.status,
+        o.payment_status,
+        o.total_amount,
+        o.note,
+        o.created_at,
+        t.table_number,
+        coalesce(
+          json_agg(
+            json_build_object(
+              'id', oi.id,
+              'item_name', oi.item_name,
+              'quantity', oi.quantity,
+              'price', oi.price,
+              'subtotal', oi.subtotal,
+              'status', oi.status,
+              'note', oi.note,
+              'image_url', mip.url
+            )
+            order by oi.id asc
+          ) filter (where oi.id is not null),
+          '[]'::json
+        ) as items
+      from orders o
+      left join tables t on t.id = o.table_id
+      left join order_items oi on oi.order_id = o.id
+      left join menu_item_photos mip
+        on mip.menu_item_id = oi.menu_item_id
+      and mip.is_primary = true
+      where o.user_id = $1
+      group by o.id, t.table_number
+      order by o.created_at desc
+      limit $2 offset $3;
+
     `,
     [userId, limit, offset],
   );
@@ -321,7 +277,7 @@ exports.findManyByUserId = async (userId, { page, limit }) => {
 exports.findOneByIdAndUserId = async (orderId, userId) => {
   const rs = await db.query(
     `
-    select
+      select
       o.id,
       o.status,
       o.payment_status,
@@ -338,7 +294,8 @@ exports.findOneByIdAndUserId = async (orderId, userId) => {
             'price', oi.price,
             'subtotal', oi.subtotal,
             'status', oi.status,
-            'note', oi.note
+            'note', oi.note,
+            'image_url', mip.url
           )
           order by oi.id asc
         ) filter (where oi.id is not null),
@@ -347,9 +304,14 @@ exports.findOneByIdAndUserId = async (orderId, userId) => {
     from orders o
     left join tables t on t.id = o.table_id
     left join order_items oi on oi.order_id = o.id
-    where o.id = $1 and o.user_id = $2
+    left join menu_item_photos mip
+      on mip.menu_item_id = oi.menu_item_id
+    and mip.is_primary = true
+    where o.id = $1
+      and o.user_id = $2
     group by o.id, t.table_number
-    limit 1
+    limit 1;
+
     `,
     [orderId, userId],
   );

@@ -103,7 +103,7 @@ export default function EditProfileModal({
                     const f = e.target.files?.[0];
                     if (!f) return;
                     // giới hạn nhẹ: 2MB
-                    if (f.size > 2 * 1024 * 1024) return;
+                    if (f.size > 5 * 1024 * 1024) return;
                     setAvatarFile(f);
                   }}
                 />
@@ -115,7 +115,7 @@ export default function EditProfileModal({
 
             <div className="text-white/70 text-xs leading-relaxed">
               <p className="font-bold text-white">Ảnh đại diện</p>
-              <p>Chọn ảnh .jpg/.png, tối đa ~2MB</p>
+              <p>Chọn ảnh .jpg/.png, tối đa ~5MB</p>
             </div>
           </div>
 

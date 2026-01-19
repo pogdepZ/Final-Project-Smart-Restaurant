@@ -82,32 +82,54 @@ const OrderDetail = () => {
             {(order.items || []).map((it) => (
               <div
                 key={it.id}
-                className="flex items-start justify-between gap-3 bg-white/5 border border-white/10 rounded-xl p-3"
+                className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-3"
               >
-                <div className="min-w-0">
-                  <p className="font-bold truncate">
-                    {it.quantity}x {it.item_name}
-                  </p>
-                  {it.note ? (
-                    <p className="text-xs text-white/50 mt-0.5">
-                      Note: {it.note}
-                    </p>
-                  ) : null}
-                  <p className="text-xs text-white/50 mt-1">
-                    {formatMoneyVND(Number(it.subtotal || 0))}
-                  </p>
+                {/* IMAGE */}
+                <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
+                  {it.image_url ? (
+                    <img
+                      src={it.image_url}
+                      alt={it.item_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-white/40">
+                      —
+                    </div>
+                  )}
                 </div>
 
-                <div className="text-right shrink-0">
-                  <span
-                    className={[
-                      "inline-flex items-center px-2 py-1 rounded-lg border text-[11px] font-black uppercase",
-                      badge(it.uiStatus),
-                    ].join(" ")}
-                  >
-                    {it.uiStatus}
-                  </span>
-                  <p className="text-xs text-white/50 mt-1">{it.status}</p>
+                {/* CONTENT */}
+                <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+                  {/* LEFT */}
+                  <div className="min-w-0">
+                    <p className="font-bold truncate">
+                      {it.quantity}x {it.item_name}
+                    </p>
+
+                    {it.note && (
+                      <p className="text-xs text-white/50 mt-0.5">
+                        Note: {it.note}
+                      </p>
+                    )}
+
+                    <p className="text-xs text-white/50 mt-1">
+                      {formatMoneyVND(Number(it.subtotal || 0))}
+                    </p>
+                  </div>
+
+                  {/* RIGHT */}
+                  <div className="text-right shrink-0">
+                    <span
+                      className={[
+                        "inline-flex items-center px-2 py-1 rounded-lg border text-[11px] font-black uppercase",
+                        badge(it.uiStatus),
+                      ].join(" ")}
+                    >
+                      {it.uiStatus}
+                    </span>
+                    <p className="text-xs text-white/50 mt-1">{it.status}</p>
+                  </div>
                 </div>
               </div>
             ))}
