@@ -122,7 +122,7 @@ exports.register = async ({ name, email, password, role }) => {
   console.log('Base URL for email verification:', baseUrl);
   const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
 
-  sendVerifyEmail({
+  await sendVerifyEmail({
     to: user.email,
     name: user.name,
     verifyUrl,
