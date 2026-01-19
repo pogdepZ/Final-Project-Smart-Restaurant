@@ -11,7 +11,6 @@ import ChangePasswordModal from "./popup/ChangePasswordModal";
 import { updateUser } from "../../store/slices/authSlice";
 import Avatar from "./components/Avatar";
 
-import { orderApi } from "../../services/orderApi";
 import { formatMoneyVND } from "../../utils/orders";
 
 const UserProfile = () => {
