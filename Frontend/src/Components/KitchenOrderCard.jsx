@@ -91,7 +91,7 @@ export default function KitchenOrderCard({
       <div className="p-5 flex flex-col h-full">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-white font-black text-lg">{order.id}</div>
+            <div className="text-white font-black text-lg">#{order.id.slice(0, 8)}</div>
 
             <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-300">
               <div className="inline-flex items-center gap-2">

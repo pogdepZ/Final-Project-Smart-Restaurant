@@ -144,7 +144,7 @@ class SocketService {
   notifyBillRequest(data) {
     if (this.io) {
       // Gửi cho tất cả staff (waiter, cashier, admin)
-      this.io.to("kitchen_room").emit("bill_request", data);
+      this.io.to("waiter_room").emit("bill_request", data);
       // Gửi cho admin room để admin nhận thông báo
       this.io.to("admin_room").emit("bill_request", data);
       console.log(

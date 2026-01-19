@@ -55,7 +55,7 @@ export default function OrderCard({ order, onView, onAccept, onReject }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-3">
-              <div className="text-white font-black text-lg">{order.id}</div>
+              <div className="text-white font-black text-lg">#{order.id.slice(0, 8)}</div>
               <StatusBadge status={order.status} />
             </div>
 
@@ -63,7 +63,7 @@ export default function OrderCard({ order, onView, onAccept, onReject }) {
               <div className="inline-flex items-center gap-2">
                 <Table2 size={16} className="text-orange-500" />
                 <span className="font-semibold text-gray-200">
-                  {order.table_id || "—"}
+                  {order.table_number || "—"}
                 </span>
               </div>
               <div className="inline-flex items-center gap-2">

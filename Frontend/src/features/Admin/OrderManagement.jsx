@@ -368,11 +368,11 @@ export default function OrderManagement() {
                     {/* Thời gian: desktop mới hiện */}
                     <td className="hidden sm:table-cell py-3 px-3 align-top">
                       <div className="text-sm text-gray-200">
-                        {formatDateTime(o.createdAt)}
+                        {formatDateTime(o.created_at)}
                       </div>
-                      {o.updatedAt ? (
+                      {o.updated_at ? (
                         <div className="text-xs text-gray-500 mt-1">
-                          Update: {formatDateTime(o.updatedAt)}
+                          Update: {formatDateTime(o.updated_at)}
                         </div>
                       ) : null}
                     </td>
