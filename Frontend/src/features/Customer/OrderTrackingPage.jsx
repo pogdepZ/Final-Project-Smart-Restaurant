@@ -330,9 +330,24 @@ const OrderTrackingPage = () => {
                 Chi tiết món ({selectedOrder.items.length} món)
               </h2>
               <div className="space-y-3">
-                {selectedOrder.items.map((item) => (
-                  <OrderItemStatus key={item.id} item={item} />
-                ))}
+                {selectedOrder.items
+                  .slice()
+                  .sort((a, b) => {
+                    // Thứ tự ưu tiên: Ready > Cooking > Queued > Rejected
+                    const statusOrder = {
+                      Ready: 1,
+                      Cooking: 2,
+                      Queued: 3,
+                      Rejected: 4,
+                    };
+                    return (
+                      (statusOrder[a.status] || 5) -
+                      (statusOrder[b.status] || 5)
+                    );
+                  })
+                  .map((item) => (
+                    <OrderItemStatus key={item.id} item={item} />
+                  ))}
               </div>
             </div>
           </>
