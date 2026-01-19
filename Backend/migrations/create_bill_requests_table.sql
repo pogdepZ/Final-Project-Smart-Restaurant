@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS bill_requests (
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
     session_id UUID REFERENCES table_sessions(id) ON DELETE SET NULL,
     note TEXT,
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'acknowledged', 'completed', 'cancelled')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'acknowledged', 'completed', 'rejected')),
     handled_by UUID REFERENCES users(id) ON DELETE SET NULL,
     handled_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()

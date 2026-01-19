@@ -21,7 +21,7 @@ export function OrderStatusNotification({ message, status, onClose }) {
           color: "text-orange-500",
           bg: "bg-orange-500/10",
         };
-      case "cancelled":
+      case "rejected":
         return {
           Icon: AlertCircle,
           color: "text-red-500",

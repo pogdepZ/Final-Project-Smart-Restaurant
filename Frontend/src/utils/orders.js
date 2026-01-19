@@ -1,5 +1,7 @@
 export function calcTotal(order) {
-  return (order?.items || []).reduce((sum, it) => sum + (it.qty || 0) * (it.price || 0), 0);
+  return (order?.items || [])
+    .filter(it => it.status !== "rejected")
+    .reduce((sum, it) => sum + (it.qty || 0) * (it.price || 0), 0);
 }
 
 export function formatMoneyVND(v) {

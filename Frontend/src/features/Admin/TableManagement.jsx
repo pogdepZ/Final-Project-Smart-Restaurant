@@ -108,7 +108,22 @@ const TableManagement = () => {
   useEffect(() => {
     if (!socket) return;
 
+    // Helper: Cập nhật bàn trong state (không refetch)
+    const updateTableInState = (table) => {
+      if (!table?.id) return;
+      setTables((prev) => {
+        const exists = prev.some((t) => t.id === table.id);
+        if (exists) {
+          return prev.map((t) => (t.id === table.id ? { ...t, ...table } : t));
+        }
+        // Nếu bàn mới, thêm vào cuối
+        return [...prev, table];
+      });
+    };
+
+    // Lắng nghe cập nhật bàn thông thường
     socket.on("table_update", (payload) => {
+      console.log("TableManagement: table_update", payload);
       const { type, table } = payload || {};
       if (!table?.id) return;
 
@@ -120,11 +135,47 @@ const TableManagement = () => {
         setSelectedTable((cur) => (cur?.id === table.id ? table : cur));
       } else if (type === "create") {
         setTables((prev) => [...prev, table]);
-        toast.success(`Bàn mới ${table.table_number} vừa được tạo!`);
       }
     });
 
-    return () => socket.off("table_update");
+    // Lắng nghe khi có khách quét QR / kết thúc session
+    socket.on("table_session_update", (payload) => {
+      console.log("TableManagement: table_session_update", payload);
+      const { type, table } = payload || {};
+      if (!table?.id) return;
+
+      // Cập nhật bàn trong danh sách (không refetch)
+      updateTableInState(table);
+
+      if (type === "session_started") {
+        toast.info(`🟢 Bàn ${table.table_number} có khách mới!`, {
+          icon: "🪑",
+        });
+      } else if (type === "session_ended") {
+        toast.info(`⚪ Bàn ${table.table_number} đã trống`, {
+          icon: "✅",
+        });
+      }
+    });
+
+    // Lắng nghe cập nhật từ admin_room (thanh toán, session changes)
+    socket.on("admin_table_update", (payload) => {
+      console.log("TableManagement: admin_table_update", payload);
+      const { type, table } = payload || {};
+      if (!table?.id) return;
+
+      updateTableInState(table);
+
+      if (type === "table_session") {
+        // Toast đã được xử lý ở table_session_update
+      }
+    });
+
+    return () => {
+      socket.off("table_update");
+      socket.off("table_session_update");
+      socket.off("admin_table_update");
+    };
   }, [socket]);
 
   // --- FETCH TABLES ---
@@ -155,7 +206,7 @@ const TableManagement = () => {
     for (const table of tables) {
       const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
-        clientUrl
+        clientUrl,
       )}`;
 
       try {
@@ -193,7 +244,7 @@ const TableManagement = () => {
     for (const table of tables) {
       const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
-        clientUrl
+        clientUrl,
       )}`;
 
       const img = new Image();
@@ -311,9 +362,12 @@ const TableManagement = () => {
 
     if (newStatus === "inactive") {
       try {
-        const res = await axiosClient.patch(`/admin/tables/${table.id}/status`, {
-          status: newStatus,
-        });
+        const res = await axiosClient.patch(
+          `/admin/tables/${table.id}/status`,
+          {
+            status: newStatus,
+          },
+        );
 
         if (res.warning) {
           if (!window.confirm(`⚠️ ${res.message}\nBạn vẫn muốn tắt bàn này?`))
@@ -321,7 +375,7 @@ const TableManagement = () => {
 
           await axiosClient.patch(
             `/admin/tables/${table.id}/status?force=true`,
-            { status: newStatus }
+            { status: newStatus },
           );
         }
 
@@ -346,8 +400,16 @@ const TableManagement = () => {
   // ===== UI HELPERS =====
   const totalActive = useMemo(
     () => (tables || []).filter((t) => t.status === "active").length,
-    [tables]
+    [tables],
   );
+
+  const totalOccupied = useMemo(
+    () => (tables || []).filter((t) => t.current_session_id).length,
+    [tables],
+  );
+
+  // Kiểm tra bàn có đang có khách không
+  const isTableOccupied = (table) => !!table.current_session_id;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -438,7 +500,9 @@ const TableManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
               {/* Status */}
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Trạng thái</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Trạng thái
+                </label>
                 <select
                   className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white
                     border border-white/10 focus:outline-none focus:border-orange-500/40 transition
@@ -456,7 +520,9 @@ const TableManagement = () => {
 
               {/* Location */}
               <div className="md:col-span-4">
-                <label className="text-xs text-gray-400 mb-1 block">Khu vực</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Khu vực
+                </label>
                 <div className="relative">
                   <MapPin
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -482,7 +548,9 @@ const TableManagement = () => {
 
               {/* Sort */}
               <div className="md:col-span-5">
-                <label className="text-xs text-gray-400 mb-1 block">Sắp xếp</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Sắp xếp
+                </label>
                 <select
                   className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white
                     border border-white/10 focus:outline-none focus:border-orange-500/40 transition
@@ -639,9 +707,10 @@ const TableManagement = () => {
                     type="text"
                     placeholder="VD: T-01"
                     className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
-                      ${errors.table_number
-                        ? "border-red-500/60 focus:border-red-500"
-                        : "border-white/10 focus:border-orange-500/40"
+                      ${
+                        errors.table_number
+                          ? "border-red-500/60 focus:border-red-500"
+                          : "border-white/10 focus:border-orange-500/40"
                       }`}
                     value={formData.table_number}
                     onChange={(e) => {
@@ -664,9 +733,10 @@ const TableManagement = () => {
                       name="capacity"
                       type="number"
                       className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
-                        ${errors.capacity
-                          ? "border-red-500/60 focus:border-red-500"
-                          : "border-white/10 focus:border-orange-500/40"
+                        ${
+                          errors.capacity
+                            ? "border-red-500/60 focus:border-red-500"
+                            : "border-white/10 focus:border-orange-500/40"
                         }`}
                       value={formData.capacity}
                       onChange={(e) => {
@@ -688,9 +758,10 @@ const TableManagement = () => {
                       name="location"
                       className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
                         [&>option]:bg-neutral-950 [&>option]:text-white
-                        ${errors.location
-                          ? "border-red-500/60 focus:border-red-500"
-                          : "border-white/10 focus:border-orange-500/40"
+                        ${
+                          errors.location
+                            ? "border-red-500/60 focus:border-red-500"
+                            : "border-white/10 focus:border-orange-500/40"
                         }`}
                       value={formData.location}
                       onChange={(e) => {

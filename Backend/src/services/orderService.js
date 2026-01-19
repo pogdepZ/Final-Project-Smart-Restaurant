@@ -129,10 +129,10 @@ exports.createOrder = async (data, io) => {
 
     await client.query("COMMIT");
 
-    // E. Socket Realtime
-    if (io) {
-      io.to("kitchen_room").emit("new_order", newOrder);
-    }
+    // E. Socket Realtime - Thông báo cho kitchen VÀ admin
+    // Lấy full order data để gửi socket (bao gồm table_number)
+    const fullOrder = await orderRepo.getById(newOrder.id);
+    socketService.notifyNewOrder(fullOrder);
 
     return newOrder;
   } catch (err) {
@@ -236,7 +236,7 @@ function getStatusMessage(status) {
     preparing: "🔥 Bếp đang chuẩn bị",
     ready: "✅ Đơn đã sẵn sàng!",
     completed: "💰 Thanh toán hoàn tất",
-    cancelled: "❌ Đơn đã bị hủy",
+    rejected: "❌ Đơn đã bị hủy",
   };
   return messages[status] || "📦 Cập nhật đơn hàng";
 }
@@ -247,12 +247,11 @@ exports.updateItemStatus = async (itemId, status) => {
   const updatedItem = await orderRepo.updateItemStatus(itemId, status);
   if (!updatedItem) throw new Error("Món không tồn tại");
 
-  // 2. Nếu Từ chối (rejected) -> Trừ tiền tổng đơn hàng
+  // 2. Nếu Từ chối (rejected) -> Tính lại tổng tiền đơn hàng (loại trừ items rejected)
   if (status === "rejected") {
-    await orderRepo.decreaseOrderTotal(
-      updatedItem.order_id,
-      updatedItem.subtotal,
-    );
+    // Sử dụng recalcOrderTotal thay vì decreaseOrderTotal để tính chính xác
+    // bao gồm cả giá modifiers
+    await orderRepo.recalcOrderTotal(updatedItem.order_id);
   }
 
   // 3. Lấy lại Full Order để bắn Socket (quan trọng để đồng bộ giao diện)

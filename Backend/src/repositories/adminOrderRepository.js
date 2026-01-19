@@ -86,6 +86,7 @@ async function findOrders(filters = {}, { limit = 20, offset = 0 } = {}) {
     LEFT JOIN (
       SELECT order_id, SUM(quantity) AS total_items
       FROM order_items
+      WHERE status != 'rejected'
       GROUP BY order_id
     ) oi ON oi.order_id = o.id
     ${whereSql}
@@ -124,6 +125,7 @@ async function findOrderById(orderId) {
     LEFT JOIN (
       SELECT order_id, SUM(quantity) AS total_items
       FROM order_items
+      WHERE status != 'rejected'
       GROUP BY order_id
     ) oi ON oi.order_id = o.id
 
@@ -145,6 +147,7 @@ async function findOrderItems(orderId) {
       price,
       quantity,
       subtotal,
+      status,
       note
     FROM order_items
     WHERE order_id = $1

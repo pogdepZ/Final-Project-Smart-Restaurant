@@ -30,7 +30,7 @@ class BillingRepository {
             JOIN order_items oi ON o.id = oi.order_id
             WHERE o.table_id = $1 
               AND (o.payment_status = 'unpaid' OR o.payment_status IS NULL)
-              AND o.status != 'cancelled'
+              AND o.status != 'rejected'
             GROUP BY o.id
             ORDER BY o.created_at ASC
         `;

@@ -11,6 +11,7 @@ import ChangePasswordModal from "./popup/ChangePasswordModal";
 import { updateUser } from "../../store/slices/authSlice";
 import Avatar from "./components/Avatar";
 
+import { formatMoneyVND } from "../../utils/orders";
 
 const UserProfile = () => {
   const { user, accessToken } = useSelector((state) => state.auth);
@@ -36,7 +37,8 @@ const UserProfile = () => {
     setName(user?.name || "");
   }, [user?.name]);
 
-  const avatarUrlToShow = previewUrl || user?.avatarUrl || user?.avatar_url || "";
+  const avatarUrlToShow =
+    previewUrl || user?.avatarUrl || user?.avatar_url || "";
 
   const canSaveName = useMemo(() => {
     const n = name.trim();
@@ -48,7 +50,8 @@ const UserProfile = () => {
 
     const okType = ["image/png", "image/jpeg", "image/webp"].includes(f.type);
     if (!okType) return toast.error("Chỉ nhận PNG/JPG/WEBP");
-    if (f.size > 5 * 1024 * 1024) return toast.error("File quá lớn (tối đa 5MB)");
+    if (f.size > 5 * 1024 * 1024)
+      return toast.error("File quá lớn (tối đa 5MB)");
 
     setFile(f);
     const url = URL.createObjectURL(f);
@@ -67,11 +70,16 @@ const UserProfile = () => {
       dispatch(
         updateUser({
           name: updatedUser?.name || n,
-          ...(updatedUser?.preferences ? { preferences: updatedUser.preferences } : {}),
-          ...(updatedUser?.avatarUrl || updatedUser?.avatar_url
-            ? { avatarUrl: updatedUser.avatarUrl || updatedUser.avatar_url, avatar_url: updatedUser.avatarUrl || updatedUser.avatar_url }
+          ...(updatedUser?.preferences
+            ? { preferences: updatedUser.preferences }
             : {}),
-        })
+          ...(updatedUser?.avatarUrl || updatedUser?.avatar_url
+            ? {
+                avatarUrl: updatedUser.avatarUrl || updatedUser.avatar_url,
+                avatar_url: updatedUser.avatarUrl || updatedUser.avatar_url,
+              }
+            : {}),
+        }),
       );
 
       toast.success("Đã cập nhật tên");
@@ -91,12 +99,15 @@ const UserProfile = () => {
       const upUser = up?.user || up;
 
       const avatarUrl =
-        upUser?.avatarUrl || upUser?.avatar_url || up?.avatarUrl || up?.avatar_url;
+        upUser?.avatarUrl ||
+        upUser?.avatar_url ||
+        up?.avatarUrl ||
+        up?.avatar_url;
 
       dispatch(
         updateUser({
           ...(avatarUrl ? { avatarUrl, avatar_url: avatarUrl } : {}),
-        })
+        }),
       );
 
       toast.success("Đã cập nhật avatar");
@@ -121,7 +132,9 @@ const UserProfile = () => {
         setOrders(res?.data || []);
       } catch (e) {
         if (!mounted) return;
-        setOrdersError(e?.response?.data?.message || "Không tải được lịch sử đơn");
+        setOrdersError(
+          e?.response?.data?.message || "Không tải được lịch sử đơn",
+        );
       } finally {
         if (mounted) setLoadingOrders(false);
       }
@@ -133,7 +146,9 @@ const UserProfile = () => {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-bold">Bạn chưa đăng nhập</h1>
-        <p className="text-gray-500">Vui lòng đăng nhập để xem thông tin cá nhân</p>
+        <p className="text-gray-500">
+          Vui lòng đăng nhập để xem thông tin cá nhân
+        </p>
 
         <Link
           to="/signin"
@@ -172,7 +187,7 @@ const UserProfile = () => {
           name,
           preferences,
           ...(avatarUrl ? { avatarUrl, avatar_url: avatarUrl } : {}),
-        })
+        }),
       );
 
       toast.success("Cập nhật hồ sơ thành công!");
@@ -251,14 +266,18 @@ const UserProfile = () => {
               <Avatar url={avatarUrlToShow} name={user?.name} size={112} />
 
               <div className="text-center">
-                <div className="text-white font-black text-lg">{user?.name}</div>
+                <div className="text-white font-black text-lg">
+                  {user?.name}
+                </div>
                 <div className="text-gray-400 text-sm">
-                  {(user?.role || "user")} {user?.is_verified ? "• Verified" : ""}
+                  {user?.role || "user"} {user?.is_verified ? "• Verified" : ""}
                 </div>
               </div>
 
               <div className="w-full mt-2">
-                <label className="text-xs text-gray-400 mb-1 block">Chọn ảnh mới</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Chọn ảnh mới
+                </label>
 
                 <div className="flex items-center gap-2">
                   <label className="flex-1 cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition">
@@ -278,16 +297,19 @@ const UserProfile = () => {
                     onClick={uploadAvatarInline}
                     disabled={!file || uploading}
                     className={`px-4 py-2 rounded-xl border transition
-                      ${(!file || uploading)
-                        ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                        : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
+                      ${
+                        !file || uploading
+                          ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                          : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
                       }`}
                   >
                     {uploading ? "Đang up..." : "Upload"}
                   </button>
                 </div>
 
-                <div className="text-xs text-gray-500 mt-2">PNG/JPG/WEBP • tối đa 5MB</div>
+                <div className="text-xs text-gray-500 mt-2">
+                  PNG/JPG/WEBP • tối đa 5MB
+                </div>
               </div>
             </div>
           </div>
@@ -295,7 +317,9 @@ const UserProfile = () => {
           {/* Right: Edit name inline (bỏ Reset theo ý bạn) */}
           <div className="lg:col-span-8 rounded-2xl bg-neutral-900/60 border border-white/10 p-4">
             <div className="text-white font-bold">Chỉnh sửa</div>
-            <div className="text-xs text-gray-400 mt-1">Bạn có thể đổi tên hiển thị.</div>
+            <div className="text-xs text-gray-400 mt-1">
+              Bạn có thể đổi tên hiển thị.
+            </div>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
@@ -309,14 +333,15 @@ const UserProfile = () => {
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Email (readonly)</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Email (readonly)
+                </label>
                 <input
                   value={user?.email || ""}
                   readOnly
                   className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-gray-400"
                 />
               </div>
-              
             </div>
 
             <div className="mt-4 flex items-center justify-end gap-2">
@@ -339,9 +364,10 @@ const UserProfile = () => {
                 onClick={saveNameInline}
                 disabled={!canSaveName || saving}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition
-                  ${(!canSaveName || saving)
-                    ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                    : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
+                  ${
+                    !canSaveName || saving
+                      ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                      : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
                   }`}
               >
                 <Save size={16} />
@@ -354,7 +380,10 @@ const UserProfile = () => {
       <div className="mt-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-black">Lịch sử đơn hàng</h2>
-          <Link to="/history" className="text-xs text-orange-400 font-bold hover:underline">
+          <Link
+            to="/history"
+            className="text-xs text-orange-400 font-bold hover:underline"
+          >
             Xem tất cả
           </Link>
         </div>
@@ -366,44 +395,78 @@ const UserProfile = () => {
         ) : orders.length === 0 ? (
           <div className="text-white/50 text-sm">Bạn chưa có đơn nào.</div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {orders.map((o) => (
-              <div key={o.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-white">Bàn: {o.table_number || "—"}</p>
-                    <p className="text-xs text-white/50">
+              <div
+                key={o.id}
+                className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 lg:p-6 mt-2"
+              >
+                {/* TOP: header */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-6">
+                  {/* Left */}
+                  <div className="min-w-0">
+                    <p className="text-white font-black text-lg sm:text-xl">
+                      Bàn: {o.table_number || "—"}
+                    </p>
+                    <p className="text-xs sm:text-sm text-white/50 mt-1">
                       {new Date(o.created_at).toLocaleString("vi-VN")}
                     </p>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-xs uppercase font-black text-orange-400">{o.status}</p>
-                    <p className="text-sm font-black">
-                      {Number(o.total_amount || 0).toLocaleString("vi-VN")} ₫
+                  {/* Right */}
+                  <div className="sm:text-right flex sm:block items-center justify-between gap-3">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide bg-orange-500/10 text-orange-300 border border-orange-500/20">
+                      {o.status}
+                    </span>
+                    <p className="text-base sm:text-lg font-black text-white mt-0 sm:mt-2">
+                      {formatMoneyVND(Number(o.total_amount || 0))}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-3 space-y-1">
-                  {(o.items || []).slice(0, 2).map((it) => (
-                    <div key={it.id} className="flex justify-between text-sm text-white/80">
-                      <span className="truncate max-w-[70%]">
-                        {it.quantity}x {it.item_name}
-                      </span>
-                      <span className="text-xs uppercase text-white/50">{it.status}</span>
+                {/* Divider */}
+                <div className="mt-4 sm:mt-5 border-t border-white/10" />
+
+                {/* ITEMS */}
+                <div className="mt-4 sm:mt-5 space-y-3">
+                  {(o.items || []).map((it) => (
+                    <div
+                      key={it.id}
+                      className="flex items-center gap-3 sm:gap-4"
+                    >
+                      {/* Image */}
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
+                        {it.image_url ? (
+                          <img
+                            src={it.image_url}
+                            alt={it.item_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-white/40">
+                            —
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Text */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white/90 font-semibold truncate text-sm sm:text-base">
+                          {it.quantity}x {it.item_name}
+                        </p>
+                        <p className="text-xs uppercase text-white/50 mt-0.5">
+                          {it.status}
+                        </p>
+                      </div>
                     </div>
                   ))}
-                  {(o.items || []).length > 2 ? (
-                    <p className="text-xs text-white/40 mt-1">+ {(o.items || []).length - 2} món nữa</p>
-                  ) : null}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
-      
+
       <EditProfileModal
         open={openEdit}
         onClose={() => setOpenEdit(false)}
@@ -423,4 +486,3 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-  

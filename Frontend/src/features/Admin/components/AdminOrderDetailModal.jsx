@@ -20,11 +20,62 @@ const STATUS_META = {
     label: "Hoàn tất",
     className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
   },
-  cancelled: {
+  rejected: {
     label: "Đã hủy",
     className: "bg-red-500/10 text-red-300 border-red-500/20",
   },
 };
+
+// Item status meta với icon và màu sắc
+const ITEM_STATUS_META = {
+  received: {
+    label: "Chờ xác nhận",
+    icon: Clock,
+    bgClass: "bg-yellow-500/10",
+    borderClass: "border-yellow-500/30",
+    textClass: "text-yellow-400",
+    pillClass: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  },
+  preparing: {
+    label: "Đang nấu",
+    icon: CheckCircle,
+    bgClass: "bg-blue-500/10",
+    borderClass: "border-blue-500/30",
+    textClass: "text-blue-400",
+    pillClass: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  },
+  ready: {
+    label: "Đã sẵn sàng",
+    icon: CheckCircle,
+    bgClass: "bg-green-500/10",
+    borderClass: "border-green-500/30",
+    textClass: "text-green-400",
+    pillClass: "bg-green-500/20 text-green-300 border-green-500/30",
+  },
+  rejected: {
+    label: "Từ chối",
+    icon: XCircle,
+    bgClass: "bg-red-500/10",
+    borderClass: "border-red-500/30",
+    textClass: "text-red-400",
+    pillClass: "bg-red-500/20 text-red-300 border-red-500/30",
+  },
+};
+
+// Component hiển thị status pill cho item
+function ItemStatusPill({ status }) {
+  const meta = ITEM_STATUS_META[status] || ITEM_STATUS_META.received;
+  const Icon = meta.icon;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wide ${meta.pillClass}`}
+    >
+      <Icon size={12} />
+      {meta.label}
+    </span>
+  );
+}
 
 function StatusPill({ status }) {
   const meta = STATUS_META[status] || {
@@ -84,6 +135,9 @@ export default function OrderDetailModal({
   if (!open) return null;
 
   const items = order?.items ?? [];
+  
+  console.log("AdminOrderDetailModal: order", order);
+
 
   return (
     <div className="fixed inset-0 z-50">
@@ -128,7 +182,9 @@ export default function OrderDetailModal({
           {/* content states */}
           {loading ? (
             <div className="p-10 text-center">
-              <div className="text-white font-bold">Đang tải chi tiết đơn...</div>
+              <div className="text-white font-bold">
+                Đang tải chi tiết đơn...
+              </div>
               <div className="text-gray-400 text-sm mt-1">Vui lòng chờ</div>
             </div>
           ) : error ? (

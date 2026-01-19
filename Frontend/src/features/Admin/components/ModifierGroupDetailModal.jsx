@@ -12,7 +12,9 @@ function Pill({ status }) {
       ? "bg-green-500/10 text-green-300 border-green-500/20"
       : "bg-yellow-500/10 text-yellow-300 border-yellow-500/20";
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${cls}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${cls}`}
+    >
       {status}
     </span>
   );
@@ -48,7 +50,12 @@ function Select({ label, children, ...props }) {
   );
 }
 
-export default function ModifierGroupDetailModal({ open, group, onClose, onChanged }) {
+export default function ModifierGroupDetailModal({
+  open,
+  group,
+  onClose,
+  onChanged,
+}) {
   const groupId = group?.id;
 
   const [loading, setLoading] = useState(false);
@@ -63,7 +70,11 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
 
   // Inline edit option
   const [editingId, setEditingId] = useState(null);
-  const [editDraft, setEditDraft] = useState({ name: "", price_adjustment: 0, status: "active" });
+  const [editDraft, setEditDraft] = useState({
+    name: "",
+    price_adjustment: 0,
+    status: "active",
+  });
   const [savingMap, setSavingMap] = useState({}); // { optionId: true }
   const [togglingMap, setTogglingMap] = useState({}); // toggle active/inactive per option
 
@@ -129,7 +140,8 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
     if (!name) return toast.error("Tên option không được rỗng");
 
     const price = Number(editDraft.price_adjustment);
-    if (!Number.isFinite(price) || price < 0) return toast.error("Giá điều chỉnh phải >= 0");
+    if (!Number.isFinite(price) || price < 0)
+      return toast.error("Giá điều chỉnh phải >= 0");
 
     setSavingMap((m) => ({ ...m, [optId]: true }));
     try {
@@ -143,7 +155,9 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
         if (!cur) return cur;
         return {
           ...cur,
-          options: cur.options.map((x) => (x.id === optId ? { ...x, ...updated } : x)),
+          options: cur.options.map((x) =>
+            x.id === optId ? { ...x, ...updated } : x,
+          ),
         };
       });
       toast.success("Đã cập nhật option");
@@ -165,7 +179,8 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
     if (!name) return toast.error("Tên option không được rỗng");
 
     const price = Number(createPrice);
-    if (!Number.isFinite(price) || price < 0) return toast.error("Giá điều chỉnh phải >= 0");
+    if (!Number.isFinite(price) || price < 0)
+      return toast.error("Giá điều chỉnh phải >= 0");
 
     setCreating(true);
     try {
@@ -201,18 +216,24 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
       if (!cur) return cur;
       return {
         ...cur,
-        options: cur.options.map((x) => (x.id === opt.id ? { ...x, status: nextStatus } : x)),
+        options: cur.options.map((x) =>
+          x.id === opt.id ? { ...x, status: nextStatus } : x,
+        ),
       };
     });
 
     try {
-      const res = await adminModifierApi.updateOption(opt.id, { status: nextStatus });
+      const res = await adminModifierApi.updateOption(opt.id, {
+        status: nextStatus,
+      });
       const updated = res?.item || res?.data?.item || res;
       setDetail((cur) => {
         if (!cur) return cur;
         return {
           ...cur,
-          options: cur.options.map((x) => (x.id === opt.id ? { ...x, ...updated } : x)),
+          options: cur.options.map((x) =>
+            x.id === opt.id ? { ...x, ...updated } : x,
+          ),
         };
       });
       onChanged?.();
@@ -222,7 +243,9 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
         if (!cur) return cur;
         return {
           ...cur,
-          options: cur.options.map((x) => (x.id === opt.id ? { ...x, status: opt.status } : x)),
+          options: cur.options.map((x) =>
+            x.id === opt.id ? { ...x, status: opt.status } : x,
+          ),
         };
       });
       toast.error(e?.response?.data?.message || "Đổi trạng thái thất bại");
@@ -243,16 +266,23 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
 
       {/* modal */}
-      <div className="absolute left-1/2 top-1/2 w-[96vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl
-          bg-neutral-950 border border-white/10 shadow-xl overflow-hidden">
+      <div
+        className="absolute left-1/2 top-1/2 w-[96vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl
+          bg-neutral-950 border border-white/10 shadow-xl overflow-hidden"
+      >
         {/* header */}
         <div className="px-5 py-4 border-b border-white/10 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-white font-black text-lg truncate">{group?.name || "Modifier group"}</div>
+            <div className="text-white font-black text-lg truncate">
+              {group?.name || "Modifier group"}
+            </div>
             <div className="mt-1 text-xs text-gray-400">
-              {group?.selection_type === "single" ? "Single choice" : "Multiple choice"} •{" "}
-              {group?.is_required ? "Required" : "Optional"} • Min {group?.min_selections ?? 0} / Max{" "}
-              {group?.max_selections ?? 0} • <Pill status={group?.status || "active"} />
+              {group?.selection_type === "single"
+                ? "Single choice"
+                : "Multiple choice"}{" "}
+              • {group?.is_required ? "Required" : "Optional"} • Min{" "}
+              {group?.min_selections ?? 0} / Max {group?.max_selections ?? 0} •{" "}
+              <Pill status={group?.status || "active"} />
             </div>
           </div>
 
@@ -566,7 +596,10 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
               await adminModifierApi.deleteOption(deleteItem.id);
               setDetail((cur) => {
                 if (!cur) return cur;
-                return { ...cur, options: cur.options.filter((x) => x.id !== deleteItem.id) };
+                return {
+                  ...cur,
+                  options: cur.options.filter((x) => x.id !== deleteItem.id),
+                };
               });
               toast.success("Đã xoá option");
               setConfirmOpen(false);

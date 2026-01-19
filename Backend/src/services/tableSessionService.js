@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const tableRepository = require("../repositories/tableRepository");
 const tableSessionRepository = require("../repositories/tableSessionRepository");
+const socketService = require("./socketService");
 
 class TableSessionService {
   // Sinh session token ngẫu nhiên
@@ -73,6 +74,20 @@ class TableSessionService {
     // 5. Cập nhật session cho bàn
     await tableRepository.updateSession(table.id, newSession.id);
 
+    // 6. Lấy lại thông tin bàn đã cập nhật để gửi socket
+    const updatedTable = await tableRepository.findById(table.id);
+
+    // 7. Emit socket thông báo có khách mới vào bàn
+    socketService.notifyTableSessionUpdate({
+      type: "session_started",
+      table: updatedTable,
+      session: {
+        id: newSession.id,
+        tableId: newSession.table_id,
+        startedAt: newSession.started_at,
+      },
+    });
+
     return {
       success: true,
       tableSession: {
@@ -89,7 +104,8 @@ class TableSessionService {
 
   async findSessionActive(userId) {
     // 2. Tìm session active của user và bàn
-    const session = await tableSessionRepository.findActiveByUserAndTable(userId);
+    const session =
+      await tableSessionRepository.findActiveByUserAndTable(userId);
     if (session) {
       return {
         hasSession: true,
@@ -125,6 +141,16 @@ class TableSessionService {
 
     // 3. Cập nhật trạng thái bàn về 'active' (available)
     await tableRepository.updateStatus(session.table_id, "active");
+
+    // 4. Lấy thông tin bàn đã cập nhật
+    const updatedTable = await tableRepository.findById(session.table_id);
+
+    // 5. Emit socket thông báo bàn đã trống
+    socketService.notifyTableSessionUpdate({
+      type: "session_ended",
+      table: updatedTable,
+      session: endedSession,
+    });
 
     return {
       message: "Đã kết thúc session",

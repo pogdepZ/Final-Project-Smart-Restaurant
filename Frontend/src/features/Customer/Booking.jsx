@@ -53,7 +53,7 @@ const Booking = () => {
 
         // Transform the flat data into the nested structure needed for rendering
         const processedData = groupTablesByLocation(
-          Array.isArray(data) ? data : []
+          Array.isArray(data) ? data : [],
         );
         setAreas(processedData);
       } catch (err) {
@@ -72,8 +72,15 @@ const Booking = () => {
 
   // click table -> open QR modal
   const handleTableClick = (table) => {
-    // Check occupancy based on your API status logic
-    if (table.status === "occupied") return;
+    // Check nếu bàn đã có khách (current_session_id khác null) thì không cho chọn
+    const isOccupied =
+      table.status === "occupied" || table.current_session_id != null;
+    if (isOccupied) {
+      toast.warning(
+        `Bàn ${table.table_number} đang có khách, vui lòng chọn bàn khác!`,
+      );
+      return;
+    }
     setSelectedTable(table);
   };
 
@@ -144,17 +151,21 @@ const Booking = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {(area.tables || []).map((table) => {
                     // Logic mapping based on your API response
-                    // API returns "active". Assuming "active" = available.
-                    const isOccupied = table.status === "occupied";
+                    // Check current_session_id để biết bàn có khách hay không
+                    const hasActiveSession = table.current_session_id != null;
+                    const isOccupied =
+                      table.status === "occupied" || hasActiveSession;
                     const isReserved = table.status === "reserved";
                     const isAvailable =
-                      table.status === "available" || table.status === "active";
+                      (table.status === "available" ||
+                        table.status === "active") &&
+                      !hasActiveSession;
 
                     return (
                       <button
                         key={table.id} // FIX: Changed a.id to table.id
                         onClick={() => handleTableClick(table)}
-                        disabled={isOccupied}
+                        disabled={isOccupied || isReserved}
                         className={`
                           relative group p-4 rounded-xl border-2 transition-all duration-300
                           flex flex-col items-center justify-center gap-2 min-h-30
@@ -165,12 +176,12 @@ const Booking = () => {
                           }
                           ${
                             isOccupied
-                              ? "bg-orange-500/10 border-orange-500/50 opacity-80 cursor-not-allowed"
+                              ? "bg-orange-500/10 border-orange-500/50 cursor-not-allowed"
                               : ""
                           }
                           ${
                             isReserved
-                              ? "bg-red-900/10 border-red-500/30 opacity-60"
+                              ? "bg-red-900/10 border-red-500/30 opacity-60 cursor-not-allowed"
                               : ""
                           }
                         `}
@@ -203,12 +214,17 @@ const Booking = () => {
                         </div>
 
                         {isOccupied && (
-                          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                          <>
+                            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                            <span className="text-[10px] text-orange-400 font-bold uppercase mt-1">
+                              Đang có khách
+                            </span>
+                          </>
                         )}
 
                         {isReserved && (
                           <span className="text-[10px] text-red-400 font-bold uppercase mt-1">
-                            Reserved
+                            Đã đặt trước
                           </span>
                         )}
                       </button>

@@ -28,5 +28,5 @@ export function useAdminOrders(params) {
     fetchOrders();
   }, [fetchOrders]);
 
-  return { data, isLoading, error, refetch: fetchOrders };
+  return { data, setData, isLoading, error, refetch: fetchOrders };
 }

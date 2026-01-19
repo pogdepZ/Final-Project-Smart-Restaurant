@@ -1,12 +1,8 @@
 import React from "react";
 import { Flame, Check, ShoppingBag } from "lucide-react";
+import { formatMoneyVND } from "../../../utils/orders";
 
-export default function MenuItemCard({
-  item,
-  onSelect,
-  onAddToCart,
-  added,
-}) {
+export default function MenuItemCard({ item, onSelect, onAddToCart, added }) {
   return (
     <div
       onClick={() => onSelect(item)}
@@ -14,7 +10,9 @@ export default function MenuItemCard({
     >
       <div className="w-28 h-28 shrink-0 rounded-xl overflow-hidden relative bg-white/5">
         <img
-          src={item.image || "https://via.placeholder.com/400x400?text=No+Image"}
+          src={
+            item.image || "https://via.placeholder.com/400x400?text=No+Image"
+          }
           alt={item.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           loading="lazy"
@@ -46,7 +44,7 @@ export default function MenuItemCard({
 
         <div className="flex justify-between items-end mt-2">
           <span className="text-xl font-black text-white">
-            ${Number(item.price).toFixed(2)}
+            {formatMoneyVND(Number(item.price))}
           </span>
         </div>
       </div>

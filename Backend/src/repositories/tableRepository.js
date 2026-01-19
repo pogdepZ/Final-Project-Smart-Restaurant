@@ -77,7 +77,7 @@ class TableRepository {
   // 6. Check Active Orders (Warning logic)
   async countActiveOrders(tableId) {
     const result = await db.query(
-      `SELECT COUNT(*) as count FROM orders WHERE table_id = $1 AND status NOT IN ('completed', 'cancelled')`,
+      `SELECT COUNT(*) as count FROM orders WHERE table_id = $1 AND status NOT IN ('completed', 'rejected')`,
       [tableId],
     );
     return parseInt(result.rows[0].count);
@@ -160,6 +160,15 @@ class TableRepository {
       [tableId],
     );
     return result.rows[0];
+  }
+
+  async checkHasGuests(tableId) {
+    const result = await db.query(
+      `SELECT COUNT(*) as count FROM table_sessions 
+       WHERE table_id = $1 AND ended_at IS NULL`,
+      [tableId],
+    );
+    return parseInt(result.rows[0].count) > 0;
   }
 }
 

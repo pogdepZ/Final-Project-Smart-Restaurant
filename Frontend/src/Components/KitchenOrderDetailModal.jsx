@@ -6,6 +6,8 @@ import {
   PlayCircle,
   X,
   AlertTriangle,
+  Check,
+  XCircle,
 } from "lucide-react";
 import { formatTime, formatMoneyVND } from "../utils/orders";
 import OrderTimer from "./OrderTimer";
@@ -15,6 +17,7 @@ export default function KitchenOrderDetailModal({
   onClose,
   onStart,
   onComplete,
+  onUpdateItemStatus,
 }) {
   if (!order) return null;
 
@@ -26,7 +29,7 @@ export default function KitchenOrderDetailModal({
     const elapsedMins =
       (Date.now() - new Date(order.created_at).getTime()) / 60000;
     const overdue = items.filter(
-      (it) => elapsedMins >= (it.prep_time_minutes || 15)
+      (it) => elapsedMins >= (it.prep_time_minutes || 15),
     );
 
     return {
@@ -37,8 +40,36 @@ export default function KitchenOrderDetailModal({
     };
   }, [order, items]);
 
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "ready":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
+            <CheckCircle2 size={12} /> Xong
+          </span>
+        );
+      case "rejected":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-xs">
+            <X size={12} /> Từ chối
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs">
+            <Clock size={12} /> Đang làm
+          </span>
+        );
+    }
+  };
+
+  // Kiểm tra tất cả items đã ready hoặc rejected chưa
+  const allItemsDone = order.items?.every(
+    (item) => item.status === "ready" || item.status === "rejected",
+  );
+
   return (
-    <div className="fixed inset-0 z-[60]">
+    <div className="fixed inset-0 z-60">
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
@@ -126,19 +157,32 @@ export default function KitchenOrderDetailModal({
                   const itemPrepTime = it.prep_time_minutes || 15;
                   const itemOverdue = elapsed >= itemPrepTime;
                   const overtimeMinutes = Math.floor(elapsed - itemPrepTime);
+                  const isItemReady = it.status === "ready";
+                  const isItemRejected = it.status === "rejected";
+                  const isItemPending = !isItemReady && !isItemRejected;
 
                   return (
                     <div
-                      key={idx}
+                      key={it.id || idx}
                       className={`p-4 transition-colors ${
-                        itemOverdue ? "bg-red-500/10" : "hover:bg-white/5"
+                        isItemReady
+                          ? "bg-green-500/10"
+                          : isItemRejected
+                          ? "bg-red-500/10 opacity-50"
+                          : itemOverdue
+                          ? "bg-red-500/10"
+                          : "hover:bg-white/5"
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         {/* Quantity Badge */}
                         <div
-                          className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg font-black border ${
-                            itemOverdue
+                          className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg font-black border ${
+                            isItemReady
+                              ? "bg-green-500/20 border-green-500/30 text-green-300"
+                              : isItemRejected
+                              ? "bg-red-500/20 border-red-500/30 text-red-300"
+                              : itemOverdue
                               ? "bg-red-500/20 border-red-500/30 text-red-300"
                               : "bg-white/10 border-white/10 text-white"
                           }`}
@@ -147,16 +191,34 @@ export default function KitchenOrderDetailModal({
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          {/* Tên món + Overdue indicator */}
-                          <div className="flex items-center gap-2">
+                          {/* Tên món + Status + Overdue indicator */}
+                          <div className="flex items-center gap-2 flex-wrap">
                             <div
                               className={`text-lg font-bold leading-tight ${
-                                itemOverdue ? "text-red-300" : "text-gray-100"
+                                isItemReady
+                                  ? "text-green-300 line-through"
+                                  : isItemRejected
+                                  ? "text-red-300 line-through"
+                                  : itemOverdue
+                                  ? "text-red-300"
+                                  : "text-gray-100"
                               }`}
                             >
-                              {it.name}
+                              {it.item_name || it.name}
                             </div>
-                            {itemOverdue && (
+
+                            {/* Status badge */}
+                            {isItemReady && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 text-green-400 text-xs font-bold">
+                                <Check size={10} /> Xong
+                              </span>
+                            )}
+                            {isItemRejected && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold">
+                                <XCircle size={10} /> Từ chối
+                              </span>
+                            )}
+                            {isItemPending && itemOverdue && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold">
                                 <AlertTriangle size={10} />+{overtimeMinutes}m
                               </span>
@@ -177,7 +239,7 @@ export default function KitchenOrderDetailModal({
                                   className="text-sm text-gray-400 flex items-center gap-2"
                                 >
                                   <span className="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
-                                  {mod.name}
+                                  {mod.name || mod.modifier_name}
                                 </div>
                               ))}
                             </div>
@@ -190,6 +252,19 @@ export default function KitchenOrderDetailModal({
                             </div>
                           )}
                         </div>
+
+                        {/* Nút hoàn thành từng item */}
+                        {isItemPending && onUpdateItemStatus && (
+                          <button
+                            onClick={() =>
+                              onUpdateItemStatus(order.id, it.id, "ready")
+                            }
+                            className="shrink-0 p-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 transition-colors"
+                            title="Đánh dấu hoàn thành món này"
+                          >
+                            <Check size={20} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
