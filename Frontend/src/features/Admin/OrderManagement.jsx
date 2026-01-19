@@ -33,7 +33,7 @@ const STATUS_META = {
   },
   completed: {
     label: "Hoàn tất",
-    className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+    className: "bg-emerald-600/10 text-emerald-300 border-emerald-600/20",
   },
   rejected: {
     label: "Đã hủy",
