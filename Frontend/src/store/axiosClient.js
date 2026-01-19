@@ -14,7 +14,7 @@ export const injectStore = (_store) => {
 
 //setup baseURL và headers chung
 const axiosClient = axios.create({
-  baseURL: `${import.meta.env.VITE_APP_BASE_URL}/api` || "http://localhost:5000/api",
+  baseURL: "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
   },

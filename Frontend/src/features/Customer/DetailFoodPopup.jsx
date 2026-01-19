@@ -554,7 +554,7 @@ export default function FoodDetailPopup({
           : (data?.length || 0) === REVIEWS_PAGE_SIZE,
       );
     } catch (e) {
-      toast.error(e?.message || "Gửi đánh giá thất bại");
+      toast.error(e?.response?.data?.message || "Gửi đánh giá thất bại");
     }
   };
 
