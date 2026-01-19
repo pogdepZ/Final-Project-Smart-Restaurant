@@ -3,7 +3,7 @@ const db = require("../config/db");
 // 1. Tạo Đơn hàng (Chạy trong Transaction - nhận client từ Service)
 exports.createOrder = async (
   client,
-  { table_id, guest_name, total_amount, note }
+  { table_id, guest_name, total_amount, note },
 ) => {
   const result = await client.query(
     `INSERT INTO orders (
@@ -15,7 +15,7 @@ exports.createOrder = async (
         NOW()
      ) 
      RETURNING *`,
-    [table_id, guest_name || "Khách lẻ", total_amount, note]
+    [table_id, guest_name || "Khách lẻ", total_amount, note],
   );
   return result.rows[0];
 };
@@ -23,12 +23,12 @@ exports.createOrder = async (
 // 2. Tạo Chi tiết đơn (Item)
 exports.createOrderItem = async (
   client,
-  { order_id, menu_item_id, item_name, price, quantity, subtotal, note }
+  { order_id, menu_item_id, item_name, price, quantity, subtotal, note },
 ) => {
   const result = await client.query(
     `INSERT INTO order_items (order_id, menu_item_id, item_name, price, quantity, subtotal, note)
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-    [order_id, menu_item_id, item_name, price, quantity, subtotal, note]
+    [order_id, menu_item_id, item_name, price, quantity, subtotal, note],
   );
   return result.rows[0];
 };
@@ -36,12 +36,12 @@ exports.createOrderItem = async (
 // 3. Tạo Modifier cho Item
 exports.createOrderItemModifier = async (
   client,
-  { order_item_id, modifier_option_id, modifier_name, price }
+  { order_item_id, modifier_option_id, modifier_name, price },
 ) => {
   await client.query(
     `INSERT INTO order_item_modifiers (order_item_id, modifier_option_id, modifier_name, price)
              VALUES ($1, $2, $3, $4)`,
-    [order_item_id, modifier_option_id, modifier_name, price]
+    [order_item_id, modifier_option_id, modifier_name, price],
   );
 };
 
@@ -169,7 +169,7 @@ exports.updateStatus = async (id, { status, payment_status }) => {
 exports.updateItemStatus = async (itemId, status) => {
   const result = await db.query(
     `UPDATE order_items SET status = $1 WHERE id = $2 RETURNING *`,
-    [status, itemId]
+    [status, itemId],
   );
   return result.rows[0];
 };
@@ -178,7 +178,7 @@ exports.updateItemStatus = async (itemId, status) => {
 exports.decreaseOrderTotal = async (orderId, amount) => {
   await db.query(
     `UPDATE orders SET total_amount = total_amount - $1 WHERE id = $2`,
-    [amount, orderId]
+    [amount, orderId],
   );
 };
 
@@ -186,7 +186,7 @@ exports.decreaseOrderTotal = async (orderId, amount) => {
 exports.updateAllItemsStatusByOrderId = async (orderId, itemStatus) => {
   const result = await db.query(
     `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status != 'rejected' RETURNING *`,
-    [itemStatus, orderId]
+    [itemStatus, orderId],
   );
   return result.rows;
 };
@@ -197,7 +197,7 @@ exports.findManyByUserId = async (userId, { page, limit }) => {
   // total
   const totalRs = await db.query(
     `select count(*)::int as total from orders where user_id = $1`,
-    [userId]
+    [userId],
   );
   const total = totalRs.rows[0]?.total || 0;
 
@@ -234,7 +234,7 @@ exports.findManyByUserId = async (userId, { page, limit }) => {
     order by o.created_at desc
     limit $2 offset $3
     `,
-    [userId, limit, offset]
+    [userId, limit, offset],
   );
 
   return { rows: rs.rows || [], total };
@@ -245,7 +245,7 @@ exports.findManyByUserId = async (userId, { page, limit }) => {
 
   const totalRs = await db.query(
     `select count(*)::int as total from orders where user_id = $1`,
-    [userId]
+    [userId],
   );
   const total = totalRs.rows[0]?.total || 0;
 
@@ -282,7 +282,7 @@ exports.findManyByUserId = async (userId, { page, limit }) => {
     order by o.created_at desc
     limit $2 offset $3
     `,
-    [userId, limit, offset]
+    [userId, limit, offset],
   );
 
   return { rows: rs.rows || [], total };
@@ -321,7 +321,7 @@ exports.findOneByIdAndUserId = async (orderId, userId) => {
     group by o.id, t.table_number
     limit 1
     `,
-    [orderId, userId]
+    [orderId, userId],
   );
 
   return rs.rows[0] || null;
@@ -351,7 +351,7 @@ exports.findByTableId = async (tableId) => {
               'subtotal', oi.subtotal,
               'note', oi.note,
               'status', oi.status,
-              'image_url', mi.image_url
+              'image_url', (SELECT url FROM menu_item_photos WHERE menu_item_id = mi.id AND is_primary = true LIMIT 1)
             )
           ) FILTER (WHERE oi.id IS NOT NULL), '[]'
         ) as items
@@ -371,7 +371,6 @@ exports.findByTableId = async (tableId) => {
   return result.rows;
 };
 
-
 exports.findUnpaidByUserId = async (tableId, sessionId) => {
   const query = `
     SELECT * FROM orders
@@ -380,7 +379,7 @@ exports.findUnpaidByUserId = async (tableId, sessionId) => {
       AND session_id = $2 
     ORDER BY created_at DESC
     LIMIT 1
-  `;  
+  `;
   const result = await db.query(query, [tableId, sessionId]);
   return result.rows[0] || null;
-}
+};

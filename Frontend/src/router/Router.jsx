@@ -30,10 +30,9 @@ import DashBoard from "../features/Admin/Dashboard";
 import MenuManagement from "../features/Admin/MenuManagement";
 import TableManagement from "../features/Admin/TableManagement";
 import OrderManagement from "../features/Admin/OrderManagement";
-import Reports from "../features/Admin/Reports";
 import AccountsManagement from "../features/Admin/AccountsManagement";
 import AdminProfile from "../features/Admin/AdminProfile";
-import Settings from "../features/Admin/Settings"; // (NEW) Cài đặt nhà hàng
+import TableAssignments from "../features/Admin/TableAssignments";
 
 // Waiter
 import WaiterOrders from "../features/Waiter/Orders";
@@ -189,6 +188,10 @@ const routers = [
           {
             path: "accounts",
             element: <AccountsManagement />,
+          },
+          {
+            path: "/admin/table-assignments",
+            element: <TableAssignments />
           },
           {
             path: "profile",

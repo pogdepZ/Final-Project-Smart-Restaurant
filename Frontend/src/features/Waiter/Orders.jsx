@@ -23,7 +23,7 @@ import BillModal from "../../Components/BillModal";
 export default function WaiterOrdersPage() {
   const socket = useSocket();
   const { play: playNotificationSound } = useNotificationSound(
-    "/sounds/new-order.mp3"
+    "/sounds/new-order.mp3",
   );
 
   const [activeTab, setActiveTab] = useState("orders");
@@ -80,9 +80,18 @@ export default function WaiterOrdersPage() {
     if (!socket) return;
 
     const handleNewOrder = (newOrder) => {
+      console.log("Received new_order via Socket.IO:", newOrder);
       setOrders((prev) => {
-        if (prev.find((o) => o.id === newOrder.id)) return prev;
-        return [newOrder, ...prev];
+        // Kiểm tra xem đơn hàng này đã có trong danh sách chưa
+        const exists = prev.find((o) => o.id === newOrder.id);
+
+        if (exists) {
+          // TRƯỜNG HỢP 1: Đơn đã tồn tại (khách gọi thêm món) -> Cập nhật lại đơn đó
+          return prev.map((o) => (o.id === newOrder.id ? newOrder : o));
+        } else {
+          // TRƯỜNG HỢP 2: Đơn hoàn toàn mới -> Thêm vào đầu danh sách
+          return [newOrder, ...prev];
+        }
       });
 
       // 🔔 Phát âm thanh thông báo
@@ -90,12 +99,36 @@ export default function WaiterOrdersPage() {
         playNotificationSound();
       }
 
-      toast.info(`🔔 Đơn mới: Bàn ${newOrder.table_number || "Mang về"}`);
+      const isUpdate = orders.some((o) => o.id === newOrder.id);
+      toast.info(
+        isUpdate
+          ? `🔔 Bàn ${newOrder.table_number} vừa cập nhật/gọi thêm món!`
+          : `🔔 Đơn mới: Bàn ${newOrder.table_number || "Mang về"}`,
+      );
+    };
+
+    // 🆕 Handler cho event khi khách gọi thêm món vào đơn đang preparing
+    const handleOrderItemsAdded = (orderData) => {
+      console.log("Received order_items_added via Socket.IO:", orderData);
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderData.id ? orderData : o)),
+      );
+
+      // 🔔 Phát âm thanh thông báo đặc biệt
+      if (soundEnabled) {
+        playNotificationSound();
+      }
+
+      toast.warning(
+        `⚠️ Bàn ${orderData.table_number} gọi thêm món! Cần duyệt món mới.`,
+        { autoClose: 5000 },
+      );
     };
 
     const handleUpdateOrder = (updatedOrder) => {
       setOrders((prev) =>
-        prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
+        prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o)),
       );
       if (updatedOrder.status === "ready") {
         // 🔔 Phát âm thanh khi món xong
@@ -107,14 +140,15 @@ export default function WaiterOrdersPage() {
     };
 
     socket.on("new_order", handleNewOrder);
+    socket.on("order_items_added", handleOrderItemsAdded);
     socket.on("update_order", handleUpdateOrder);
-    
 
     return () => {
       socket.off("new_order", handleNewOrder);
+      socket.off("order_items_added", handleOrderItemsAdded);
       socket.off("update_order", handleUpdateOrder);
     };
-  }, [socket, soundEnabled, playNotificationSound]);
+  }, [socket, soundEnabled, playNotificationSound, orders]);
 
   // 3. Logic Filter (Giữ nguyên)
   const filteredOrders = useMemo(() => {
@@ -136,10 +170,10 @@ export default function WaiterOrdersPage() {
     try {
       await axiosClient.patch(`/orders/${orderId}`, { status });
       toast.success(
-        status === "preparing" ? "Đã nhận đơn & Chuyển bếp" : "Đã cập nhật"
+        status === "preparing" ? "Đã nhận đơn & Chuyển bếp" : "Đã cập nhật",
       );
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status } : o))
+        prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
       );
     } catch (e) {
       toast.error("Lỗi cập nhật");

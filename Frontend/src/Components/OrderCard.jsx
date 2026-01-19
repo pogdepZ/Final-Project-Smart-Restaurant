@@ -37,8 +37,8 @@ export default function OrderCard({ order, onView, onAccept, onReject }) {
         isUrgent && showTimer
           ? "border-red-500/50 ring-2 ring-red-500/20"
           : isWarning && showTimer
-          ? "border-yellow-500/30"
-          : "border-white/10"
+            ? "border-yellow-500/30"
+            : "border-white/10"
       }`}
     >
       {/* Urgent Banner */}

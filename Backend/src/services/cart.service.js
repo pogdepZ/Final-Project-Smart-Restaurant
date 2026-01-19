@@ -10,7 +10,7 @@ function isUuid(v) {
   return (
     typeof v === "string" &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      v
+      v,
     )
   );
 }
@@ -53,9 +53,12 @@ async function listCartItems(client, cartId) {
         ci.modifiers,
         mi.name,
         mi.price,
-        mi.image_url as "imageUrl"
+        p.url as "imageUrl"
      from cart_items ci
      join menu_items mi on mi.id = ci.menu_item_id
+     left join menu_item_photos p 
+       on p.menu_item_id = mi.id 
+      and p.is_primary = true
      where ci.cart_id = $1
      order by ci.created_at asc`,
     [cartId],
@@ -433,13 +436,19 @@ async function syncCartByTableId(
     let orderRes;
     if (sessionId) {
       orderRes = await client.query(
-        `select * from public.orders where table_id = $1 and session_id = $2 and status = 'received' order by created_at desc limit 1`,
-        [tableId, sessionId]
+        `select * from public.orders where table_id = $1 and session_id = $2 and (status = 'received' or status = 'preparing') order by created_at desc limit 1`,
+        [tableId, sessionId],
+      );
+
+      // chuyển trạng thái order 'completed' hoặc 'preparing' thành 'received' nếu có
+      await client.query(
+        `update public.orders set status = 'received' where table_id = $1 and session_id = $2 and (status = 'completed' or status = 'preparing')`,
+        [tableId, sessionId],
       );
     } else {
       orderRes = await client.query(
-        `select * from public.orders where table_id = $1 and status = 'received' order by created_at desc limit 1`,
-        [tableId]
+        `select * from public.orders where table_id = $1 and (status = 'received' or status = 'preparing') order by created_at desc limit 1`,
+        [tableId],
       );
     }
     if (orderRes.rows[0]) {
@@ -519,6 +528,7 @@ async function syncCartByTableId(
             'price', oi.price,
             'subtotal', oi.subtotal,
             'note', oi.note,
+            'status', oi.status,
             'modifiers', (
               SELECT COALESCE(
                 json_agg(json_build_object('name', oim.modifier_name, 'price', oim.price)),
@@ -543,6 +553,8 @@ async function syncCartByTableId(
     );
 
     const orderToSend = fullOrderRes.rows[0];
+
+    console.log("Emitting new_order via Socket.IO abc:", orderToSend);
 
     if (io && orderToSend) {
       // Gửi event new_order

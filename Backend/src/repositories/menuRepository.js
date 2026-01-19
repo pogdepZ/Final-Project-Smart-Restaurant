@@ -51,7 +51,7 @@ exports.updateCategoryById = async (id, patch) => {
 exports.findCategoryId = async (id) => {
   const result = await db.query(
     "SELECT id FROM menu_categories WHERE id = $1",
-    [id]
+    [id],
   );
   return result.rows[0] || null;
 };
@@ -67,9 +67,15 @@ exports.findMenuItemsAdmin = async ({
 }) => {
   const params = [];
   let sql = `
-    SELECT i.*, c.name AS category_name
+    SELECT i.id, i.category_id, i.name, i.description, i.price, 
+           i.prep_time_minutes, i.status, i.is_chef_recommended, 
+           i.created_at, i.updated_at, i.is_deleted,
+           p.url AS image_url, c.name AS category_name
     FROM menu_items i
     LEFT JOIN menu_categories c ON i.category_id = c.id
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = i.id 
+     AND p.is_primary = true
     WHERE i.is_deleted = false
   `;
 
@@ -110,7 +116,15 @@ exports.findMenuItemsAdmin = async ({
 };
 
 exports.findMenuItemById = async (id) => {
-  const result = await db.query("SELECT * FROM menu_items WHERE id = $1", [id]);
+  const sql = `
+    SELECT mi.*, p.url AS image_url
+    FROM menu_items mi
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = mi.id 
+     AND p.is_primary = true
+    WHERE mi.id = $1
+  `;
+  const result = await db.query(sql, [id]);
   return result.rows[0] || null;
 };
 
@@ -137,8 +151,8 @@ exports.findModifierGroupsByMenuItemId = async (menuItemId) => {
 exports.insertMenuItem = async (data) => {
   const sql = `
     INSERT INTO menu_items
-      (category_id, name, description, price, prep_time_minutes, status, image_url, is_chef_recommended)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      (category_id, name, description, price, prep_time_minutes, status, is_chef_recommended)
+    VALUES ($1,$2,$3,$4,$5,$6,$7)
     RETURNING *
   `;
   const result = await db.query(sql, [
@@ -148,7 +162,6 @@ exports.insertMenuItem = async (data) => {
     data.price,
     data.prep_time_minutes,
     data.status,
-    data.image_url,
     data.is_chef_recommended,
   ]);
   return result.rows[0];
@@ -168,18 +181,24 @@ exports.softDeleteMenuItem = async (id) => {
   await db.query("UPDATE menu_items SET is_deleted = true WHERE id = $1", [id]);
 };
 
-exports.insertMenuItemPhoto = async (menuItemId, url) => {
+exports.insertMenuItemPhoto = async (menuItemId, url, isPrimary = false) => {
   await db.query(
-    "INSERT INTO menu_item_photos (menu_item_id, url) VALUES ($1, $2)",
-    [menuItemId, url]
+    "INSERT INTO menu_item_photos (menu_item_id, url, is_primary) VALUES ($1, $2, $3)",
+    [menuItemId, url, isPrimary],
   );
 };
 
 exports.findGuestMenu = async () => {
   const sql = `
-    SELECT i.*, c.name as category_name
+    SELECT i.id, i.category_id, i.name, i.description, i.price, 
+           i.prep_time_minutes, i.status, i.is_chef_recommended, 
+           i.created_at, i.updated_at, i.is_deleted,
+           p.url AS image_url, c.name as category_name
     FROM menu_items i
     JOIN menu_categories c ON i.category_id = c.id
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = i.id 
+     AND p.is_primary = true
     WHERE i.is_deleted = false
       AND i.status = 'available'
       AND c.status = 'active'
@@ -192,9 +211,12 @@ exports.findGuestMenu = async () => {
 exports.findRelatedItemsByCategory = async (categoryId, excludeId) => {
   // POSTGRESQL: Dùng $1, $2 thay vì ?
   const sql = `
-    SELECT id, name, price, image_url 
-    FROM menu_items 
-    WHERE category_id = $1 AND id != $2
+    SELECT mi.id, mi.name, mi.price, p.url AS image_url 
+    FROM menu_items mi
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = mi.id 
+     AND p.is_primary = true
+    WHERE mi.category_id = $1 AND mi.id != $2
     LIMIT 5
   `;
 
@@ -240,15 +262,18 @@ exports.findMenuItemsPublic = async ({
   const listSql = `
     SELECT 
       i.id, i.category_id, i.name, i.description, i.price,
-      i.status, i.image_url, i.is_chef_recommended,
+      i.status, p.url AS image_url, i.is_chef_recommended,
       i.created_at,
       c.name AS category_name,
       COALESCE(SUM(oi.quantity), 0)::int AS total_ordered
     FROM menu_items i
     JOIN menu_categories c ON c.id = i.category_id
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = i.id 
+     AND p.is_primary = true
     LEFT JOIN order_items oi ON oi.menu_item_id = i.id
     ${where}
-    GROUP BY i.id, c.name
+    GROUP BY i.id, c.name, p.url
     ${orderBy}
     LIMIT $${params.length + 1} OFFSET $${params.length + 2}
   `;
@@ -267,6 +292,14 @@ exports.findMenuItemsPublic = async ({
 
 exports.getItemById = async (id) => {
   // Lấy thông tin món ăn theo ID
-  const result = await db.query("SELECT * FROM menu_items WHERE id = $1", [id]);
+  const sql = `
+    SELECT mi.*, p.url AS image_url
+    FROM menu_items mi
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = mi.id 
+     AND p.is_primary = true
+    WHERE mi.id = $1
+  `;
+  const result = await db.query(sql, [id]);
   return result.rows[0];
 };

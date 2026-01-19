@@ -48,11 +48,12 @@ class BillingRepository {
     total_amount,
     payment_method,
     user_id,
+    stripe_payment_intent_id = null,
   }) {
     const result = await db.query(
       `INSERT INTO bills 
-            (table_id, subtotal, tax_amount, discount_type, discount_value, total_amount, payment_method, created_by)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+            (table_id, subtotal, tax_amount, discount_type, discount_value, total_amount, payment_method, created_by, stripe_payment_intent_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
             RETURNING *`,
       [
         table_id,
@@ -63,7 +64,8 @@ class BillingRepository {
         total_amount,
         payment_method,
         user_id,
-      ]
+        stripe_payment_intent_id,
+      ],
     );
     return result.rows[0];
   }
@@ -74,7 +76,7 @@ class BillingRepository {
       `UPDATE orders 
             SET payment_status = 'paid', status = 'completed', bill_id = $1 
             WHERE id = ANY($2::uuid[])`,
-      [billId, orderIds]
+      [billId, orderIds],
     );
   }
 }
