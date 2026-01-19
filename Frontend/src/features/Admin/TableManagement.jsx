@@ -80,31 +80,40 @@ const TableManagement = () => {
   useEffect(() => {
     if (!socket) return;
 
+    // Helper: Cập nhật bàn trong state (không refetch)
+    const updateTableInState = (table) => {
+      if (!table?.id) return;
+      setTables((prev) => {
+        const exists = prev.some((t) => t.id === table.id);
+        if (exists) {
+          return prev.map((t) => (t.id === table.id ? { ...t, ...table } : t));
+        }
+        // Nếu bàn mới, thêm vào cuối
+        return [...prev, table];
+      });
+    };
+
     // Lắng nghe cập nhật bàn thông thường
     socket.on("table_update", (payload) => {
+      console.log("TableManagement: table_update", payload);
       const { type, table } = payload || {};
       if (!table?.id) return;
 
-      if (type === "update") {
-        setTables((prev) => prev.map((t) => (t.id === table.id ? table : t)));
-        // toast.info(`Bàn ${table.table_number} vừa cập nhật!`);
+      if (type === "update" || type === "payment_completed") {
+        updateTableInState(table);
       } else if (type === "create") {
         setTables((prev) => [...prev, table]);
-        // toast.success(`Bàn mới ${table.table_number} vừa được tạo!`);
       }
     });
 
     // Lắng nghe khi có khách quét QR / kết thúc session
     socket.on("table_session_update", (payload) => {
       console.log("TableManagement: table_session_update", payload);
-
-      
       const { type, table } = payload || {};
       if (!table?.id) return;
 
-
-      // Cập nhật bàn trong danh sách
-      setTables((prev) => prev.map((t) => (t.id === table.id ? table : t)));
+      // Cập nhật bàn trong danh sách (không refetch)
+      updateTableInState(table);
 
       if (type === "session_started") {
         toast.info(`🟢 Bàn ${table.table_number} có khách mới!`, {
@@ -117,9 +126,23 @@ const TableManagement = () => {
       }
     });
 
+    // Lắng nghe cập nhật từ admin_room (thanh toán, session changes)
+    socket.on("admin_table_update", (payload) => {
+      console.log("TableManagement: admin_table_update", payload);
+      const { type, table } = payload || {};
+      if (!table?.id) return;
+
+      updateTableInState(table);
+
+      if (type === "table_session") {
+        // Toast đã được xử lý ở table_session_update
+      }
+    });
+
     return () => {
       socket.off("table_update");
       socket.off("table_session_update");
+      socket.off("admin_table_update");
     };
   }, [socket]);
 

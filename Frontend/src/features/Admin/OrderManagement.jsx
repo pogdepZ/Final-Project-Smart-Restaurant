@@ -123,7 +123,7 @@ export default function OrderManagement() {
     [q, status, fromDate, toDate, page, limit],
   );
 
-  const { data, isLoading, error, refetch } = useAdminOrders(params);
+  const { data, setData, isLoading, error, refetch } = useAdminOrders(params);
 
   useEffect(() => {
     if (error) toast.error(error);
@@ -155,37 +155,109 @@ export default function OrderManagement() {
   useEffect(() => {
     if (!socket) return;
 
-    // Lắng nghe đơn hàng mới
-    const handleNewOrder = (data) => {
-      console.log("🔔 OrderManagement: Nhận đơn mới", data);
-      playNewOrderSound();
-      // Refetch để lấy danh sách mới nhất
-      refetch();
-      toast.success(`🍽️ Đơn hàng mới từ Bàn ${data.table_number}!`, {
-        icon: "📋",
+    // Helper: Cập nhật order trong state (không refetch)
+    const updateOrderInState = (updatedOrder) => {
+      if (!updatedOrder?.id) return;
+      setData((prev) => {
+        if (!prev?.orders) return prev;
+        const exists = prev.orders.some((o) => o.id === updatedOrder.id);
+        if (exists) {
+          // Cập nhật order đã tồn tại
+          return {
+            ...prev,
+            orders: prev.orders.map((o) =>
+              o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o,
+            ),
+          };
+        }
+        return prev;
       });
     };
 
+    // Helper: Thêm order mới vào đầu danh sách
+    const addNewOrderToState = (newOrder) => {
+      if (!newOrder?.id) return;
+      setData((prev) => {
+        if (!prev?.orders) return prev;
+        // Kiểm tra trùng lặp
+        const exists = prev.orders.some((o) => o.id === newOrder.id);
+        if (exists) {
+          // Nếu đã tồn tại thì cập nhật
+          return {
+            ...prev,
+            orders: prev.orders.map((o) =>
+              o.id === newOrder.id ? { ...o, ...newOrder } : o,
+            ),
+          };
+        }
+        // Thêm mới vào đầu danh sách
+        return {
+          ...prev,
+          orders: [newOrder, ...prev.orders],
+          pagination: {
+            ...prev.pagination,
+            total: (prev.pagination?.total || 0) + 1,
+          },
+        };
+      });
+    };
+
+    // Lắng nghe đơn hàng mới
+    const handleNewOrder = (socketData) => {
+      console.log("🔔 OrderManagement: Nhận đơn mới", socketData);
+      playNewOrderSound();
+
+      // Thêm order mới vào state (không refetch)
+      const newOrder = socketData.order || socketData;
+      addNewOrderToState({
+        id: newOrder.id,
+        code: newOrder.code,
+        status: newOrder.status || "received",
+        tableName: newOrder.table_name || `Bàn ${socketData.table_number}`,
+        totalItems: newOrder.total_items || newOrder.items?.length,
+        totalAmount: newOrder.total_amount,
+        createdAt: newOrder.created_at || new Date().toISOString(),
+        updatedAt: newOrder.updated_at,
+      });
+
+      toast.success(
+        `🍽️ Đơn hàng mới từ Bàn ${socketData.table_number || newOrder.table_number}!`,
+        {
+          icon: "📋",
+        },
+      );
+    };
+
     // Lắng nghe cập nhật đơn hàng
-    const handleOrderUpdate = (data) => {
-      console.log("🔔 OrderManagement: Cập nhật đơn", data);
-      // Refetch để đồng bộ dữ liệu
-      refetch();
+    const handleOrderUpdate = (socketData) => {
+      console.log("🔔 OrderManagement: Cập nhật đơn", socketData);
+      const order = socketData.order || socketData;
+      updateOrderInState({
+        id: order.id,
+        code: order.code,
+        status: order.status,
+        updatedAt: order.updated_at || new Date().toISOString(),
+      });
     };
 
     // Lắng nghe từ kitchen_room (update_order event)
     const handleKitchenOrderUpdate = (order) => {
       console.log("🔔 OrderManagement: Kitchen update", order);
-      refetch();
+      updateOrderInState({
+        id: order.id,
+        code: order.code,
+        status: order.status,
+        updatedAt: order.updated_at || new Date().toISOString(),
+      });
     };
 
     // Lắng nghe thanh toán hoàn tất
-    const handlePaymentCompleted = (data) => {
-      console.log("🔔 OrderManagement: Thanh toán hoàn tất", data);
-      // Refetch để cập nhật trạng thái đơn hàng đã thanh toán
-      refetch();
+    const handlePaymentCompleted = (socketData) => {
+      console.log("🔔 OrderManagement: Thanh toán hoàn tất", socketData);
+      // Cập nhật tất cả orders của bàn này thành completed (nếu cần)
+      // Hoặc chỉ hiển thị toast thông báo
       toast.success(
-        `💰 Bàn ${data.table_number} đã thanh toán ${data.total_amount?.toLocaleString("vi-VN")}₫`,
+        `💰 Bàn ${socketData.table_number} đã thanh toán ${socketData.total_amount?.toLocaleString("vi-VN")}₫`,
         {
           icon: "✅",
         },
@@ -205,7 +277,7 @@ export default function OrderManagement() {
       socket.off("update_order", handleKitchenOrderUpdate);
       socket.off("admin_payment_completed", handlePaymentCompleted);
     };
-  }, [socket, refetch, playNewOrderSound]);
+  }, [socket, setData, playNewOrderSound]);
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
