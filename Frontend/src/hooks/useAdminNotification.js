@@ -159,11 +159,48 @@ export function useAdminNotification() {
       }
     };
 
+    // 5. Khách quét QR / Session bắt đầu
+    const handleTableSession = (data) => {
+      console.log("🔔 Admin nhận table session:", data);
+
+      if (data.type === "session_started") {
+        playUpdateSound();
+        addNotification({
+          type: "table_session",
+          title: "🟢 Khách mới đến",
+          message:
+            data.message || `Bàn ${data.table?.table_number} có khách mới!`,
+          data: data.table,
+          timestamp: data.timestamp || new Date().toISOString(),
+          icon: "table",
+          priority: "medium",
+        });
+      }
+    };
+
+    // 6. Thanh toán hoàn tất
+    const handlePaymentCompleted = (data) => {
+      console.log("🔔 Admin nhận thanh toán hoàn tất:", data);
+      playUpdateSound();
+
+      addNotification({
+        type: "payment_completed",
+        title: "💰 Thanh toán thành công",
+        message: data.message || `Bàn ${data.table_number} đã thanh toán xong`,
+        data: data,
+        timestamp: data.timestamp || new Date().toISOString(),
+        icon: "bill",
+        priority: "medium",
+      });
+    };
+
     // Đăng ký listeners
     socket.on("admin_new_order", handleNewOrder);
     socket.on("admin_order_update", handleOrderUpdate);
     socket.on("admin_table_update", handleTableUpdate);
     socket.on("bill_request", handleBillRequest);
+    socket.on("table_session_update", handleTableSession);
+    socket.on("admin_payment_completed", handlePaymentCompleted);
 
     // Cleanup
     return () => {
@@ -171,6 +208,8 @@ export function useAdminNotification() {
       socket.off("admin_order_update", handleOrderUpdate);
       socket.off("admin_table_update", handleTableUpdate);
       socket.off("bill_request", handleBillRequest);
+      socket.off("table_session_update", handleTableSession);
+      socket.off("admin_payment_completed", handlePaymentCompleted);
     };
   }, [socket, addNotification, playNewOrderSound, playUpdateSound]);
 

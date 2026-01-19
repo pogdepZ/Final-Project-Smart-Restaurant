@@ -19,7 +19,13 @@ class SocketService {
         console.log(`🛡️ Socket ${socket.id} joined admin_room`);
       });
 
-      // Waiter & Kitchen join phòng chung
+      // Waiter join phòng staff
+      socket.on("join_waiter", () => {
+        socket.join("waiter_room");
+        console.log(`👩‍🍳 Socket ${socket.id} joined waiter_room`);
+      });
+
+      // kitchen join phòng
       socket.on("join_kitchen", () => {
         socket.join("kitchen_room");
         // console.log(`Socket ${socket.id} joined kitchen_room`);
@@ -46,7 +52,7 @@ class SocketService {
       return;
     }
     // Gửi cho kitchen
-    this.io.to("kitchen_room").emit("new_order", order);
+    this.io.to("waiter_room").emit("new_order", order);
 
     // Gửi thêm cho admin room để admin nhận thông báo
     this.io.to("admin_room").emit("admin_new_order", {
@@ -59,17 +65,33 @@ class SocketService {
   }
 
   // 2. Thông báo cập nhật đơn hàng (Status thay đổi)
-  notifyOrderUpdate(order) {
+
+  notifyToKitchen(order) {
+    if (!this.io) return;
+    this.io.to("kitchen_room").emit("update_order", order);
+  }
+
+  notifyOrderUpdate(order, destination = "ALL") {
     if (!this.io) return;
 
-    // Báo cho bếp/waiter
-    this.io.to("kitchen_room").emit("update_order", order);
+    if (destination === "KITCHEN") {
+      this.io.to("kitchen_room").emit("update_order", order);
+      console.log("📡 Bắn socket cập nhật đơn cho kitchen:", order.id);
+      return;
+    }
 
-    // Báo cho admin với message rõ ràng
+    // khi cập nhật order luôn gửi cho admin và khách
     this.io.to("admin_room").emit("admin_order_update", {
       type: "order_update",
       order: order,
       message: `Đơn #${order.id} - ${this._getStatusMessage(order.status)}`,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.io.to(`table_${order.table_id}`).emit("order_status_update", {
+      orderId: order.id,
+      status: order.status,
+      message: this._getStatusMessage(order.status),
       timestamp: new Date().toISOString(),
     });
 
@@ -81,23 +103,6 @@ class SocketService {
       "table:",
       order.table_id,
     );
-
-    // Báo cho khách ngồi bàn đó (QUAN TRỌNG)
-    // if (order.table_id) {
-    //   this.io.to(`table_${order.table_id}`).emit("order_status_update", {
-    //     orderId: order.id,
-    //     status: order.status,
-    //     message: this._getStatusMessage(order.status),
-    //     timestamp: new Date().toISOString(),
-    //   });
-    // }
-
-    this.io.to(`table_${order.table_id}`).emit("order_status_update", {
-      orderId: order.id,
-      status: order.status,
-      message: this._getStatusMessage(order.status),
-      timestamp: new Date().toISOString(),
-    });
   }
 
   // Thông báo cập nhật từng item trong đơn
@@ -107,6 +112,22 @@ class SocketService {
     console.log(
       `📡 Bắn socket item update: Order ${orderId}, Item ${itemId} -> ${itemStatus}`,
     );
+
+    // bắn cho admin
+    this.io.to("admin_room").emit("admin_order_item_update", {
+      orderId,
+      itemId,
+      itemStatus,
+      timestamp: new Date().toISOString(),
+    });
+
+    // bắn cho waiter
+    this.io.to("waiter_room").emit("order_item_status_update", {
+      orderId,
+      itemId,
+      itemStatus,
+      timestamp: new Date().toISOString(),
+    });
 
     // Bắn cho khách ở bàn đó
     if (tableId) {
@@ -124,6 +145,8 @@ class SocketService {
     if (this.io) {
       // Gửi cho tất cả staff (waiter, cashier, admin)
       this.io.to("kitchen_room").emit("bill_request", data);
+      // Gửi cho admin room để admin nhận thông báo
+      this.io.to("admin_room").emit("bill_request", data);
       console.log(
         "📢 Bill request notification sent:",
         data.request?.table_number,

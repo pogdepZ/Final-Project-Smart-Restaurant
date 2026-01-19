@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { orderApi } from "../../services/orderApi";
-import { useSocket } from "../../context/SocketContext";
-import OrderItemStatus from "../../Components/customer/OrderItemStatus"
+import useCustomerSocket from "../../hooks/useCustomerSocket";
+import OrderItemStatus from "../../Components/customer/OrderItemStatus";
 import { formatMoneyVND } from "../../utils/orders";
 
 // Map status từ backend sang UI status
@@ -32,13 +32,13 @@ const mapItemStatus = (status) => {
 
 const OrderTrackingPage = () => {
   const navigate = useNavigate();
-  const socket = useSocket();
+  // Sử dụng hook chung - socket events đã được xử lý ở CustomerLayout
+  const { isConnected, lastUpdate } = useCustomerSocket(false);
   const [orders, setOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState(null); // <-- ĐỔI: Chỉ lưu ID
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [isConnected, setIsConnected] = useState(false);
 
   const qrToken = localStorage.getItem("qrToken");
 
@@ -76,9 +76,7 @@ const OrderTrackingPage = () => {
 
       // Auto-select đơn hàng đang active
       if (!selectedOrderId) {
-        const activeOrder = mappedOrders.find(
-          (o) => ![].includes(o.status),
-        );
+        const activeOrder = mappedOrders.find((o) => ![].includes(o.status));
         if (activeOrder) {
           setSelectedOrderId(activeOrder.id);
         }
@@ -99,61 +97,18 @@ const OrderTrackingPage = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  // QUAN TRỌNG: Lắng nghe socket events từ backend
+  // Lắng nghe lastUpdate từ socket để refresh data
   useEffect(() => {
-    if (!socket) return;
-
-    console.log("🔔 Setting up socket listeners for order tracking");
-    setIsConnected(true);
-
-    // console.log("Socket connected:", socket);
-
-    // Lắng nghe cập nhật trạng thái đơn hàng
-    const handleOrderStatusUpdate = (data) => {
-      console.log("📢 Order Status Update:", data);
-
-      // QUAN TRỌNG: Fetch lại để lấy data mới nhất từ server
+    if (
+      lastUpdate &&
+      (lastUpdate.type === "order_status" ||
+        lastUpdate.type === "order_item_status" ||
+        lastUpdate.type === "bill_update")
+    ) {
+      // Fetch lại data khi có cập nhật từ socket
       fetchOrders();
-
-      toast.info(`${data.message || "Cập nhật đơn hàng"}`, {
-        position: "top-right",
-        autoClose: 4000,
-      });
-    };
-
-    // Lắng nghe cập nhật từng item trong đơn
-    const handleOrderItemStatusUpdate = (data) => {
-      console.log("📢 Order Item Status Update:", data);
-
-      // QUAN TRỌNG: Fetch lại để lấy data mới nhất từ server
-      fetchOrders();
-
-      toast.success(`✅ Món đã được cập nhật!`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    };
-
-    const handleBillUpdate = (data) => {
-      console.log("📢 Bill Update:", data);
-      toast.success(data.message || "💰 Cập nhật hóa đơn!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      fetchOrders();
-    };
-
-    socket.on("order_status_update", handleOrderStatusUpdate);
-    socket.on("order_item_status_update", handleOrderItemStatusUpdate);
-    socket.on("bill_update", handleBillUpdate); // Có thể dùng chung handler
-
-    return () => {
-      socket.off("order_status_update", handleOrderStatusUpdate);
-      socket.off("order_item_status_update", handleOrderItemStatusUpdate);
-      socket.off("bill_update", handleBillUpdate); // Có thể dùng chung handler
-      setIsConnected(false);
-    };
-  }, [socket, fetchOrders]);
+    }
+  }, [lastUpdate, fetchOrders]);
 
   const handleRefresh = () => {
     setRefreshing(true);

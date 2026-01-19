@@ -439,7 +439,9 @@ const TableManagement = () => {
           <div className="text-sm text-gray-400 mt-2">
             Tổng: <span className="text-white font-bold">{tables.length}</span>{" "}
             bàn • Active:{" "}
-            <span className="text-white font-bold">{totalActive}</span>
+            <span className="text-white font-bold">{totalActive}</span> • Đang
+            phục vụ:{" "}
+            <span className="text-blue-400 font-bold">{totalOccupied}</span>
           </div>
         </div>
 
@@ -593,105 +595,145 @@ const TableManagement = () => {
           </div>
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {tables.map((table) => (
-              <div
-                key={table.id}
-                onClick={() => setSelectedTable(table)}
-                className={`group relative rounded-2xl border p-5 cursor-pointer transition
-                  bg-white/5 border-white/10 hover:bg-white/10 hover:border-orange-500/20
-                  ${
-                    selectedTable?.id === table.id
-                      ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
-                      : ""
-                  }
-                  ${table.status === "inactive" ? "opacity-60 grayscale" : ""}
-                `}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg
-                        ${
-                          table.status === "active"
+            {tables.map((table) => {
+              const hasCustomer = isTableOccupied(table);
+
+              return (
+                <div
+                  key={table.id}
+                  onClick={() => setSelectedTable(table)}
+                  className={`group relative rounded-2xl border p-5 cursor-pointer transition
+                ${
+                  hasCustomer
+                    ? "bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/15 hover:border-blue-500/40"
+                    : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-orange-500/20"
+                }
+                ${
+                  selectedTable?.id === table.id
+                    ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
+                    : ""
+                }
+                ${table.status === "inactive" ? "opacity-60 grayscale" : ""}
+              `}
+                >
+                  {/* Badge "Có khách" */}
+                  {hasCustomer && (
+                    <div className="absolute -top-2 -right-2 z-10">
+                      <div className="relative">
+                        <div className="px-3 py-1 rounded-full bg-blue-500 text-white text-xs font-bold shadow-lg">
+                          Có khách
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg
+                      ${
+                        hasCustomer
+                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                          : table.status === "active"
                             ? "bg-orange-500/10 text-orange-300 border border-orange-500/20"
                             : "bg-white/5 text-gray-400 border border-white/10"
-                        }`}
-                    >
-                      {String(table.table_number || "").replace(/\D/g, "") ||
-                        "—"}
-                    </div>
-
-                    <div>
-                      <div className="text-white font-black text-lg">
-                        {table.table_number}
-                      </div>
-                      <div
-                        className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${
-                          table.status === "active"
-                            ? "text-green-400"
-                            : "text-red-400"
-                        }`}
-                      >
-                        {table.status === "active" ? "Online" : "Offline"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-1 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <Users size={14} className="text-orange-400" />
-                    {table.capacity} khách
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={14} className="text-orange-400" />
-                    {table.location || "—"}
-                  </div>
-                </div>
-
-                <div className="mt-4 flex gap-2 pt-4 border-t border-white/10">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEdit(table);
-                    }}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl
-                      bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition"
-                    title="Edit"
-                  >
-                    <Edit size={16} />
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleStatus(table);
-                    }}
-                    className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border transition
-                      ${
-                        table.status === "active"
-                          ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
-                          : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
                       }`}
-                    title={table.status === "active" ? "Tắt bàn" : "Bật bàn"}
-                  >
-                    <Power size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
+                      >
+                        {String(table.table_number || "").replace(/\D/g, "") ||
+                          "—"}
+                      </div>
 
-            {!tables.length ? (
+                      <div>
+                        <div className="text-white font-black text-lg">
+                          {table.table_number}
+                        </div>
+                        <div
+                          className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${
+                            hasCustomer
+                              ? "text-blue-400"
+                              : table.status === "active"
+                                ? "text-green-400"
+                                : "text-red-400"
+                          }`}
+                        >
+                          {hasCustomer
+                            ? "Đang phục vụ"
+                            : table.status === "active"
+                              ? "Online"
+                              : "Offline"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-1 text-sm text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <Users
+                        size={14}
+                        className={
+                          hasCustomer ? "text-blue-400" : "text-orange-400"
+                        }
+                      />
+                      {table.capacity} khách
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin
+                        size={14}
+                        className={
+                          hasCustomer ? "text-blue-400" : "text-orange-400"
+                        }
+                      />
+                      {table.location || "—"}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-2 pt-4 border-t border-white/10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEdit(table);
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl
+                    bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition"
+                      title="Edit"
+                    >
+                      <Edit size={16} />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStatus(table);
+                      }}
+                      className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border transition
+                    ${
+                      table.status === "active"
+                        ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
+                        : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
+                    }`}
+                      title={table.status === "active" ? "Tắt bàn" : "Bật bàn"}
+                      disabled={hasCustomer}
+                    >
+                      <Power size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Kiểm tra nếu không có bàn nào thì hiện thông báo */}
+            {tables.length === 0 && (
               <div className="col-span-full rounded-2xl bg-white/5 border border-white/10 p-10 text-center">
                 <div className="text-white font-black">Chưa có bàn</div>
                 <div className="text-gray-400 text-sm mt-1">
                   Bấm “Thêm bàn” để tạo mới.
                 </div>
               </div>
-            ) : null}
+            )}
           </div>
         )}
       </div>
+
 
       {/* MODAL FORM (Create/Edit) */}
       {showModal && (

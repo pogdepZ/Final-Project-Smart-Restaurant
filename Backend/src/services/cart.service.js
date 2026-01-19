@@ -5,6 +5,7 @@ const {
   normalizeModifiers,
   modifiersKey,
 } = require("../utils/normalizeModifiers");
+const socketService = require("./socketService");
 
 // Lưu ý: bạn cần bảng `tables` có cột `code` (tableCode) như bạn đang dùng useParams tableCode ở FE.
 function isUuid(v) {
@@ -567,10 +568,7 @@ async function syncCartByTableId(
 
     console.log("Emitting new_order via Socket.IO abc:", orderToSend);
 
-    if (io && orderToSend) {
-      // Gửi event new_order
-      io.to("kitchen_room").emit("new_order", orderToSend);
-    }
+    socketService.notifyNewOrder(orderToSend, );
 
     return {
       order: { ...order, total_amount: total },

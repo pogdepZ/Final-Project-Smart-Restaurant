@@ -214,11 +214,31 @@ exports.recalcOrderTotal = async (orderId) => {
 
 // 4. Hàm cập nhật status của tất cả items trong một order
 exports.updateAllItemsStatusByOrderId = async (orderId, itemStatus) => {
-  const result = await db.query(
-    `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status = 'received' RETURNING *`,
-    [itemStatus, orderId],
-  );
-  return result.rows;
+  if (itemStatus === "preparing") {
+    const result = await db.query(
+      `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status = 'received' RETURNING *`,
+      [itemStatus, orderId],
+    );
+    return result.rows;
+  } else if( itemStatus === "ready" ) {
+    const result = await db.query(
+      `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status = 'preparing' RETURNING *`,
+      [itemStatus, orderId],
+    );
+    return result.rows;
+  } else if( itemStatus === "completed" ) {
+    const result = await db.query(
+      `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status != 'rejected' RETURNING *`,
+      [itemStatus, orderId],
+    );
+    return result.rows;
+  } else if( itemStatus === "rejected" ) {
+    const result = await db.query(
+      `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status = 'received' RETURNING *`,
+      [itemStatus, orderId],
+    );
+    return result.rows;
+  }
 };
 
 exports.findManyByUserId = async (userId, { page, limit }) => {
