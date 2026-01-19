@@ -8,7 +8,9 @@ import {
   QrCode,
   Wallet,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
+import QRCodeReact from "react-qr-code";
 import { billApi } from "../services/billApi";
 import { stripeApi } from "../services/stripeApi";
 import { toast } from "react-toastify";
@@ -20,7 +22,7 @@ const StripePaymentWrapper = lazy(() => import("./StripePaymentWrapper"));
 
 // CẤU HÌNH TÀI KHOẢN NGÂN HÀNG
 const BANK_INFO = {
-  BANK_ID:  import.meta.env.VITE_BANK_ID || "MB",
+  BANK_ID: import.meta.env.VITE_BANK_ID || "MB",
   ACCOUNT_NO: import.meta.env.VITE_ACCOUNT_NO || "21230907843010",
   TEMPLATE: import.meta.env.VITE_TEMPLATE || "compact",
   ACCOUNT_NAME: import.meta.env.VITE_ACCOUNT_NAME || "NHA HANG SMART",
@@ -61,6 +63,13 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
   const [clientSecret, setClientSecret] = useState("");
   const [showStripeForm, setShowStripeForm] = useState(false);
   const [stripeLoading, setStripeLoading] = useState(false);
+
+  // Stripe QR states
+  const [stripePaymentUrl, setStripePaymentUrl] = useState("");
+  const [stripeSessionId, setStripeSessionId] = useState("");
+  const [showStripeQR, setShowStripeQR] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
   // 1. Fetch Bill Preview
   useEffect(() => {
@@ -400,6 +409,101 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     }
   };
 
+  // Tạo Stripe QR Code (Payment Link)
+  const handleCreateStripeQR = async () => {
+    if (!billData) return;
+
+    setStripeLoading(true);
+    try {
+      const result = await stripeApi.createPaymentLink(tableId, {
+        discount_type: discountType,
+        discount_value: Number(discountValue),
+      });
+
+      if (result.url) {
+        setStripePaymentUrl(result.url);
+        setStripeSessionId(result.sessionId);
+        setShowStripeQR(true);
+        setPaymentStatus(null);
+        toast.success("Đã tạo mã QR Stripe! Quét để thanh toán");
+      } else {
+        throw new Error("Không thể tạo link thanh toán");
+      }
+    } catch (err) {
+      console.error("Stripe QR error:", err);
+      toast.error(err.message || "Lỗi tạo QR Stripe");
+    } finally {
+      setStripeLoading(false);
+    }
+  };
+
+  // Kiểm tra trạng thái thanh toán Stripe
+  const handleCheckStripePayment = async () => {
+    if (!stripeSessionId) return;
+
+    setCheckingPayment(true);
+    try {
+      const result = await stripeApi.checkSessionStatus(stripeSessionId);
+
+      if (result.status === "complete") {
+        setPaymentStatus("complete");
+        toast.success("Thanh toán thành công!");
+
+        // Xử lý thanh toán thành công
+        await billApi.checkoutBill(tableId, {
+          payment_method: "stripe",
+          discount_type: discountType,
+          discount_value: Number(discountValue),
+          stripe_session_id: stripeSessionId,
+        });
+
+        handlePrint();
+        if (onPaymentSuccess) onPaymentSuccess();
+
+        // Đóng modal sau khi xử lý xong
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+
+        return true; // Trả về true để dừng polling
+      } else if (result.status === "open") {
+        setPaymentStatus("pending");
+        return false; // Tiếp tục polling
+      } else {
+        setPaymentStatus("failed");
+        toast.error("Thanh toán thất bại hoặc đã hủy");
+        return true; // Dừng polling
+      }
+    } catch (err) {
+      console.error("Check payment error:", err);
+      toast.error("Lỗi kiểm tra thanh toán");
+      return false;
+    } finally {
+      setCheckingPayment(false);
+    }
+  };
+
+  // Auto-polling khi QR được hiển thị
+  useEffect(() => {
+    if (!showStripeQR || !stripeSessionId) return;
+
+    let isActive = true;
+    const interval = setInterval(async () => {
+      if (!isActive) return;
+
+      const shouldStop = await handleCheckStripePayment();
+      if (shouldStop) {
+        clearInterval(interval);
+        isActive = false;
+      }
+    }, 5000); // Check mỗi 5 giây
+
+    return () => {
+      clearInterval(interval);
+      isActive = false;
+    };
+  }, [showStripeQR, stripeSessionId]);
+
   const handleCheckout = async () => {
     if (!billData) return;
     if (
@@ -592,6 +696,8 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                     onClick={() => {
                       setPaymentMethod(m.id);
                       setShowStripeForm(false);
+                      setShowStripeQR(false);
+                      setStripePaymentUrl("");
                     }}
                     className={`flex-1 min-w-15 flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
                       paymentMethod === m.id
@@ -636,7 +742,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
           )}
 
           {/* Stripe Checkout Section */}
-          {paymentMethod === "stripe" && !showStripeForm && (
+          {paymentMethod === "stripe" && !showStripeForm && !showStripeQR && (
             <div className="flex flex-col items-center animate-in zoom-in-95 duration-300 p-4 bg-white/5 rounded-xl border border-white/10">
               <Wallet size={48} className="text-purple-500 mb-3" />
               <h4 className="text-white font-bold mb-2">
@@ -645,23 +751,130 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
               <p className="text-gray-400 text-sm text-center mb-4">
                 Hỗ trợ Visa, Mastercard, Apple Pay, Google Pay
               </p>
+
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={handleCreateStripeQR}
+                  disabled={stripeLoading}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                >
+                  {stripeLoading ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Đang tạo...
+                    </>
+                  ) : (
+                    <>
+                      <QrCode size={18} />
+                      QR Code
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleInitStripe}
+                  disabled={stripeLoading}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                >
+                  {stripeLoading ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Đang tạo...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard size={18} />
+                      Nhập thẻ
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Stripe QR Code Display */}
+          {paymentMethod === "stripe" && showStripeQR && stripePaymentUrl && (
+            <div className="flex flex-col items-center animate-in zoom-in-95 duration-300 p-6 bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-xl border border-purple-500/30">
+              <h4 className="text-white font-bold mb-2 text-lg">
+                🔒 Quét QR để thanh toán Stripe
+              </h4>
+              <p className="text-gray-300 text-sm text-center mb-4">
+                Quét mã QR bằng điện thoại để mở trang thanh toán
+              </p>
+
+              <div className="bg-white p-4 rounded-xl shadow-lg">
+                <QRCodeReact
+                  value={stripePaymentUrl}
+                  size={200}
+                  level="H"
+                  fgColor="#000000"
+                />
+              </div>
+
+              <div className="mt-4 text-center space-y-2">
+                <p className="text-purple-400 font-bold text-xl">
+                  {formatMoneyVND(billData.final_amount)}
+                </p>
+                {paymentStatus === "pending" && (
+                  <p className="text-yellow-400 text-xs animate-pulse">
+                    ⏳ Chờ khách thanh toán...
+                  </p>
+                )}
+                {paymentStatus === "complete" && (
+                  <p className="text-green-400 text-xs">
+                    ✅ Đã thanh toán thành công!
+                  </p>
+                )}
+                {!paymentStatus && (
+                  <p className="text-gray-400 text-xs">
+                    Thanh toán an toàn qua Stripe
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 flex gap-2 w-full">
+                <button
+                  onClick={() => window.open(stripePaymentUrl, "_blank")}
+                  className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <ExternalLink size={16} />
+                  Mở link
+                </button>
+                <button
+                  onClick={() => {
+                    setShowStripeQR(false);
+                    setStripePaymentUrl("");
+                    setPaymentStatus(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-all"
+                >
+                  Hủy
+                </button>
+              </div>
+
+              {/* Nút kiểm tra thủ công */}
               <button
-                onClick={handleInitStripe}
-                disabled={stripeLoading}
-                className="px-6 py-3 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+                onClick={handleCheckStripePayment}
+                disabled={checkingPayment}
+                className="mt-3 w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
               >
-                {stripeLoading ? (
+                {checkingPayment ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    Đang khởi tạo...
+                    Đang kiểm tra...
                   </>
                 ) : (
                   <>
                     <CreditCard size={18} />
-                    Tiếp tục với Stripe
+                    Kiểm tra thanh toán
                   </>
                 )}
               </button>
+
+              <div className="mt-4 text-xs text-gray-500 text-center">
+                💡 Hệ thống tự động kiểm tra mỗi 5 giây hoặc bấm "Kiểm tra thanh
+                toán"
+              </div>
             </div>
           )}
 
@@ -739,8 +952,11 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
             <Printer size={20} />
           </button>
 
-          {/* Ẩn nút checkout khi đang dùng Stripe form */}
-          {!(paymentMethod === "stripe" && showStripeForm) && (
+          {/* Ẩn nút checkout khi đang dùng Stripe form hoặc QR */}
+          {!(
+            paymentMethod === "stripe" &&
+            (showStripeForm || showStripeQR)
+          ) && (
             <button
               onClick={handleCheckout}
               disabled={loading || paymentMethod === "stripe"}

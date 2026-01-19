@@ -55,8 +55,8 @@ export default function WaiterOrdersPage() {
       ]);
 
       // lọc chỉ lấy những items ở trạng thái received cho từng đơn
-      ordersRes.forEach(order => {
-        order.items = order.items.filter(item => item.status === "received");
+      ordersRes.forEach((order) => {
+        order.items = order.items.filter((item) => item.status === "received");
       });
 
       setOrders(Array.isArray(ordersRes) ? ordersRes : []);
@@ -149,14 +149,40 @@ export default function WaiterOrdersPage() {
       }
     };
 
+    // 💰 Handler cho thanh toán thành công
+    const handlePaymentCompleted = (data) => {
+      console.log("Received payment_completed via Socket.IO:", data);
+
+      const { table_number, total_amount, message } = data;
+
+      // 🔔 Phát âm thanh thông báo thanh toán
+      if (soundEnabled) {
+        playNotificationSound();
+      }
+
+      // Hiển thị thông báo thanh toán thành công
+      toast.success(
+        message || `💰 Bàn ${table_number} đã thanh toán thành công!`,
+        {
+          autoClose: 7000,
+          position: "top-center",
+        },
+      );
+
+      // Refresh lại dữ liệu để cập nhật trạng thái bàn
+      fetchAllData();
+    };
+
     socket.on("new_order", handleNewOrder);
     socket.on("order_items_added", handleOrderItemsAdded);
     socket.on("update_order", handleUpdateOrder);
+    socket.on("payment_completed", handlePaymentCompleted);
 
     return () => {
       socket.off("new_order", handleNewOrder);
       socket.off("order_items_added", handleOrderItemsAdded);
       socket.off("update_order", handleUpdateOrder);
+      socket.off("payment_completed", handlePaymentCompleted);
     };
   }, [socket, soundEnabled, playNotificationSound, orders]);
 

@@ -25,6 +25,10 @@ import Bill from "../features/Customer/Bill";
 import OrderHistory from "../features/Customer/OrderHistory"; // (NEW) Xem lịch sử ăn uống
 import UserProfile from "../features/Customer/UserProfile"; // (NEW) Cập nhật thông tin khách
 
+// Payment
+import PaymentSuccess from "../features/Payment/PaymentSuccess";
+import PaymentCancelled from "../features/Payment/PaymentCancelled";
+
 // Admin
 import DashBoard from "../features/Admin/Dashboard";
 import MenuManagement from "../features/Admin/MenuManagement";
@@ -62,6 +66,8 @@ const routers = [
       { path: "orders/:id", element: <OrderDetail /> },
       { path: "bill", element: <Bill /> },
       { path: "scan/:tableCode", element: <ScanQR /> },
+      { path: "payment-success", element: <PaymentSuccess /> },
+      { path: "payment-cancelled", element: <PaymentCancelled /> },
     ],
   },
 
