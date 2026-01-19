@@ -20,10 +20,10 @@ const StripePaymentWrapper = lazy(() => import("./StripePaymentWrapper"));
 
 // CẤU HÌNH TÀI KHOẢN NGÂN HÀNG
 const BANK_INFO = {
-  BANK_ID: "MB",
-  ACCOUNT_NO: "0909123456",
-  TEMPLATE: "compact",
-  ACCOUNT_NAME: "NHA HANG SMART",
+  BANK_ID:  import.meta.env.VITE_BANK_ID || "MB",
+  ACCOUNT_NO: import.meta.env.VITE_ACCOUNT_NO || "21230907843010",
+  TEMPLATE: import.meta.env.VITE_TEMPLATE || "compact",
+  ACCOUNT_NAME: import.meta.env.VITE_ACCOUNT_NAME || "NHA HANG SMART",
 };
 
 // Stripe Promise - sẽ load khi cần (dynamic import)
