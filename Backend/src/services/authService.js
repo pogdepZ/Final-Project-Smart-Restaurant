@@ -336,7 +336,7 @@ exports.forgotPassword = async ({ email }) => {
   if (!user) return;
 
   // revoke token cũ (optional nhưng tốt)
-  await passwordResetRepo.revokeAllByUserId(user.id);
+  await passwordResetRepo.revokeAllByUserId(user.id); 
 
   // raw token gửi cho user qua email
   const rawToken = crypto.randomBytes(32).toString("hex");
