@@ -113,6 +113,22 @@ class SocketService {
       `📡 Bắn socket item update: Order ${orderId}, Item ${itemId} -> ${itemStatus}`,
     );
 
+    // bắn cho admin
+    this.io.to("admin_room").emit("admin_order_item_update", {
+      orderId,
+      itemId,
+      itemStatus,
+      timestamp: new Date().toISOString(),
+    });
+
+    // bắn cho waiter
+    this.io.to("waiter_room").emit("order_item_status_update", {
+      orderId,
+      itemId,
+      itemStatus,
+      timestamp: new Date().toISOString(),
+    });
+
     // Bắn cho khách ở bàn đó
     if (tableId) {
       this.io.to(`table_${tableId}`).emit("order_item_status_update", {

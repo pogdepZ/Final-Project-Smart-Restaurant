@@ -1,16 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSocket } from "../context/SocketContext";
 import { toast } from "react-toastify";
 
+// Giữ nguyên file âm thanh của bạn
+const NOTIFICATION_SOUND = "/sounds/notification.mp3";
+
 /**
  * Custom hook để lắng nghe socket events cho customer
- * @param {boolean} notify - Có hiển thị popup thông báo (toast) hay không? Mặc định là true.
- * Truyền false nếu chỉ muốn lắng nghe dữ liệu cập nhật mà không hiện thông báo (tránh duplicate).
+ * @param {boolean} notify - Có hiển thị popup và phát âm thanh hay không?
  */
 const useCustomerSocket = (notify = true) => {
   const socket = useSocket();
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
+
+  // Dùng useRef để giữ instance của Audio
+  const audioRef = useRef(new Audio(NOTIFICATION_SOUND));
+
+  // Hàm phát âm thanh (đã xử lý lỗi chặn autoplay)
+  const playSound = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch((err) => {
+        console.warn("Trình duyệt chặn tự động phát âm thanh (cần tương tác trước):", err);
+      });
+    }
+  };
 
   useEffect(() => {
     if (!socket) {
@@ -18,7 +33,6 @@ const useCustomerSocket = (notify = true) => {
       return;
     }
 
-    // --- Xử lý kết nối ---
     const handleConnect = () => {
       console.log("🟢 Customer Socket Connected:", socket.id);
       setIsConnected(true);
@@ -29,9 +43,9 @@ const useCustomerSocket = (notify = true) => {
       setIsConnected(false);
     };
 
-    // --- Các hàm xử lý sự kiện (Event Handlers) ---
+    // --- CÁC EVENT HANDLER ---
 
-    // 1. Cập nhật trạng thái đơn hàng (chung)
+    // 1. Cập nhật trạng thái Đơn hàng (Order Status)
     const handleOrderStatusUpdate = (data) => {
       console.log("📢 [Customer] Order Status Update:", data);
       setLastUpdate({ type: "order_status", data, timestamp: Date.now() });
@@ -39,15 +53,14 @@ const useCustomerSocket = (notify = true) => {
       if (notify) {
         toast.info(
           `🍽️ ${data.message || "Đơn hàng của bạn đã được cập nhật!"}`,
-          {
-            position: "top-right",
-            autoClose: 4000,
-          }
+          { position: "top-right", autoClose: 4000 }
         );
+        // Thêm âm thanh khi trạng thái đơn hàng thay đổi
+        playSound();
       }
     };
 
-    // 2. Cập nhật trạng thái từng món (Item)
+    // 2. Cập nhật trạng thái Món ăn (Item Status)
     const handleOrderItemStatusUpdate = (data) => {
       console.log("📢 [Customer] Order Item Status Update:", data);
       setLastUpdate({ type: "order_item_status", data, timestamp: Date.now() });
@@ -62,16 +75,21 @@ const useCustomerSocket = (notify = true) => {
 
         const message = statusMessages[data.status] || "Cập nhật món ăn!";
 
-        // Nếu bị từ chối thì hiện màu đỏ (error), còn lại màu xanh (success)
         if (data.status === "rejected") {
           toast.error(message, { position: "top-right", autoClose: 4000 });
         } else {
           toast.success(message, { position: "top-right", autoClose: 3000 });
         }
+
+        // LOGIC SỬA ĐỔI: Chỉ phát âm thanh khi món Sẵn sàng, Phục vụ hoặc Bị từ chối.
+        // Không phát khi "preparing" để tránh ồn ào.
+        if (["ready", "served", "rejected"].includes(data.status)) {
+          playSound();
+        }
       }
     };
 
-    // 3. Cập nhật hóa đơn
+    // 3. Cập nhật Hóa đơn (Bill Update)
     const handleBillUpdate = (data) => {
       console.log("📢 [Customer] Bill Update:", data);
       setLastUpdate({ type: "bill_update", data, timestamp: Date.now() });
@@ -81,6 +99,8 @@ const useCustomerSocket = (notify = true) => {
           position: "top-right",
           autoClose: 3000,
         });
+        // Thêm âm thanh khi thanh toán xong
+        playSound();
       }
     };
 
@@ -96,15 +116,14 @@ const useCustomerSocket = (notify = true) => {
       if (notify) {
         toast.success(
           "✅ Yêu cầu thanh toán đã được xác nhận! Nhân viên sẽ đến ngay.",
-          {
-            position: "top-right",
-            autoClose: 5000,
-          }
+          { position: "top-right", autoClose: 5000 }
         );
+        // Thêm âm thanh xác nhận
+        playSound();
       }
     };
 
-    // 5. Thông báo chung cho bàn
+    // 5. Thông báo chung (Table Notification)
     const handleTableNotification = (data) => {
       console.log("📢 [Customer] Table Notification:", data);
       setLastUpdate({
@@ -118,6 +137,8 @@ const useCustomerSocket = (notify = true) => {
           position: "top-right",
           autoClose: 4000,
         });
+        // Thêm âm thanh cho thông báo
+        playSound();
       }
     };
 
@@ -130,12 +151,10 @@ const useCustomerSocket = (notify = true) => {
     socket.on("bill_request_confirmed", handleBillRequestConfirmed);
     socket.on("table_notification", handleTableNotification);
 
-    // Kiểm tra trạng thái hiện tại ngay lập tức
     if (socket.connected) {
       setIsConnected(true);
     }
 
-    // --- Cleanup khi unmount hoặc notify thay đổi ---
     return () => {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
@@ -145,7 +164,7 @@ const useCustomerSocket = (notify = true) => {
       socket.off("bill_request_confirmed", handleBillRequestConfirmed);
       socket.off("table_notification", handleTableNotification);
     };
-  }, [socket, notify]); // Quan trọng: thêm notify vào đây
+  }, [socket, notify]);
 
   return {
     socket,
