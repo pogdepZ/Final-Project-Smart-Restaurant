@@ -50,8 +50,7 @@ const SignIn = () => {
         navigate("/");
       }
     } catch (error) {
-      console.log("Login failed:", error);
-      const message =
+      const message = error ||
         error?.message ||
         error?.response?.data?.message ||
         "Đăng nhập thất bại. Vui lòng thử lại!";

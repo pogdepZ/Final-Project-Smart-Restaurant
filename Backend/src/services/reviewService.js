@@ -5,12 +5,11 @@ exports.getItemReviews = async (menuItemId, page, limit) => {
 };
 
 exports.createReview = async (userId, payload) => {
-  const { menuItemId, rating, comment } = payload;
+  const { menu_item_id, rating, comment } = payload;
 
+  const menuItemId = menu_item_id;
   // 1. Kiểm tra Business Logic: User đã mua món này chưa?
-  // Repo cần query bảng Orders/OrderItems
-
-  console.log('Checking if user has purchased the item:', userId, menuItemId);
+  // Repo cần query bảng Orders/OrderItem
 
   const hasPurchased = await repo.checkUserPurchasedItem(userId, menuItemId);
   
@@ -34,7 +33,6 @@ exports.createReview = async (userId, payload) => {
     throw err;
   }
 
-  
 
   // 3. Tạo đánh giá mới
   const newReview = await repo.insertReview({

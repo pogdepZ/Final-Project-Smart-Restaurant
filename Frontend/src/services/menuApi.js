@@ -45,6 +45,7 @@ export const menuApi = {
 
   // POST /api/menu/reviews  (cần login)
   async createReview(payload) {
+    console.log(payload);
     return axiosClient.post("/menu/reviews", payload);
   },
 };

@@ -39,9 +39,14 @@ const Navbar = () => {
 
   // Check qrToken in localStorage
   const [hasQrToken, setHasQrToken] = useState(false);
+  // Thêm location.pathname vào dependency array
   useEffect(() => {
-    setHasQrToken(!!localStorage.getItem("qrToken"));
-  }, []);
+    // Kiểm tra kỹ hơn: Có token HOẶC có mã bàn thì coi như đã quét
+    const token = localStorage.getItem("qrToken");
+    const table = localStorage.getItem("tableNumber"); // Check thêm cái này cho chắc
+
+    setHasQrToken(!!token || !!table);
+  }, [location.pathname]); // <--- QUAN TRỌNG: Chạy lại mỗi khi đổi đường dẫn
 
   // --- HÀM ĐÓNG MENU ---
   const closeMenu = () => {
