@@ -33,7 +33,16 @@ export default function KitchenPage() {
     setLoading(true);
     try {
       const res = await axiosClient.get("/orders?status=preparing");
+      // console.log(">>>>>> Fetched Orders for Kitchen:", res);
       setOrders(Array.isArray(res) ? res : []);
+      // lọc những item có status preparing
+      setOrders((prev) =>
+        prev.map((order) => ({
+          ...order,
+          items: (order.items || []).filter((item) => item.status === "preparing"),
+        })),
+      );
+      console.log(">>>>>> Filtered Orders:", orders);
     } catch (error) {
       toast.error("Lỗi tải đơn bếp");
     } finally {
@@ -117,8 +126,11 @@ export default function KitchenPage() {
   // Actions
   const handleUpdateStatus = async (orderId, status) => {
     try {
-      await axiosClient.patch(`/orders/${orderId}`, { status });
+      const res = await axiosClient.patch(`/orders/${orderId}`, { status });
+      if(res)
       toast.success("Món đã xong! ✅");
+      setSelected(null);
+      fetchOrders();
       // Socket sẽ trả về update_order với status 'ready', tự động remove khỏi list
     } catch (e) {
       toast.error("Lỗi cập nhật");

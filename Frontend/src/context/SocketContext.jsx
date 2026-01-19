@@ -113,13 +113,16 @@ export const SocketProvider = ({ children }) => {
 
       if (user) {
         // User đã đăng nhập
-        if (user.role === "admin" || user.role === "waiter") {
-          // Admin & Waiter tham gia cả 2 để vừa quản lý vừa nhận đơn
+        if (user.role === "admin" || user.role === "superadmin") {
           newSocket.emit("join_admin");
-          newSocket.emit("join_kitchen");
+          console.log("🛡️ Admin joined admin room");
         } else if (user.role === "kitchen") {
           // Bếp chỉ cần tham gia phòng bếp
           newSocket.emit("join_kitchen");
+          console.log("👩‍🍳 Kitchen joined kitchen room");
+        } else if (user.role === "waiter") {
+          newSocket.emit("join_waiter");
+          console.log("👩‍🍳 Waiter joined waiter room");
         } else if (user.role === "customer") {
           // Khách hàng đã đăng nhập tham gia phòng khách
           if (tableCode) {

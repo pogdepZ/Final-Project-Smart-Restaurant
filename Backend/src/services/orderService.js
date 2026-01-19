@@ -4,6 +4,7 @@ const menuRepo = require("../repositories/menuRepository"); // Cần viết thê
 const modifierRepo = require("../repositories/modifierRepository"); // Cần repo này để lấy giá option
 const tableRepo = require("../repositories/tableRepository"); // Cần repo này để check bàn
 const socketService = require("./socketService"); // Import
+const socketDestination = require("../config/socketDestionation"); // Import destination map
 
 const mapItemUiStatus = (status) => {
   switch (status) {
@@ -148,6 +149,8 @@ exports.getOrders = async (filters) => {
   // 1. Lấy dữ liệu thô từ DB
   const orders = await orderRepo.getAll(filters);
 
+  // console.log("Fetched Orders with filters", filters, orders);
+
   // 2. LOGIC LỌC DỮ LIỆU CHO BẾP
   // Nếu API đang yêu cầu lấy đơn "preparing" (tức là request từ màn hình Bếp)
   if (filters.status === "preparing") {
@@ -176,7 +179,7 @@ exports.getOrderDetails = async (id) => {
 };
 
 // --- 4. Cập nhật trạng thái ---
-exports.updateStatus = async (id, data, io) => {
+exports.updateStatus = async (id, data) => {
   // 1. Thực hiện Update vào DB (Chỉ để đổi status)
   const rawUpdated = await orderRepo.updateStatus(id, data);
 
@@ -203,27 +206,30 @@ exports.updateStatus = async (id, data, io) => {
 
   // console.log("Socket Payload (Full):", fullOrder); // Debug xem có items chưa
 
-  if (io) {
-    const orderForKitchen = {
-      ...fullOrder,
-      items: fullOrder.items.filter((item) => item.status !== "rejected"),
-    };
+  // lọc đơn hàng để gửi cho kitchen (loại trừ món bị từ chối)
+  const orderForKitchen = {
+    ...fullOrder,
+    items: fullOrder.items.filter((item) => item.status === "preparing"),
+  };
 
-    if (orderForKitchen.items.length > 0) {
-      io.to("kitchen_room").emit("update_order", orderForKitchen);
-    }
+  // nếu nhận đơn thì gửi cho kitchen
+  if ((data.status === "preparing" || data.status === "ready") && orderForKitchen.items.length > 0) {
+    socketService.notifyOrderUpdate(orderForKitchen, "KITCHEN");
+    // io.to(socketDestination.KITCHEN).emit("update_order", orderForKitchen);
+  }
+  
+  // 3. Gửi Socket thông báo cho các bên liên quan
+  socketService.notifyOrderUpdate(fullOrder);
 
-    io.to("kitchen_room").emit("update_order", fullOrder);
-
-    // QUAN TRỌNG: Bắn socket cho CUSTOMER (khách hàng)
-    if (fullOrder.table_id) {
-      io.to(`table_${fullOrder.table_id}`).emit("order_status_update", {
-        orderId: fullOrder.id,
-        status: fullOrder.status,
-        message: getStatusMessage(fullOrder.status),
-        timestamp: new Date().toISOString(),
-      });
-    }
+  // QUAN TRỌNG: Bắn socket cho CUSTOMER (khách hàng)
+  if (fullOrder.table_id) {
+    socketService.notifyOrderUpdate({
+      table_id: fullOrder.table_id,
+      orderId: fullOrder.id,
+      status: fullOrder.status,
+      message: getStatusMessage(fullOrder.status),
+      timestamp: new Date().toISOString(),
+    });
   }
 
   return fullOrder; // Trả về full data cho Controller luôn
