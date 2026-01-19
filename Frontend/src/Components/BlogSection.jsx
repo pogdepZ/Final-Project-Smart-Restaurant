@@ -121,7 +121,7 @@ const BlogSection = () => {
                   </div>
 
                   {/* NỘI DUNG */}
-                  <div className="p-6 flex flex-col flex-grow">
+                  <div className="p-6 flex flex-col grow">
                     {/* Metadata */}
                     <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                       <div className="flex items-center gap-1">
@@ -142,7 +142,7 @@ const BlogSection = () => {
                     </h3>
 
                     {/* Excerpt */}
-                    <p className="text-gray-400 text-sm mb-6 line-clamp-3 flex-grow">
+                    <p className="text-gray-400 text-sm mb-6 line-clamp-3 grow">
                       {post.excerpt}
                     </p>
 

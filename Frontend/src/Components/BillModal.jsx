@@ -561,7 +561,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                       setPaymentMethod(m.id);
                       setShowStripeForm(false);
                     }}
-                    className={`flex-1 min-w-[60px] flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                    className={`flex-1 min-w-15 flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
                       paymentMethod === m.id
                         ? "bg-orange-600 text-white border-orange-500"
                         : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
@@ -616,7 +616,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
               <button
                 onClick={handleInitStripe}
                 disabled={stripeLoading}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+                className="px-6 py-3 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50"
               >
                 {stripeLoading ? (
                   <>
@@ -712,7 +712,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
             <button
               onClick={handleCheckout}
               disabled={loading || paymentMethod === "stripe"}
-              className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-xl font-bold shadow-lg shadow-green-900/20 disabled:opacity-50 transition-all"
+              className="flex-1 bg-linear-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-xl font-bold shadow-lg shadow-green-900/20 disabled:opacity-50 transition-all"
             >
               {loading
                 ? "Đang xử lý..."

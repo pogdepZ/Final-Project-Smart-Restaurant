@@ -6,7 +6,7 @@ import SignIn from "../features/Auth/SignIn/SignIn";
 import SignUp from "../features/Auth/SignUp/SignUp";
 
 // Layouts
-import Layout from "../layouts/Layout";
+
 import AdminLayout from "../layouts/AdminLayout";
 import WaiterLayout from "../layouts/WaiterLayout";
 import KitchenLayout from "../layouts/KitchenLayout";
@@ -36,12 +36,9 @@ import TableAssignments from "../features/Admin/TableAssignments";
 
 // Waiter
 import WaiterOrders from "../features/Waiter/Orders";
-import WaiterTables from "../features/Waiter/Tables";
-import WaiterNotifications from "../features/Waiter/Notifications"; // (NEW) Thông báo gọi phục vụ
 
 // Kitchen
 import KitchenOrders from "../features/Kitchen/Orders";
-import KitchenHistory from "../features/Kitchen/History"; // (NEW) Lịch sử món đã nấu
 import CustomerLayout from "../layouts/CustomerLayout";
 import Booking from "../features/Customer/Booking";
 import VerifyEmail from "../features/Auth/VerifyEmail/VerifyEmail";
@@ -52,91 +49,30 @@ import OrderTrackingPage from "../features/Customer/OrderTrackingPage";
 const routers = [
   // ===== PUBLIC ROUTES (Login/Register/Scan) =====
   {
+    path: "/",
+    element: <CustomerLayout />,
+    children: [
+      { index: true, element: <LandingPage /> },
+      { path: "menu", element: <Menu /> },
+      { path: "menu/:tableCode", element: <Menu /> },
+      { path: "cart", element: <Cart /> },
+      { path: "cart/:tableCode", element: <Cart /> },
+      { path: "booking", element: <Booking /> },
+      { path: "order-tracking", element: <OrderTrackingPage /> },
+      { path: "orders/:id", element: <OrderDetail /> },
+      { path: "bill", element: <Bill /> },
+      { path: "scan/:tableCode", element: <ScanQR /> },
+    ],
+  },
+
+  {
     element: <PublicRoute />,
     children: [
-      {
-        path: "/",
-        element: <CustomerLayout />,
-        children: [
-          {
-            index: true,
-            element: <LandingPage />,
-          },
-          {
-            path: "/signin",
-            element: <SignIn />,
-          },
-
-          {
-            path: "/signup",
-            element: <SignUp />,
-          },
-
-          {
-            path: "/scan/:tableCode",
-            element: <ScanQR />,
-          },
-          {
-            path: "/verify-email",
-            element: <VerifyEmail />,
-          },
-          {
-            path: "/menu/:tableCode",
-            element: <Menu />,
-          },
-          {
-            path: "/cart/:tableCode",
-            element: <Cart />,
-          },
-          {
-            path: "/forgot",
-            element: <Forgot />,
-          },
-          {
-            path: "/reset-password",
-            element: <ResetPassword />,
-          },
-          {
-            path: "order/status",
-            element: <OrderStatus />,
-          },
-          {
-            path: "order-tracking",
-            element: <OrderTrackingPage />,
-          },
-          {
-            path: "orders/:id",
-            element: <OrderDetail />,
-          },
-          {
-            path: "bill",
-            element: <Bill />,
-          },
-          {
-            path: "booking",
-            element: <Booking />,
-          },
-          {
-            path: "cart",
-            element: <Cart />,
-          },
-
-          {
-            path: "order/status",
-            element: <OrderStatus />,
-          },
-          {
-            path: "menu",
-            element: <Menu />,
-          },
-        ],
-      },
-
-      // Trang báo lỗi không có quyền truy cập
-      {
-        path: "/unauthorized",
-        element: <Unauthorized />,
-      },
+      { path: "/signin", element: <SignIn /> },
+      { path: "/signup", element: <SignUp /> },
+      { path: "/forgot", element: <Forgot /> },
+      { path: "/reset-password", element: <ResetPassword /> },
+      { path: "/verify-email", element: <VerifyEmail /> },
     ],
   },
 
@@ -191,7 +127,7 @@ const routers = [
           },
           {
             path: "/admin/table-assignments",
-            element: <TableAssignments />
+            element: <TableAssignments />,
           },
           {
             path: "profile",
@@ -218,15 +154,6 @@ const routers = [
             path: "orders",
             element: <WaiterOrders />,
           },
-          {
-            path: "tables",
-            element: <WaiterTables />,
-          },
-          // (NEW) Xem các yêu cầu hỗ trợ từ khách
-          {
-            path: "notifications",
-            element: <WaiterNotifications />,
-          },
         ],
       },
     ],
@@ -238,6 +165,7 @@ const routers = [
     element: <ProtectedRoute roles={["kitchen"]} />,
     children: [
       {
+        element: <KitchenLayout />,
         children: [
           {
             index: true,
@@ -246,11 +174,6 @@ const routers = [
           {
             path: "orders",
             element: <KitchenOrders />,
-          },
-          // (NEW) Xem lại các món đã trả trong ngày
-          {
-            path: "history",
-            element: <KitchenHistory />,
           },
         ],
       },

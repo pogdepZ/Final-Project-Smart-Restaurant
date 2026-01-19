@@ -41,6 +41,8 @@ exports.googleLogin = async ({ credential }) => {
   // 1) tìm user theo email
   let user = await authRepo.findUserPublicByEmail(email);
 
+  console.log('Google login user found:', user);
+
   // 2) chưa có thì tạo user mới (role customer)
   if (!user) {
     // bạn có thể tạo thêm cột is_verified = true vì email Google verified
@@ -57,7 +59,7 @@ exports.googleLogin = async ({ credential }) => {
   const accessToken = jwt.sign(
     { id: user.id, role: user.role, name: user.name },
     config.auth.accessTokenSecret,
-    { expiresIn: "30m" }
+    { expiresIn: "10s" }
   );
 
   const refreshToken = jwt.sign(
@@ -76,7 +78,7 @@ exports.googleLogin = async ({ credential }) => {
   return {
     accessToken,
     refreshToken,
-    user: { id: user.id, name: user.name, role: user.role, email: user.email },
+    user: { id: user.id, name: user.name, role: user.role, email: user.email, avatar_url: user.avatar_url},
   };
 };
 
@@ -186,6 +188,7 @@ exports.login = async ({ email, password }) => {
       name: user.name,
       role: user.role,
       email: user.email,
+      avatar_url: user.avatar_url,
     },
   };
 };
@@ -242,6 +245,7 @@ exports.refreshToken = async (refreshToken) => {
         name: user.name,
         role: user.role,
         email: user.email,
+        avatar_url: user.avatar_url,
       },
     };
   } catch (e) {

@@ -21,6 +21,8 @@ exports.login = async (req, res) => {
   try {
     const { accessToken, refreshToken, user } = await authService.login(req.body);
 
+    console.log(user);
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

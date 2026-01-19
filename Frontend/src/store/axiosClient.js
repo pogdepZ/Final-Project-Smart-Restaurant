@@ -58,10 +58,7 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Hoàn thành loading bar khi có lỗi
-    if (!originalRequest?.skipLoading) {
-      completeLoading();
-    }
+    if (!originalRequest?.skipLoading) completeLoading();
 
     if (!store) return Promise.reject(error);
     if (
@@ -71,11 +68,7 @@ axiosClient.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-        // Bắt đầu loading lại cho refresh request
-        if (!originalRequest.skipLoading) {
-          startLoading();
-        }
-        const result = await axiosClient.post("/auth/refresh", {} , {
+        const result = await axiosClient.post("/auth/refresh", {}, {
           skipLoading: true,
         });
         const newAccessToken = result.accessToken;
