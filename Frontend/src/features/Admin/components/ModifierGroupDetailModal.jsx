@@ -306,7 +306,7 @@ export default function ModifierGroupDetailModal({
 
         <ScrollArea>
           {/* body */}
-          <div className="max-h-105 overflow-x-auto p-5">
+          <div className="max-h-[80vh] overflow-x-auto p-5">
             {/* Create option */}
             <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
               <div className="flex items-center justify-between gap-3">

@@ -64,6 +64,18 @@ function buildRange(period) {
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
 
+  useEffect(() => {
+    if (!error) return;
+
+    // lấy message đẹp nhất có thể
+    const msg =
+      error?.response?.data?.message || error
+      error?.message ||
+      "Tải trang chủ thất bại"
+
+    toast.error(msg);
+  }, [error]);
+
   const today = new Date().toLocaleDateString("vi-VN");
 
   const PERIODS = [
@@ -125,7 +137,7 @@ export default function AdminDashboard() {
         setRevenueValue(Number(res?.total || 0));
       } catch (e) {
         if (cancelled) return;
-        toast.error(e?.response?.data?.message || "Không tải được doanh thu");
+        toast.error(e || "Không tải được doanh thu");
         setRevenueValue(0);
       } finally {
         if (!cancelled) setRevenueLoading(false);
@@ -152,6 +164,7 @@ export default function AdminDashboard() {
         if (cancelled) return;
         setOrdersDaily(res?.series || []);
       } catch (e) {
+        toast.error(e || "Không tải được đơn hàng hằng ngày");
         if (cancelled) return;
         setOrdersDaily([]);
       } finally {
@@ -175,6 +188,7 @@ export default function AdminDashboard() {
         if (cancelled) return;
         setPeakHours(res?.series || []);
       } catch (e) {
+        toast.error(e || "Không tải được khung giờ đông khách");
         if (cancelled) return;
         setPeakHours([]);
       } finally {
@@ -202,6 +216,7 @@ export default function AdminDashboard() {
         if (cancelled) return;
         setPopularItems(res?.items || []);
       } catch (e) {
+        toast.error(e || "Không tải được món ăn phổ biến");
         if (cancelled) return;
         setPopularItems([]);
       } finally {

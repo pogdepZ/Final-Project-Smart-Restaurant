@@ -36,7 +36,7 @@ function SkeletonRow() {
         <div className="h-4 w-20 bg-white/5 rounded animate-pulse" />
       </td>
       <td className="py-3 px-3">
-        <div className="h-4 w-16 bg-white/5 rounded animate-pulse" />
+        <div className="hidden sm:inline-block h-4 w-16 bg-white/5 rounded animate-pulse" />
       </td>
       <td className="py-3 pl-3 pr-4 text-right">
         <div className="h-6 w-24 bg-white/5 rounded-full animate-pulse ml-auto" />
@@ -378,14 +378,14 @@ export default function TableAssignments() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-245">
+          <table className="w-full">
             <thead className="bg-neutral-950/60 border-b border-white/10">
               <tr className="text-left text-xs text-gray-400">
                 <th className="py-3 pr-3 pl-4 w-[8%]">Pick</th>
-                <th className="py-3 px-3 w-[42%]">Bàn</th>
-                <th className="py-3 px-3 w-[20%]">Khu vực</th>
-                <th className="py-3 px-3 w-[15%]">Sức chứa</th>
-                <th className="py-3 pl-3 pr-4 text-right w-[15%]">Trạng thái</th>
+                <th className="py-3 px-3 w-[5%] sm:w-[42%]">Bàn</th>
+                <th className="py-3 px-3 w-[8%] sm:w-[20%]">Khu vực</th>
+                <th className="hidden sm:inline-block py-3 px-3 sm:w-[15%]">Sức chứa</th>
+                <th className="py-3 pl-3 pr-4 text-right sm:w-[15%]">Trạng thái</th>
               </tr>
             </thead>
 
@@ -412,7 +412,7 @@ export default function TableAssignments() {
 
                       <td className="py-3 px-3 align-top">
                         <div className="text-white font-bold">{t.table_number}</div>
-                        <div className="text-xs text-gray-400 mt-1">
+                        <div className="hidden sm:inline-block text-xs text-gray-400 mt-1">
                           ID: <span className="text-gray-500">{t.id}</span>
                         </div>
                       </td>
@@ -421,7 +421,7 @@ export default function TableAssignments() {
                         <div className="text-gray-200">{t.location || "—"}</div>
                       </td>
 
-                      <td className="py-3 px-3 align-top">
+                      <td className="hidden sm:inline-block py-3 px-3 align-top">
                         <div className="text-gray-200">{t.capacity ?? "—"}</div>
                       </td>
 

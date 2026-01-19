@@ -140,9 +140,9 @@ export default function EditMenuItemModal({
 
       const res = await adminMenuApi.uploadMenuItemPhotos(item.id, files);
       setPhotos(res?.photos || []);
-      toast.success("Upload ảnh thành công");
+      toast.success("Đăng tải ảnh thành công");
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Upload ảnh thất bại");
+      toast.error(err?.response?.data?.message || "Đăng tải ảnh thất bại");
     } finally {
       setUploadingImage(false);
     }
@@ -227,7 +227,7 @@ export default function EditMenuItemModal({
 
           {/* body */}
           <ScrollArea>
-            <div className="max-h-[70vh] overflow-auto p-5 space-y-3">
+            <div className="max-h-[80vh] overflow-auto p-5 space-y-3">
               {error ? (
                 <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
                   {error}

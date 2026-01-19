@@ -89,7 +89,7 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
 
         <div className="p-4 space-y-3">
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Họ tên</label>
+            <label className="text-xs text-gray-400 mb-1 block">Họ tên *</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -99,7 +99,7 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Email</label>
+            <label className="text-xs text-gray-400 mb-1 block">Email *</label>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -110,7 +110,7 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Role</label>
+              <label className="text-xs text-gray-400 mb-1 block">Role *</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -132,7 +132,7 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
             </div>
 
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Mật khẩu</label>
+              <label className="text-xs text-gray-400 mb-1 block">Mật khẩu *</label>
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

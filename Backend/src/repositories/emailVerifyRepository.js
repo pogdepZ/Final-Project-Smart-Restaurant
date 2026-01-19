@@ -14,11 +14,13 @@ exports.upsertToken = async ({ userId, tokenHash, expiresAt }) => {
 };
 
 exports.findValidByHash = async (tokenHash) => {
+  const now = new Date(); 
+
   const rs = await db.query(
     `SELECT * FROM email_verification_tokens
-     WHERE token_hash = $1 AND expires_at > now()
-     LIMIT 1`,
-    [tokenHash]
+     WHERE token_hash = $1
+       AND expires_at > $2`,
+    [tokenHash, now]
   );
   return rs.rows[0] || null;
 };

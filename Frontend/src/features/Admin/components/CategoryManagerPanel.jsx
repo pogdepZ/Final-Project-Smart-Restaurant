@@ -284,7 +284,6 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
         onClose={() => setOpenCreate(false)}
         onSuccess={() => {
           setOpenCreate(false);
-          toast.success("Thêm category thành công");
           fetchCategories();          // reload list trong panel
           onReloadCategories?.();     // ✅ reload categories ở MenuManagement
           onReloadMenuItems?.();      // optional

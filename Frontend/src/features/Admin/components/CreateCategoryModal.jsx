@@ -43,7 +43,7 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
   const handleSubmit = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Vui lòng nhập tên category.");
+      toast.error("Vui lòng nhập tên category.");
       return;
     }
 
@@ -98,12 +98,6 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
 
           {/* body */}
           <div className="p-5 space-y-4">
-            {error ? (
-              <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-                {error}
-              </div>
-            ) : null}
-
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Tên category *</label>
               <input
