@@ -585,7 +585,7 @@ export default function FoodDetailPopup({
   if (!foodId) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 ">
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
@@ -644,7 +644,7 @@ export default function FoodDetailPopup({
         </div>
 
         {/* RIGHT */}
-        <div className="w-full md:w-1/2 flex flex-col bg-neutral-900 p-6 md:p-8 overflow-y-auto">
+        <div className="w-full md:w-1/2 flex flex-col bg-neutral-900 p-6 md:p-8 overflow-y-auto no-scrollbar">
           <div className="space-y-6">
             {/* description */}
             <section>
@@ -864,7 +864,7 @@ export default function FoodDetailPopup({
                 <MessageSquare size={14} /> Khách hàng nói gì
               </h4>
 
-              <div className="space-y-4 max-h-48 overflow-y-auto pr-2">
+              <div className="space-y-4 max-h-48 overflow-y-auto pr-2 no-scrollbar">
                 {loadingReviews && reviews.length === 0 ? (
                   <div className="text-xs text-gray-500">
                     Đang tải đánh giá...
