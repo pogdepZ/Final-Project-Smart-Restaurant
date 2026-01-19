@@ -16,6 +16,9 @@ class BillingService {
     if (orders.length === 0)
       throw new Error("Bàn này không có đơn nào chưa thanh toán");
 
+    // 1.5. Lấy thông tin session để có giờ vào/ra
+    const session = await tableSessionRepository.findActiveByTableId(tableId);
+
     // 2. Gộp Items & Tính toán lại giá tiền chi tiết (Cần sửa đoạn này)
     let aggregatedItems = [];
     let subtotal = 0; // Tổng tiền hàng (chưa thuế/giảm giá)
@@ -79,6 +82,8 @@ class BillingService {
       discount_amount: discountAmount,
       tax_amount: taxAmount,
       final_amount: finalAmount,
+      session_started_at: session?.started_at || null,
+      session_ended_at: session?.ended_at || null,
     };
   }
 
@@ -130,7 +135,7 @@ class BillingService {
 
       // 5. Lấy thông tin đầy đủ của bàn để gửi socket
       const tableInfo = await tableRepository.findById(tableId);
-      
+
       // 6. Bắn Socket báo bàn đã thanh toán (Clear màn hình Waiter/Kitchen)
       socketService.notifyTableUpdate({
         type: "payment_completed",

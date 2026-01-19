@@ -183,6 +183,38 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     doc.text(`Ngay: ${new Date().toLocaleString("en-GB")}`, MARGIN, y);
     y += 4;
 
+    // Phương thức thanh toán
+    const paymentMethodText = {
+      cash: "Tien mat",
+      card: "The",
+      transfer: "Chuyen khoan",
+      stripe: "Stripe",
+    };
+    doc.text(
+      `PT Thanh toan: ${paymentMethodText[paymentMethod] || "Tien mat"}`,
+      MARGIN,
+      y,
+    );
+    y += 4;
+
+    // Thông tin session (nếu có)
+    if (billData.session_started_at) {
+      const startTime = new Date(
+        billData.session_started_at,
+      ).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+      doc.text(`Gio vao: ${startTime}`, MARGIN, y);
+      y += 4;
+    }
+
+    if (billData.session_ended_at) {
+      const endTime = new Date(billData.session_ended_at).toLocaleTimeString(
+        "en-GB",
+        { hour: "2-digit", minute: "2-digit" },
+      );
+      doc.text(`Gio ra: ${endTime}`, MARGIN, y);
+      y += 4;
+    }
+
     doc.setLineDash([1, 1], 0);
     doc.line(MARGIN, y, PAPER_WIDTH - MARGIN, y);
     doc.setLineDash([]);
