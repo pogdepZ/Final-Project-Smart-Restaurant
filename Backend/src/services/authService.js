@@ -349,7 +349,7 @@ exports.forgotPassword = async ({ email }) => {
     expiresAt,
   });
 
-  const baseUrl = process.env.APP_BASE_URL || "http://localhost:5173";
+  const baseUrl = process.env.CLIENT_URL || "http://localhost:5173";
   const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
   await sendResetPasswordEmail({
