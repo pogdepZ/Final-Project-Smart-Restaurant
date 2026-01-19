@@ -45,21 +45,21 @@ exports.findReviewsByMenuItemId = async (menuItemId, page = 1, limit = 5) => {
 };
 
 exports.countReviewsByMenuItemId = async (menuItemId) => {
-  const sql = `SELECT COUNT(*)::int AS total FROM reviews WHERE menu_item_id = $1`;
+  const sql = `SELECT COUNT(*)::int AS total FROM menu_item_reviews WHERE menu_item_id = $1`;
   const result = await db.query(sql, [menuItemId]);
   return result.rows[0]?.total ?? 0;
 };
 
 exports.findReviewByUserAndItem = async (userId, menuItemId) => {
-  const sql = `SELECT * FROM reviews WHERE user_id = $1 AND menu_item_id = $2 LIMIT 1`;
+  const sql = `SELECT * FROM menu_item_reviews WHERE user_id = $1 AND menu_item_id = $2 LIMIT 1`;
   const result = await db.query(sql, [userId, menuItemId]);
   return result.rows[0] || null;
 };
 
 exports.insertReview = async (reviewData) => {
   const sql = `
-    INSERT INTO reviews (user_id, menu_item_id, rating, comment, created_at)
-    VALUES ($1, $2, $3, $4, NOW())
+    INSERT INTO menu_item_reviews (user_id, menu_item_id, rating, comment)
+    VALUES ($1, $2, $3, $4)
     RETURNING *
   `;
   const result = await db.query(sql, [
@@ -73,14 +73,19 @@ exports.insertReview = async (reviewData) => {
 
 exports.checkUserPurchasedItem = async (userId, menuItemId) => {
   const sql = `
-    SELECT 1
+   SELECT 1
     FROM orders o
     JOIN order_items oi ON o.id = oi.order_id
     WHERE o.user_id = $1
       AND oi.menu_item_id = $2
-      AND o.status IN ('COMPLETED', 'DELIVERED')
+      -- 1. Đơn hàng tổng phải thành công
+      AND o.status = 'completed'
+      -- 2. Món ăn đó không được bị hủy (rejected)
+      AND oi.status != 'rejected' 
     LIMIT 1
   `;
+  console.log('Executing checkUserPurchasedItem with userId:', userId, 'menuItemId:', menuItemId);
   const result = await db.query(sql, [userId, menuItemId]);
+  console.log('checkUserPurchasedItem result:', result.rows);
   return result.rows.length > 0;
 };
