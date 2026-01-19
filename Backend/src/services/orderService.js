@@ -211,41 +211,18 @@ exports.updateStatus = async (id, data) => {
     ...fullOrder,
     items: fullOrder.items.filter((item) => item.status === "preparing"),
   };
+  
+  // 3. Gửi Socket thông báo cho các bên liên quan
+  socketService.notifyOrderUpdate(fullOrder);
 
   // nếu nhận đơn thì gửi cho kitchen
   if ((data.status === "preparing" || data.status === "ready") && orderForKitchen.items.length > 0) {
     socketService.notifyOrderUpdate(orderForKitchen, "KITCHEN");
     // io.to(socketDestination.KITCHEN).emit("update_order", orderForKitchen);
   }
-  
-  // 3. Gửi Socket thông báo cho các bên liên quan
-  socketService.notifyOrderUpdate(fullOrder);
-
-  // QUAN TRỌNG: Bắn socket cho CUSTOMER (khách hàng)
-  if (fullOrder.table_id) {
-    socketService.notifyOrderUpdate({
-      table_id: fullOrder.table_id,
-      orderId: fullOrder.id,
-      status: fullOrder.status,
-      message: getStatusMessage(fullOrder.status),
-      timestamp: new Date().toISOString(),
-    });
-  }
 
   return fullOrder; // Trả về full data cho Controller luôn
 };
-
-// Helper để lấy message thân thiện
-function getStatusMessage(status) {
-  const messages = {
-    received: "📝 Đơn đã được tiếp nhận",
-    preparing: "🔥 Bếp đang chuẩn bị",
-    ready: "✅ Đơn đã sẵn sàng!",
-    completed: "💰 Thanh toán hoàn tất",
-    rejected: "❌ Đơn đã bị hủy",
-  };
-  return messages[status] || "📦 Cập nhật đơn hàng";
-}
 
 // Xử lý Accept/Reject từng món
 exports.updateItemStatus = async (itemId, status) => {
@@ -264,7 +241,7 @@ exports.updateItemStatus = async (itemId, status) => {
   const fullOrder = await orderRepo.getById(updatedItem.order_id);
 
   // 5. Bắn Socket
-  socketService.notifyOrderUpdate(fullOrder);
+  socketService.notifyOrderItemUpdate(fullOrder.id, updatedItem.id, status, fullOrder.table_id);
 
   return fullOrder;
 };

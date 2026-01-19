@@ -74,6 +74,12 @@ class SocketService {
   notifyOrderUpdate(order, destination = "ALL") {
     if (!this.io) return;
 
+    if (destination === "KITCHEN") {
+      this.io.to("kitchen_room").emit("update_order", order);
+      console.log("📡 Bắn socket cập nhật đơn cho kitchen:", order.id);
+      return;
+    }
+
     // khi cập nhật order luôn gửi cho admin và khách
     this.io.to("admin_room").emit("admin_order_update", {
       type: "order_update",
@@ -88,12 +94,6 @@ class SocketService {
       message: this._getStatusMessage(order.status),
       timestamp: new Date().toISOString(),
     });
-
-    if(destination === "KITCHEN") {
-      this.io.to("kitchen_room").emit("update_order", order);
-      console.log("📡 Bắn socket cập nhật đơn cho kitchen:", order.id);
-      return
-    }
 
     console.log(
       "📡 Bắn socket cập nhật đơn:",

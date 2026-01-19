@@ -33,7 +33,7 @@ const mapItemStatus = (status) => {
 const OrderTrackingPage = () => {
   const navigate = useNavigate();
   // Sử dụng hook chung - socket events đã được xử lý ở CustomerLayout
-  const { isConnected, lastUpdate } = useCustomerSocket();
+  const { isConnected, lastUpdate } = useCustomerSocket(false);
   const [orders, setOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState(null); // <-- ĐỔI: Chỉ lưu ID
   const [loading, setLoading] = useState(true);
