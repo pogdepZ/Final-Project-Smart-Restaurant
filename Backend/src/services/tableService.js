@@ -116,6 +116,15 @@ class TableService {
       }
     }
 
+    const havsGuests = await TableRepository.checkHasGuests(id);
+    if (status === "inactive" && havsGuests) {
+      return {
+        warning: true,
+        message: "Bàn đang có khách, không thể đặt thành không hoạt động.",
+        has_guests: true,
+      };
+    }
+
     // --- FIX LỖI TẠI ĐÂY ---
     // Gọi Repository update trước để lấy kết quả
     const updatedTable = await TableRepository.updateStatus(id, status);

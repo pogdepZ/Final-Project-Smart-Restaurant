@@ -94,9 +94,9 @@ exports.createMenuItem = async (body, filePathOrNull) => {
     !body.price ||
     Number.isNaN(numericPrice) ||
     numericPrice <= 0 ||
-    numericPrice > 999999
+    numericPrice > 100000000
   ) {
-    const err = new Error("Giá phải là số dương hợp lệ (0.01 - 999999).");
+    const err = new Error("Giá phải là số dương hợp lệ (1 - 100,000,000 VND).");
     err.status = 400;
     throw err;
   }
@@ -157,8 +157,10 @@ exports.updateMenuItem = async (id, body, imageUrlOrUndefined) => {
 
   if (body.price !== undefined) {
     const p = Number(body.price);
-    if (Number.isNaN(p) || p <= 0 || p > 999999) {
-      const err = new Error("Giá phải là số dương hợp lệ (0.01 - 999999).");
+    if (Number.isNaN(p) || p <= 0 || p > 100000000) {
+      const err = new Error(
+        "Giá phải là số dương hợp lệ (1 - 100,000,000 VND).",
+      );
       err.status = 400;
       throw err;
     }

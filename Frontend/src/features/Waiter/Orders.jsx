@@ -54,6 +54,11 @@ export default function WaiterOrdersPage() {
         axiosClient.get("/tables/my-tables"),
       ]);
 
+      // lọc chỉ lấy những items ở trạng thái received cho từng đơn
+      ordersRes.forEach(order => {
+        order.items = order.items.filter(item => item.status === "received");
+      });
+
       setOrders(Array.isArray(ordersRes) ? ordersRes : []);
       setMyTables(Array.isArray(tablesRes) ? tablesRes : []);
     } catch (error) {
@@ -81,6 +86,11 @@ export default function WaiterOrdersPage() {
 
     const handleNewOrder = (newOrder) => {
       console.log("Received new_order via Socket.IO:", newOrder);
+
+      newOrder.items = newOrder.items.filter(
+        (item) => item.status === "received",
+      );
+      // lọc lấy những items có trạng thái là received
       setOrders((prev) => {
         // Kiểm tra xem đơn hàng này đã có trong danh sách chưa
         const exists = prev.find((o) => o.id === newOrder.id);
@@ -168,6 +178,17 @@ export default function WaiterOrdersPage() {
   // Actions
   const handleUpdateStatus = async (orderId, status) => {
     try {
+      if (status === "rejected") {
+        // kiểm tra xem có item nào đã được chuẩn bị không
+        const order = orders.find((o) => o.id === orderId);
+        const hasPreparingItems = order.items.some(
+          (item) => item.status === "preparing" || item.status === "completed",
+        );
+        if (hasPreparingItems) {
+          toast.error("Không thể hủy đơn đã có món được chuẩn bị.");
+          return;
+        }
+      }
       await axiosClient.patch(`/orders/${orderId}`, { status });
       toast.success(
         status === "preparing" ? "Đã nhận đơn & Chuyển bếp" : "Đã cập nhật",
@@ -268,7 +289,7 @@ export default function WaiterOrdersPage() {
                   {orders.filter((o) => o.status === "ready").length})
                 </option>
                 <option value="completed">💰 Đã xong</option>
-                <option value="cancelled">❌ Đã hủy</option>
+                <option value="rejected">❌ Đã hủy</option>
                 <option value="all">Tất cả</option>
               </select>
             </div>

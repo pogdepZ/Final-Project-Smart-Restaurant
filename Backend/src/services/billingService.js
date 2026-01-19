@@ -4,6 +4,7 @@ const tableSessionRepository = require("../repositories/tableSessionRepository")
 const billRequestRepo = require("../repositories/billRequestRepository");
 const socketService = require("./socketService");
 const db = require("../config/db");
+const tableSessionService = require("./tableSessionService");
 
 class BillingService {
   // A. Xem trước hóa đơn (Preview)
@@ -88,7 +89,7 @@ class BillingService {
     const billInfo = await this.previewTableBill(
       tableId,
       discount_type,
-      discount_value
+      discount_value,
     );
 
     const client = await db.pool.connect();
@@ -110,11 +111,15 @@ class BillingService {
       // 3. Update Orders (Link vào Bill)
       await billingRepo.markOrdersAsPaid(billInfo.order_ids, newBill.id);
 
+      const session = await tableSessionRepository.findActiveByTableId(tableId);
+
+      console.log("Session to be cleared:", session);
+
       // 4. Sau khi thanh toán xong, xóa session bàn để cho khách khác sử dụng
       await tableRepository.clearSession(tableId);
 
       // 5. Cập nhật giá trị ended_at cho session vừa xóa
-      await tableSessionRepository.endSession(tableId);
+      await tableSessionService.endSession(tableId, session?.id || null);
       await tableSessionRepository.endAllActiveByTableId(tableId);
 
       // 6. Hủy tất cả bill requests của bàn này
@@ -122,11 +127,28 @@ class BillingService {
 
       await client.query("COMMIT");
 
-      // 5. Bắn Socket báo bàn đã thanh toán (Clear màn hình Waiter/Kitchen)
+      // 5. Lấy thông tin đầy đủ của bàn để gửi socket
+      const tableInfo = await tableRepository.findById(tableId);
+
+      // 6. Bắn Socket báo bàn đã thanh toán (Clear màn hình Waiter/Kitchen)
       socketService.notifyTableUpdate({
-        id: tableId,
-        status: "active",
-        is_paid: true,
+        type: "payment_completed",
+        table: {
+          id: tableId,
+          table_number: tableInfo?.table_number || null,
+          status: "active",
+          current_session_id: null, // Session đã bị xóa
+          is_paid: true,
+        },
+      });
+
+      // 7. Gửi thông báo thanh toán thành công cho admin
+      socketService.notifyPaymentCompleted({
+        table_id: tableId,
+        table_number: tableInfo?.table_number,
+        bill: newBill,
+        orders_count: billInfo.orders_count,
+        total_amount: billInfo.final_amount,
       });
 
       return newBill;

@@ -174,7 +174,7 @@ exports.updateItemStatus = async (itemId, status) => {
   return result.rows[0];
 };
 
-// 3. Hàm trừ tiền đơn hàng (Khi từ chối món)
+// 3. Hàm trừ tiền đơn hàng (Khi từ chối món) - DEPRECATED, dùng recalcOrderTotal thay
 exports.decreaseOrderTotal = async (orderId, amount) => {
   await db.query(
     `UPDATE orders SET total_amount = total_amount - $1 WHERE id = $2`,
@@ -182,10 +182,40 @@ exports.decreaseOrderTotal = async (orderId, amount) => {
   );
 };
 
+// 3b. Hàm tính lại tổng tiền đơn hàng (loại trừ items rejected)
+exports.recalcOrderTotal = async (orderId) => {
+  // Tính tổng tiền = sum(order_items.subtotal) + sum(order_item_modifiers.price * quantity)
+  // CHỈ tính các items KHÔNG bị rejected
+  const result = await db.query(
+    `
+    WITH base AS (
+      SELECT COALESCE(SUM(subtotal), 0) AS base_total
+      FROM order_items
+      WHERE order_id = $1
+        AND status != 'rejected'
+    ),
+    mods AS (
+      SELECT COALESCE(SUM(m.price * i.quantity), 0) AS mods_total
+      FROM order_items i
+      JOIN order_item_modifiers m ON m.order_item_id = i.id
+      WHERE i.order_id = $1
+        AND i.status != 'rejected'
+    )
+    UPDATE orders 
+    SET total_amount = (SELECT base_total FROM base) + (SELECT mods_total FROM mods),
+        updated_at = NOW()
+    WHERE id = $1
+    RETURNING total_amount
+    `,
+    [orderId],
+  );
+  return result.rows[0]?.total_amount || 0;
+};
+
 // 4. Hàm cập nhật status của tất cả items trong một order
 exports.updateAllItemsStatusByOrderId = async (orderId, itemStatus) => {
   const result = await db.query(
-    `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status != 'rejected' RETURNING *`,
+    `UPDATE order_items SET status = $1 WHERE order_id = $2 AND status != 'rejected' AND status != 'ready' AND status != 'completed' RETURNING *`,
     [itemStatus, orderId],
   );
   return result.rows;

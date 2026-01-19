@@ -17,9 +17,15 @@ export default function AdminLayout() {
         <div className="container mx-auto">
           <p className="mb-2">Smart Restaurant System © 2024</p>
           <div className="flex justify-center gap-4 text-xs">
-            <a href="#" className="hover:text-orange-500">Chính sách</a>
-            <a href="#" className="hover:text-orange-500">Điều khoản</a>
-            <a href="#" className="hover:text-orange-500">Liên hệ</a>
+            <a href="#" className="hover:text-orange-500">
+              Chính sách
+            </a>
+            <a href="#" className="hover:text-orange-500">
+              Điều khoản
+            </a>
+            <a href="#" className="hover:text-orange-500">
+              Liên hệ
+            </a>
           </div>
         </div>
       </footer>

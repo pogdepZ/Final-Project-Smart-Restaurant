@@ -14,6 +14,8 @@ import { formatVND } from "../../utils/adminFormat";
 import OrderDetailModal from "./components/AdminOrderDetailModal";
 import { useAdminOrderDetail } from "../../hooks/useAdminOrderDetail";
 import PaginationBar from "../../Components/PaginationBar";
+import { useSocket } from "../../context/SocketContext";
+import { useNotificationSound } from "../../hooks/useNotificationSound";
 
 // ----- helpers -----
 const STATUS_META = {
@@ -33,7 +35,7 @@ const STATUS_META = {
     label: "Hoàn tất",
     className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
   },
-  cancelled: {
+  rejected: {
     label: "Đã hủy",
     className: "bg-red-500/10 text-red-300 border-red-500/20",
   },
@@ -51,11 +53,10 @@ function formatDateTime(dt) {
 }
 
 function StatusPill({ status }) {
-  const meta =
-    STATUS_META[status] || {
-      label: status || "—",
-      className: "bg-white/5 text-gray-200 border-white/10",
-    };
+  const meta = STATUS_META[status] || {
+    label: status || "—",
+    className: "bg-white/5 text-gray-200 border-white/10",
+  };
   return (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${meta.className}`}
@@ -91,6 +92,12 @@ function SkeletonRow() {
 }
 
 export default function OrderManagement() {
+  // Socket & Sound
+  const socket = useSocket();
+  const { play: playNewOrderSound } = useNotificationSound(
+    "/sounds/new-order.mp3",
+  );
+
   // filters
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("ALL");
@@ -113,7 +120,7 @@ export default function OrderManagement() {
       page,
       limit,
     }),
-    [q, status, fromDate, toDate, page, limit]
+    [q, status, fromDate, toDate, page, limit],
   );
 
   const { data, isLoading, error, refetch } = useAdminOrders(params);
@@ -122,9 +129,18 @@ export default function OrderManagement() {
     if (error) toast.error(error);
   }, [error]);
 
+  // console.log("OrderManagement: data", data);
+
   const orders = data?.orders ?? [];
-  console.log(orders[0]);
-  const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 1 };
+
+  console.log("Rendered OrderManagement", orders);
+
+  const pagination = data?.pagination ?? {
+    page,
+    limit,
+    total: 0,
+    totalPages: 1,
+  };
   const totalPages = pagination.totalPages || 1;
 
   const [selectedOrderId, setSelectedOrderId] = useState(null);
@@ -134,6 +150,50 @@ export default function OrderManagement() {
     isLoading: isDetailLoading,
     error: detailError,
   } = useAdminOrderDetail(selectedOrderId, !!selectedOrderId);
+
+  // --- SOCKET LISTENER cho real-time orders ---
+  useEffect(() => {
+    if (!socket) return;
+
+    // Lắng nghe đơn hàng mới
+    const handleNewOrder = (data) => {
+      console.log("🔔 OrderManagement: Nhận đơn mới", data);
+      playNewOrderSound();
+      // Refetch để lấy danh sách mới nhất
+      refetch();
+      toast.success(
+        `🍽️ Đơn hàng mới từ Bàn ${data.table_number}!`,
+        {
+          icon: "📋",
+        },
+      );
+    };
+
+    // Lắng nghe cập nhật đơn hàng
+    const handleOrderUpdate = (data) => {
+      console.log("🔔 OrderManagement: Cập nhật đơn", data);
+      // Refetch để đồng bộ dữ liệu
+      refetch();
+    };
+
+    // Lắng nghe từ kitchen_room (update_order event)
+    const handleKitchenOrderUpdate = (order) => {
+      console.log("🔔 OrderManagement: Kitchen update", order);
+      refetch();
+    };
+
+    socket.on("admin_new_order", handleNewOrder);
+    socket.on("admin_order_update", handleOrderUpdate);
+    socket.on("new_order", handleNewOrder); // Cũng lắng nghe từ kitchen_room
+    socket.on("update_order", handleKitchenOrderUpdate);
+
+    return () => {
+      socket.off("admin_new_order", handleNewOrder);
+      socket.off("admin_order_update", handleOrderUpdate);
+      socket.off("new_order", handleNewOrder);
+      socket.off("update_order", handleKitchenOrderUpdate);
+    };
+  }, [socket, refetch, playNewOrderSound]);
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -189,7 +249,9 @@ export default function OrderManagement() {
             <div className="mt-3 grid grid-cols-1 md:grid-cols-15 gap-3">
               {/* Search */}
               <div className="md:col-span-7">
-                <label className="text-xs text-gray-400 mb-1 block">Tìm theo mã</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Tìm theo mã
+                </label>
                 <div className="relative">
                   <Search
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -209,7 +271,9 @@ export default function OrderManagement() {
 
               {/* From */}
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Từ ngày</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Từ ngày
+                </label>
                 <div className="relative">
                   <Calendar
                     size={18}
@@ -239,7 +303,9 @@ export default function OrderManagement() {
 
               {/* To */}
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Đến ngày</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Đến ngày
+                </label>
                 <div className="relative">
                   <Calendar
                     size={18}
@@ -269,7 +335,9 @@ export default function OrderManagement() {
 
               {/* Status */}
               <div className="md:col-span-2">
-                <label className="text-xs text-gray-400 mb-1 block">Trạng thái</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Trạng thái
+                </label>
                 <div className="relative">
                   <Tag
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -289,7 +357,7 @@ export default function OrderManagement() {
                     <option value="preparing">Đang chuẩn bị</option>
                     <option value="ready">Sẵn sàng</option>
                     <option value="completed">Hoàn tất</option>
-                    <option value="cancelled">Đã hủy</option>
+                    <option value="rejected">Đã hủy</option>
                   </select>
                 </div>
               </div>
@@ -297,10 +365,12 @@ export default function OrderManagement() {
 
             {/* Quick info */}
             <div className="mt-3 text-xs text-gray-400">
-              Page <span className="text-white font-bold">{pagination.page}</span> /{" "}
-              <span className="text-white font-bold">{totalPages}</span> • Hiển thị{" "}
-              <span className="text-white font-bold">{orders.length}</span> /{" "}
-              <span className="text-white font-bold">{pagination.total}</span> đơn
+              Page{" "}
+              <span className="text-white font-bold">{pagination.page}</span> /{" "}
+              <span className="text-white font-bold">{totalPages}</span> • Hiển
+              thị <span className="text-white font-bold">{orders.length}</span>{" "}
+              / <span className="text-white font-bold">{pagination.total}</span>{" "}
+              đơn
             </div>
           </div>
         </div>
@@ -326,62 +396,66 @@ export default function OrderManagement() {
 
             <tbody>
               {isLoading
-                ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
+                ? Array.from({ length: 8 }).map((_, i) => (
+                    <SkeletonRow key={i} />
+                  ))
                 : orders.map((o) => (
-                  <tr
-                    key={o.id}
-                    onClick={() => setSelectedOrderId(o.id)}
-                    className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
-                    title="Click để xem chi tiết"
-                  >
-                    <td className="py-3 pr-3 pl-4 align-top">
-                      <div className="text-white font-bold">{o.code}</div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {o.tableName ?? "—"}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-3 align-top">
-                      <div className="text-sm text-gray-200">
-                        {formatDateTime(o.createdAt)}
-                      </div>
-                      {o.updatedAt ? (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Update: {formatDateTime(o.updatedAt)}
+                    <tr
+                      key={o.id}
+                      onClick={() => setSelectedOrderId(o.id)}
+                      className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
+                      title="Click để xem chi tiết"
+                    >
+                      <td className="py-3 pr-3 pl-4 align-top">
+                        <div className="text-white font-bold">{o.code}</div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {o.tableName ?? "—"}
                         </div>
-                      ) : null}
-                    </td>
+                      </td>
 
-                    <td className="py-3 px-3 align-top">
-                      <StatusPill status={o.status} />
-                    </td>
+                      <td className="py-3 px-3 align-top">
+                        <div className="text-sm text-gray-200">
+                          {formatDateTime(o.createdAt)}
+                        </div>
+                        {o.updatedAt ? (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Update: {formatDateTime(o.updatedAt)}
+                          </div>
+                        ) : null}
+                      </td>
 
-                    <td className="py-3 px-3 align-top">
-                      <div className="text-sm text-gray-200 font-semibold">
-                        {o.totalItems ?? "—"}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {o.note ? `Note: ${o.note}` : "—"}
-                      </div>
-                    </td>
+                      <td className="py-3 px-3 align-top">
+                        <StatusPill status={o.status} />
+                      </td>
 
-                    <td className="py-3 pl-3 pr-4 align-top text-right">
-                      <div className="text-white font-bold">
-                        {typeof o.totalAmount === "number"
-                          ? formatVND(o.totalAmount)
-                          : "—"}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {o.paymentMethod ? `Pay: ${o.paymentMethod}` : "—"}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-3 px-3 align-top">
+                        <div className="text-sm text-gray-200 font-semibold">
+                          {o.totalItems ?? "—"}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {o.note ? `Note: ${o.note}` : "—"}
+                        </div>
+                      </td>
+
+                      <td className="py-3 pl-3 pr-4 align-top text-right">
+                        <div className="text-white font-bold">
+                          {typeof o.totalAmount === "number"
+                            ? formatVND(o.totalAmount)
+                            : "—"}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {o.paymentMethod ? `Pay: ${o.paymentMethod}` : "—"}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
 
               {!isLoading && orders.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-10 text-center">
-                    <div className="text-white font-bold">Không có đơn phù hợp</div>
+                    <div className="text-white font-bold">
+                      Không có đơn phù hợp
+                    </div>
                     <div className="text-gray-400 text-sm mt-1">
                       Thử đổi filter hoặc khoảng ngày, hoặc kiểm tra mã đơn.
                     </div>

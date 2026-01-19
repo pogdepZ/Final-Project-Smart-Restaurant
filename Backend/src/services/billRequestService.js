@@ -86,7 +86,7 @@ class BillRequestService {
   }
 
   // Hủy yêu cầu (khách hủy hoặc đã thanh toán xong)
-  async cancelRequest(requestId, reason = "cancelled") {
+  async cancelRequest(requestId, reason = "rejected") {
     const updated = await billRequestRepo.updateStatus(requestId, reason);
     return updated;
   }

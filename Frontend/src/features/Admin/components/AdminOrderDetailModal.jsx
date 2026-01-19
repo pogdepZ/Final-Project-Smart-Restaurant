@@ -1,5 +1,12 @@
 import React from "react";
-import { X, ReceiptText } from "lucide-react";
+import {
+  X,
+  ReceiptText,
+  Clock,
+  ChefHat,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import { formatVND } from "../../../utils/adminFormat";
 import ScrollArea from "../../../Components/ScrollArea";
 
@@ -20,11 +27,62 @@ const STATUS_META = {
     label: "Hoàn tất",
     className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
   },
-  cancelled: {
+  rejected: {
     label: "Đã hủy",
     className: "bg-red-500/10 text-red-300 border-red-500/20",
   },
 };
+
+// Item status meta với icon và màu sắc
+const ITEM_STATUS_META = {
+  received: {
+    label: "Chờ xác nhận",
+    icon: Clock,
+    bgClass: "bg-yellow-500/10",
+    borderClass: "border-yellow-500/30",
+    textClass: "text-yellow-400",
+    pillClass: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  },
+  preparing: {
+    label: "Đang nấu",
+    icon: CheckCircle,
+    bgClass: "bg-blue-500/10",
+    borderClass: "border-blue-500/30",
+    textClass: "text-blue-400",
+    pillClass: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  },
+  ready: {
+    label: "Đã sẵn sàng",
+    icon: CheckCircle,
+    bgClass: "bg-green-500/10",
+    borderClass: "border-green-500/30",
+    textClass: "text-green-400",
+    pillClass: "bg-green-500/20 text-green-300 border-green-500/30",
+  },
+  rejected: {
+    label: "Từ chối",
+    icon: XCircle,
+    bgClass: "bg-red-500/10",
+    borderClass: "border-red-500/30",
+    textClass: "text-red-400",
+    pillClass: "bg-red-500/20 text-red-300 border-red-500/30",
+  },
+};
+
+// Component hiển thị status pill cho item
+function ItemStatusPill({ status }) {
+  const meta = ITEM_STATUS_META[status] || ITEM_STATUS_META.received;
+  const Icon = meta.icon;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wide ${meta.pillClass}`}
+    >
+      <Icon size={12} />
+      {meta.label}
+    </span>
+  );
+}
 
 function StatusPill({ status }) {
   const meta = STATUS_META[status] || {
@@ -72,6 +130,9 @@ export default function OrderDetailModal({
   if (!open) return null;
 
   const items = order?.items ?? [];
+  
+  console.log("AdminOrderDetailModal: order", order);
+
 
   return (
     <div className="fixed inset-0 z-50">
@@ -116,7 +177,9 @@ export default function OrderDetailModal({
           {/* content states */}
           {loading ? (
             <div className="p-10 text-center">
-              <div className="text-white font-bold">Đang tải chi tiết đơn...</div>
+              <div className="text-white font-bold">
+                Đang tải chi tiết đơn...
+              </div>
               <div className="text-gray-400 text-sm mt-1">Vui lòng chờ</div>
             </div>
           ) : error ? (
@@ -147,10 +210,15 @@ export default function OrderDetailModal({
                 <div className="mt-3 divide-y divide-white/10">
                   <InfoRow label="Mã đơn" value={order?.code} />
                   <InfoRow label="Bàn" value={order?.tableName} />
-                  <InfoRow label="Tạo lúc" value={formatDateTime(order?.createdAt)} />
+                  <InfoRow
+                    label="Tạo lúc"
+                    value={formatDateTime(order?.createdAt)}
+                  />
                   <InfoRow
                     label="Cập nhật"
-                    value={order?.updatedAt ? formatDateTime(order?.updatedAt) : "—"}
+                    value={
+                      order?.updatedAt ? formatDateTime(order?.updatedAt) : "—"
+                    }
                   />
                   <InfoRow label="Số items" value={order?.totalItems} />
                   <InfoRow
@@ -170,7 +238,9 @@ export default function OrderDetailModal({
               <div className="lg:col-span-7 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
                 <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
                   <div className="text-white font-bold">Danh sách món</div>
-                  <div className="text-xs text-gray-400">{items.length} món</div>
+                  <div className="text-xs text-gray-400">
+                    {items.length} món
+                  </div>
                 </div>
 
                 <ScrollArea>
@@ -186,8 +256,13 @@ export default function OrderDetailModal({
                       <table className="w-full min-w-50">
                         <thead className="bg-neutral-950/60 border-b border-white/10">
                           <tr className="text-left text-xs text-gray-400">
-                            <th className="py-3 pl-4 pr-3 w-[60%]">Món</th>
-                            <th className="py-3 px-3 w-[12%]">Số lượng</th>
+                            <th className="py-3 pl-4 pr-3 w-[45%]">Món</th>
+                            <th className="py-3 px-3 w-[12%] text-center">
+                              SL
+                            </th>
+                            <th className="py-3 px-3 w-[25%] text-center">
+                              Trạng thái
+                            </th>
                           </tr>
                         </thead>
 
@@ -197,49 +272,82 @@ export default function OrderDetailModal({
                             const total =
                               typeof it.totalPrice === "number"
                                 ? it.totalPrice
-                                : typeof it.unitPrice === "number" && typeof it.quantity === "number"
+                                : typeof it.unitPrice === "number" &&
+                                    typeof it.quantity === "number"
                                   ? it.unitPrice * it.quantity
                                   : null;
 
+                            // Get item status meta for row styling
+                            const itemStatus = it.status || "received";
+                            const statusMeta =
+                              ITEM_STATUS_META[itemStatus] ||
+                              ITEM_STATUS_META.received;
+
                             return (
                               <React.Fragment key={key}>
-                                {/* Row 1: tên món + qty */}
-                                <tr className="border-b border-white/5">
+                                {/* Row 1: tên món + qty + status */}
+                                <tr
+                                  className={`border-b border-white/5 ${statusMeta.bgClass} transition-colors`}
+                                >
                                   <td className="py-3 pl-4 pr-3 align-top">
-                                    <div className="text-gray-100 font-semibold">
-                                      {it.name ?? "—"}
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      {/* Note */}
-                                      {it.note ? (
-                                        <div className="text-xs text-gray-500 mt-1">Note: {it.note}</div>
-                                      ) : null}
-
-                                      {/* Modifiers */}
-                                      {Array.isArray(it.modifiers) && it.modifiers.length > 0 ? (
-                                        <div className="mt-2 space-y-1">
-                                          <div className="text-xs text-gray-400 font-semibold">Modifiers đã chọn:</div>
-
-                                          <div className="flex flex-wrap gap-2">
-                                            {it.modifiers.map((m, mi) => {
-                                              const mKey = m.id ?? `${key}-m-${mi}`;
-                                              const price = typeof m.price === "number" ? m.price : Number(m.price || 0);
-
-                                              return (
-                                                <span
-                                                  key={mKey}
-                                                  className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-gray-200"
-                                                >
-                                                  <span className="font-semibold">{m.modifier_name || "—"}</span>
-                                                  {price > 0 ? <span className="text-orange-300">+{formatVND(price)}</span> : null}
-                                                </span>
-                                              );
-                                            })}
-                                          </div>
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={`w-1 h-10 rounded-full ${statusMeta.textClass.replace("text-", "bg-")}`}
+                                      ></span>
+                                      <div>
+                                        <div className="text-gray-100 font-semibold">
+                                          {it.name ?? "—"}
                                         </div>
-                                      ) : (
-                                        <div className="text-xs text-gray-600 mt-2">Không có modifiers</div>
-                                      )}
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          {/* Note */}
+                                          {it.note ? (
+                                            <div className="text-xs text-gray-500 mt-1">
+                                              Note: {it.note}
+                                            </div>
+                                          ) : null}
+
+                                          {/* Modifiers */}
+                                          {Array.isArray(it.modifiers) &&
+                                          it.modifiers.length > 0 ? (
+                                            <div className="mt-2 space-y-1">
+                                              <div className="text-xs text-gray-400 font-semibold">
+                                                Modifiers đã chọn:
+                                              </div>
+
+                                              <div className="flex flex-wrap gap-2">
+                                                {it.modifiers.map((m, mi) => {
+                                                  const mKey =
+                                                    m.id ?? `${key}-m-${mi}`;
+                                                  const price =
+                                                    typeof m.price === "number"
+                                                      ? m.price
+                                                      : Number(m.price || 0);
+
+                                                  return (
+                                                    <span
+                                                      key={mKey}
+                                                      className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-gray-200"
+                                                    >
+                                                      <span className="font-semibold">
+                                                        {m.modifier_name || "—"}
+                                                      </span>
+                                                      {price > 0 ? (
+                                                        <span className="text-orange-300">
+                                                          +{formatVND(price)}
+                                                        </span>
+                                                      ) : null}
+                                                    </span>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <div className="text-xs text-gray-600 mt-2">
+                                              Không có modifiers
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
                                   </td>
 
@@ -248,13 +356,18 @@ export default function OrderDetailModal({
                                       {it.quantity ?? "—"}
                                     </div>
                                   </td>
+
+                                  <td className="py-3 px-3 align-top text-center">
+                                    <ItemStatusPill status={itemStatus} />
+                                  </td>
                                 </tr>
 
                                 {/* Row 2: giá */}
                                 <tr className="border-b border-white/50 bg-white/3 text-right">
                                   <td colSpan={3} className="py-2 pl-4 pr-4">
                                     <div className="text-sm text-gray-400 font-bold">
-                                      {typeof it.unitPrice === "number" && typeof it.quantity === "number"
+                                      {typeof it.unitPrice === "number" &&
+                                      typeof it.quantity === "number"
                                         ? `Giá: ${formatVND(total)}`
                                         : "Giá: —"}
                                     </div>
@@ -263,7 +376,6 @@ export default function OrderDetailModal({
                               </React.Fragment>
                             );
                           })}
-
                         </tbody>
                       </table>
                     )}

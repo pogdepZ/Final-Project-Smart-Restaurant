@@ -1,5 +1,6 @@
 // src/services/cart.service.js
 const { pool } = require("../config/db");
+const tableSessionRepository = require("../repositories/tableSessionRepository");
 const {
   normalizeModifiers,
   modifiersKey,
@@ -373,18 +374,21 @@ async function insertOrderItemModifiersTx(
 async function recalcOrderTotalTx(client, orderId) {
   // total = sum(order_items.subtotal) + sum(order_item_modifiers.price * order_items.quantity)
   // Vì modifiers lưu theo dòng item, và subtotal của item đang chỉ base*qty.
+  // ⚠️ QUAN TRỌNG: Loại trừ các items có status = 'rejected' khỏi tổng tiền
   const res = await client.query(
     `
     with base as (
       select coalesce(sum(subtotal),0) as base_total
       from public.order_items
       where order_id = $1
+        AND status != 'rejected'
     ),
     mods as (
       select coalesce(sum(m.price * i.quantity),0) as mods_total
       from public.order_items i
       join public.order_item_modifiers m on m.order_item_id = i.id
       where i.order_id = $1
+        AND i.status != 'rejected'
     )
     select (base.base_total + mods.mods_total) as total
     from base, mods
@@ -431,18 +435,25 @@ async function syncCartByTableId(
       throw err;
     }
 
+    console.log("Syncing cart to order for tableId:", tableId);
+    console.log("sessionId:", sessionId);
+
+    const tableSession = await tableSessionRepository.findById(sessionId);
+
+    // if(tableSession && tableSession.)
+
     // 1) Kiểm tra đã có order 'received' tại bàn này (và sessionId nếu có) chưa
     let order;
     let orderRes;
     if (sessionId) {
       orderRes = await client.query(
-        `select * from public.orders where table_id = $1 and session_id = $2 and (status = 'received' or status = 'preparing') order by created_at desc limit 1`,
+        `select * from public.orders where table_id = $1 and session_id = $2 and (status = 'received' or status = 'preparing' or status = 'rejected' or status = 'ready') order by created_at desc limit 1`,
         [tableId, sessionId],
       );
 
       // chuyển trạng thái order 'completed' hoặc 'preparing' thành 'received' nếu có
       await client.query(
-        `update public.orders set status = 'received' where table_id = $1 and session_id = $2 and (status = 'completed' or status = 'preparing')`,
+        `update public.orders set status = 'received' where table_id = $1 and session_id = $2 and (status = 'completed' or status = 'preparing' or status = 'rejected' or status = 'ready')`,
         [tableId, sessionId],
       );
     } else {

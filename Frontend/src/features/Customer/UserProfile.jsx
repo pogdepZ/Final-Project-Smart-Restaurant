@@ -11,6 +11,8 @@ import ChangePasswordModal from "./popup/ChangePasswordModal";
 import { updateUser } from "../../store/slices/authSlice";
 import Avatar from "./components/Avatar";
 
+import { orderApi } from "../../services/orderApi";
+import { formatMoneyVND } from "../../utils/orders";
 
 const UserProfile = () => {
   const { user, accessToken } = useSelector((state) => state.auth);
@@ -121,7 +123,9 @@ const UserProfile = () => {
         setOrders(res?.data || []);
       } catch (e) {
         if (!mounted) return;
-        setOrdersError(e?.response?.data?.message || "Không tải được lịch sử đơn");
+        setOrdersError(
+          e?.response?.data?.message || "Không tải được lịch sử đơn",
+        );
       } finally {
         if (mounted) setLoadingOrders(false);
       }
@@ -172,7 +176,7 @@ const UserProfile = () => {
           name,
           preferences,
           ...(avatarUrl ? { avatarUrl, avatar_url: avatarUrl } : {}),
-        })
+        }),
       );
 
       toast.success("Cập nhật hồ sơ thành công!");
@@ -380,7 +384,7 @@ const UserProfile = () => {
                   <div className="text-right">
                     <p className="text-xs uppercase font-black text-orange-400">{o.status}</p>
                     <p className="text-sm font-black">
-                      {Number(o.total_amount || 0).toLocaleString("vi-VN")} ₫
+                      {formatMoneyVND(Number(o.total_amount || 0))}
                     </p>
                   </div>
                 </div>

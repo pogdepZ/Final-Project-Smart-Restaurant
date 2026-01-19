@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import { orderApi } from "../../services/orderApi";
 import { useSocket } from "../../context/SocketContext";
 import OrderItemStatus from "../../components/customer/OrderItemStatus";
+import { formatMoneyVND } from "../../utils/orders";
 
 // Map status từ backend sang UI status
 const mapItemStatus = (status) => {
@@ -52,6 +53,8 @@ const OrderTrackingPage = () => {
       setError("");
       const response = await orderApi.getOrdersByTable(qrToken);
 
+      console.log("Fetched orders:", response);
+
       const mappedOrders = (response || []).map((order) => ({
         id: order.id,
         code: order.code || `ORD-${order.id.slice(0, 8)}`,
@@ -74,7 +77,7 @@ const OrderTrackingPage = () => {
       // Auto-select đơn hàng đang active
       if (!selectedOrderId) {
         const activeOrder = mappedOrders.find(
-          (o) => !["completed", "cancelled"].includes(o.status),
+          (o) => ![].includes(o.status),
         );
         if (activeOrder) {
           setSelectedOrderId(activeOrder.id);
@@ -103,7 +106,7 @@ const OrderTrackingPage = () => {
     console.log("🔔 Setting up socket listeners for order tracking");
     setIsConnected(true);
 
-    console.log("Socket connected:", socket);
+    // console.log("Socket connected:", socket);
 
     // Lắng nghe cập nhật trạng thái đơn hàng
     const handleOrderStatusUpdate = (data) => {
@@ -138,7 +141,7 @@ const OrderTrackingPage = () => {
         autoClose: 3000,
       });
       fetchOrders();
-    }
+    };
 
     socket.on("order_status_update", handleOrderStatusUpdate);
     socket.on("order_item_status_update", handleOrderItemStatusUpdate);

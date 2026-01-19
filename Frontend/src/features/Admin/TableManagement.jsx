@@ -80,20 +80,47 @@ const TableManagement = () => {
   useEffect(() => {
     if (!socket) return;
 
+    // Lắng nghe cập nhật bàn thông thường
     socket.on("table_update", (payload) => {
       const { type, table } = payload || {};
       if (!table?.id) return;
 
       if (type === "update") {
         setTables((prev) => prev.map((t) => (t.id === table.id ? table : t)));
-        toast.info(`Bàn ${table.table_number} vừa cập nhật!`);
+        // toast.info(`Bàn ${table.table_number} vừa cập nhật!`);
       } else if (type === "create") {
         setTables((prev) => [...prev, table]);
-        toast.success(`Bàn mới ${table.table_number} vừa được tạo!`);
+        // toast.success(`Bàn mới ${table.table_number} vừa được tạo!`);
       }
     });
 
-    return () => socket.off("table_update");
+    // Lắng nghe khi có khách quét QR / kết thúc session
+    socket.on("table_session_update", (payload) => {
+      console.log("TableManagement: table_session_update", payload);
+
+      
+      const { type, table } = payload || {};
+      if (!table?.id) return;
+
+
+      // Cập nhật bàn trong danh sách
+      setTables((prev) => prev.map((t) => (t.id === table.id ? table : t)));
+
+      if (type === "session_started") {
+        toast.info(`🟢 Bàn ${table.table_number} có khách mới!`, {
+          icon: "🪑",
+        });
+      } else if (type === "session_ended") {
+        toast.info(`⚪ Bàn ${table.table_number} đã trống`, {
+          icon: "✅",
+        });
+      }
+    });
+
+    return () => {
+      socket.off("table_update");
+      socket.off("table_session_update");
+    };
   }, [socket]);
 
   // --- FETCH TABLES ---
@@ -124,7 +151,7 @@ const TableManagement = () => {
     for (const table of tables) {
       const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
-        clientUrl
+        clientUrl,
       )}`;
 
       try {
@@ -162,7 +189,7 @@ const TableManagement = () => {
     for (const table of tables) {
       const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
-        clientUrl
+        clientUrl,
       )}`;
 
       const img = new Image();
@@ -280,9 +307,12 @@ const TableManagement = () => {
 
     if (newStatus === "inactive") {
       try {
-        const res = await axiosClient.patch(`/admin/tables/${table.id}/status`, {
-          status: newStatus,
-        });
+        const res = await axiosClient.patch(
+          `/admin/tables/${table.id}/status`,
+          {
+            status: newStatus,
+          },
+        );
 
         if (res.warning) {
           if (!window.confirm(`⚠️ ${res.message}\nBạn vẫn muốn tắt bàn này?`))
@@ -290,7 +320,7 @@ const TableManagement = () => {
 
           await axiosClient.patch(
             `/admin/tables/${table.id}/status?force=true`,
-            { status: newStatus }
+            { status: newStatus },
           );
         }
 
@@ -315,8 +345,16 @@ const TableManagement = () => {
   // ===== UI HELPERS =====
   const totalActive = useMemo(
     () => (tables || []).filter((t) => t.status === "active").length,
-    [tables]
+    [tables],
   );
+
+  const totalOccupied = useMemo(
+    () => (tables || []).filter((t) => t.current_session_id).length,
+    [tables],
+  );
+
+  // Kiểm tra bàn có đang có khách không
+  const isTableOccupied = (table) => !!table.current_session_id;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -338,9 +376,11 @@ const TableManagement = () => {
           </h1>
 
           <div className="text-sm text-gray-400 mt-2">
-            Tổng:{" "}
-            <span className="text-white font-bold">{tables.length}</span> bàn • Active:{" "}
-            <span className="text-white font-bold">{totalActive}</span>
+            Tổng: <span className="text-white font-bold">{tables.length}</span>{" "}
+            bàn • Active:{" "}
+            <span className="text-white font-bold">{totalActive}</span> • Đang
+            có khách:{" "}
+            <span className="text-green-400 font-bold">{totalOccupied}</span>
           </div>
         </div>
 
@@ -408,7 +448,9 @@ const TableManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
               {/* Status */}
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Trạng thái</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Trạng thái
+                </label>
                 <select
                   className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white
                     border border-white/10 focus:outline-none focus:border-orange-500/40 transition
@@ -426,7 +468,9 @@ const TableManagement = () => {
 
               {/* Location */}
               <div className="md:col-span-4">
-                <label className="text-xs text-gray-400 mb-1 block">Khu vực</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Khu vực
+                </label>
                 <div className="relative">
                   <MapPin
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -452,7 +496,9 @@ const TableManagement = () => {
 
               {/* Sort */}
               <div className="md:col-span-5">
-                <label className="text-xs text-gray-400 mb-1 block">Sắp xếp</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Sắp xếp
+                </label>
                 <select
                   className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white
                     border border-white/10 focus:outline-none focus:border-orange-500/40 transition
@@ -472,7 +518,8 @@ const TableManagement = () => {
               </div>
 
               <div className="md:col-span-12 text-xs text-gray-500">
-                Tip: Click card để mở panel chi tiết bên phải. Card inactive sẽ mờ đi.
+                Tip: Click card để mở panel chi tiết bên phải. Card inactive sẽ
+                mờ đi.
               </div>
             </div>
           </div>
@@ -489,34 +536,51 @@ const TableManagement = () => {
             </div>
           ) : (
             <div
-              className={`grid gap-4 ${selectedTable
-                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                }`}
+              className={`grid gap-4 ${
+                selectedTable
+                  ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              }`}
             >
               {tables.map((table) => (
                 <div
                   key={table.id}
                   onClick={() => setSelectedTable(table)}
                   className={`group relative rounded-2xl border p-5 cursor-pointer transition
-                    bg-white/5 border-white/10 hover:bg-white/10 hover:border-orange-500/20
-                    ${selectedTable?.id === table.id
-                      ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
-                      : ""
+                    ${
+                      isTableOccupied(table)
+                        ? "bg-green-500/10 border-green-500/30 hover:bg-green-500/15 hover:border-green-500/40"
+                        : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-orange-500/20"
+                    }
+                    ${
+                      selectedTable?.id === table.id
+                        ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
+                        : ""
                     }
                     ${table.status === "inactive" ? "opacity-60 grayscale" : ""}
                   `}
                 >
+                  {/* Badge đang có khách */}
+                  {isTableOccupied(table) && (
+                    <div className="absolute -top-2 -right-2 px-2 py-1 rounded-full bg-green-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-green-500/30 animate-pulse">
+                      Có khách
+                    </div>
+                  )}
+
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg
-                          ${table.status === "active"
-                            ? "bg-orange-500/10 text-orange-300 border border-orange-500/20"
-                            : "bg-white/5 text-gray-400 border border-white/10"
+                          ${
+                            isTableOccupied(table)
+                              ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                              : table.status === "active"
+                                ? "bg-orange-500/10 text-orange-300 border border-orange-500/20"
+                                : "bg-white/5 text-gray-400 border border-white/10"
                           }`}
                       >
-                        {String(table.table_number || "").replace(/\D/g, "") || "—"}
+                        {String(table.table_number || "").replace(/\D/g, "") ||
+                          "—"}
                       </div>
 
                       <div>
@@ -524,10 +588,19 @@ const TableManagement = () => {
                           {table.table_number}
                         </div>
                         <div
-                          className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${table.status === "active" ? "text-green-400" : "text-red-400"
-                            }`}
+                          className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${
+                            isTableOccupied(table)
+                              ? "text-green-400"
+                              : table.status === "active"
+                                ? "text-gray-400"
+                                : "text-red-400"
+                          }`}
                         >
-                          {table.status === "active" ? "Online" : "Offline"}
+                          {isTableOccupied(table)
+                            ? "🟢 Đang phục vụ"
+                            : table.status === "active"
+                              ? "⚪ Trống"
+                              : "Offline"}
                         </div>
                       </div>
                     </div>
@@ -535,11 +608,25 @@ const TableManagement = () => {
 
                   <div className="mt-4 space-y-1 text-sm text-gray-400">
                     <div className="flex items-center gap-2">
-                      <Users size={14} className="text-orange-400" />
+                      <Users
+                        size={14}
+                        className={
+                          isTableOccupied(table)
+                            ? "text-green-400"
+                            : "text-orange-400"
+                        }
+                      />
                       {table.capacity} khách
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin size={14} className="text-orange-400" />
+                      <MapPin
+                        size={14}
+                        className={
+                          isTableOccupied(table)
+                            ? "text-green-400"
+                            : "text-orange-400"
+                        }
+                      />
                       {table.location || "—"}
                     </div>
                   </div>
@@ -563,9 +650,10 @@ const TableManagement = () => {
                         handleToggleStatus(table);
                       }}
                       className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border transition
-                        ${table.status === "active"
-                          ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
-                          : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
+                        ${
+                          table.status === "active"
+                            ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
+                            : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
                         }`}
                       title={table.status === "active" ? "Tắt bàn" : "Bật bàn"}
                     >
@@ -628,9 +716,10 @@ const TableManagement = () => {
                     type="text"
                     placeholder="VD: T-01"
                     className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
-                      ${errors.table_number
-                        ? "border-red-500/60 focus:border-red-500"
-                        : "border-white/10 focus:border-orange-500/40"
+                      ${
+                        errors.table_number
+                          ? "border-red-500/60 focus:border-red-500"
+                          : "border-white/10 focus:border-orange-500/40"
                       }`}
                     value={formData.table_number}
                     onChange={(e) => {
@@ -653,9 +742,10 @@ const TableManagement = () => {
                       name="capacity"
                       type="number"
                       className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
-                        ${errors.capacity
-                          ? "border-red-500/60 focus:border-red-500"
-                          : "border-white/10 focus:border-orange-500/40"
+                        ${
+                          errors.capacity
+                            ? "border-red-500/60 focus:border-red-500"
+                            : "border-white/10 focus:border-orange-500/40"
                         }`}
                       value={formData.capacity}
                       onChange={(e) => {
@@ -677,9 +767,10 @@ const TableManagement = () => {
                       name="location"
                       className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
                         [&>option]:bg-neutral-950 [&>option]:text-white
-                        ${errors.location
-                          ? "border-red-500/60 focus:border-red-500"
-                          : "border-white/10 focus:border-orange-500/40"
+                        ${
+                          errors.location
+                            ? "border-red-500/60 focus:border-red-500"
+                            : "border-white/10 focus:border-orange-500/40"
                         }`}
                       value={formData.location}
                       onChange={(e) => {

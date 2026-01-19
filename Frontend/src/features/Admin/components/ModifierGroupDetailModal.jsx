@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import ConfirmModal from "../../../Components/ConfirmModal";
 import ToggleSwitch from "../../../Components/ToggleSwitch";
 import { adminModifierApi } from "../../../services/adminModifierApi";
+import { formatVND } from "../../../utils/adminFormat";
 
 function Pill({ status }) {
   const cls =
@@ -11,7 +12,9 @@ function Pill({ status }) {
       ? "bg-green-500/10 text-green-300 border-green-500/20"
       : "bg-yellow-500/10 text-yellow-300 border-yellow-500/20";
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${cls}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${cls}`}
+    >
       {status}
     </span>
   );
@@ -47,7 +50,12 @@ function Select({ label, children, ...props }) {
   );
 }
 
-export default function ModifierGroupDetailModal({ open, group, onClose, onChanged }) {
+export default function ModifierGroupDetailModal({
+  open,
+  group,
+  onClose,
+  onChanged,
+}) {
   const groupId = group?.id;
 
   const [loading, setLoading] = useState(false);
@@ -62,7 +70,11 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
 
   // Inline edit option
   const [editingId, setEditingId] = useState(null);
-  const [editDraft, setEditDraft] = useState({ name: "", price_adjustment: 0, status: "active" });
+  const [editDraft, setEditDraft] = useState({
+    name: "",
+    price_adjustment: 0,
+    status: "active",
+  });
   const [savingMap, setSavingMap] = useState({}); // { optionId: true }
   const [togglingMap, setTogglingMap] = useState({}); // toggle active/inactive per option
 
@@ -128,7 +140,8 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
     if (!name) return toast.error("Tên option không được rỗng");
 
     const price = Number(editDraft.price_adjustment);
-    if (!Number.isFinite(price) || price < 0) return toast.error("Giá điều chỉnh phải >= 0");
+    if (!Number.isFinite(price) || price < 0)
+      return toast.error("Giá điều chỉnh phải >= 0");
 
     setSavingMap((m) => ({ ...m, [optId]: true }));
     try {
@@ -142,7 +155,9 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
         if (!cur) return cur;
         return {
           ...cur,
-          options: cur.options.map((x) => (x.id === optId ? { ...x, ...updated } : x)),
+          options: cur.options.map((x) =>
+            x.id === optId ? { ...x, ...updated } : x,
+          ),
         };
       });
       toast.success("Đã cập nhật option");
@@ -164,7 +179,8 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
     if (!name) return toast.error("Tên option không được rỗng");
 
     const price = Number(createPrice);
-    if (!Number.isFinite(price) || price < 0) return toast.error("Giá điều chỉnh phải >= 0");
+    if (!Number.isFinite(price) || price < 0)
+      return toast.error("Giá điều chỉnh phải >= 0");
 
     setCreating(true);
     try {
@@ -200,18 +216,24 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
       if (!cur) return cur;
       return {
         ...cur,
-        options: cur.options.map((x) => (x.id === opt.id ? { ...x, status: nextStatus } : x)),
+        options: cur.options.map((x) =>
+          x.id === opt.id ? { ...x, status: nextStatus } : x,
+        ),
       };
     });
 
     try {
-      const res = await adminModifierApi.updateOption(opt.id, { status: nextStatus });
+      const res = await adminModifierApi.updateOption(opt.id, {
+        status: nextStatus,
+      });
       const updated = res?.item || res?.data?.item || res;
       setDetail((cur) => {
         if (!cur) return cur;
         return {
           ...cur,
-          options: cur.options.map((x) => (x.id === opt.id ? { ...x, ...updated } : x)),
+          options: cur.options.map((x) =>
+            x.id === opt.id ? { ...x, ...updated } : x,
+          ),
         };
       });
       onChanged?.();
@@ -221,7 +243,9 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
         if (!cur) return cur;
         return {
           ...cur,
-          options: cur.options.map((x) => (x.id === opt.id ? { ...x, status: opt.status } : x)),
+          options: cur.options.map((x) =>
+            x.id === opt.id ? { ...x, status: opt.status } : x,
+          ),
         };
       });
       toast.error(e?.response?.data?.message || "Đổi trạng thái thất bại");
@@ -242,16 +266,23 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
 
       {/* modal */}
-      <div className="absolute left-1/2 top-1/2 w-[96vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl
-          bg-neutral-950 border border-white/10 shadow-xl overflow-hidden">
+      <div
+        className="absolute left-1/2 top-1/2 w-[96vw] max-w-4xl -translate-x-1/2 -translate-y-1/2 rounded-2xl
+          bg-neutral-950 border border-white/10 shadow-xl overflow-hidden"
+      >
         {/* header */}
         <div className="px-5 py-4 border-b border-white/10 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-white font-black text-lg truncate">{group?.name || "Modifier group"}</div>
+            <div className="text-white font-black text-lg truncate">
+              {group?.name || "Modifier group"}
+            </div>
             <div className="mt-1 text-xs text-gray-400">
-              {group?.selection_type === "single" ? "Single choice" : "Multiple choice"} •{" "}
-              {group?.is_required ? "Required" : "Optional"} • Min {group?.min_selections ?? 0} / Max{" "}
-              {group?.max_selections ?? 0} • <Pill status={group?.status || "active"} />
+              {group?.selection_type === "single"
+                ? "Single choice"
+                : "Multiple choice"}{" "}
+              • {group?.is_required ? "Required" : "Optional"} • Min{" "}
+              {group?.min_selections ?? 0} / Max {group?.max_selections ?? 0} •{" "}
+              <Pill status={group?.status || "active"} />
             </div>
           </div>
 
@@ -279,7 +310,9 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
           <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="text-white font-bold">Thêm option</div>
-              <div className="text-xs text-gray-400">Option thuộc group này</div>
+              <div className="text-xs text-gray-400">
+                Option thuộc group này
+              </div>
             </div>
 
             <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
@@ -294,16 +327,20 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
 
               <div className="md:col-span-3">
                 <Input
-                  label="Giá điều chỉnh"
+                  label="Giá điều chỉnh (VND)"
                   value={createPrice}
                   onChange={(e) => setCreatePrice(e.target.value)}
                   placeholder="0"
-                  inputMode="decimal"
+                  inputMode="numeric"
                 />
               </div>
 
               <div className="md:col-span-3">
-                <Select label="Status" value={createStatus} onChange={(e) => setCreateStatus(e.target.value)}>
+                <Select
+                  label="Status"
+                  value={createStatus}
+                  onChange={(e) => setCreateStatus(e.target.value)}
+                >
                   <option value="active">active</option>
                   <option value="inactive">inactive</option>
                 </Select>
@@ -328,7 +365,9 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
           <div className="mt-4 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
             <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
               <div className="text-white font-bold">Options</div>
-              <div className="text-xs text-gray-400">{loading ? "Đang tải..." : `${options.length} options`}</div>
+              <div className="text-xs text-gray-400">
+                {loading ? "Đang tải..." : `${options.length} options`}
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -345,32 +384,49 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={4} className="py-10 text-center text-gray-400">
+                      <td
+                        colSpan={4}
+                        className="py-10 text-center text-gray-400"
+                      >
                         Đang tải options...
                       </td>
                     </tr>
                   ) : options.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="py-10 text-center">
-                        <div className="text-white font-bold">Chưa có option</div>
-                        <div className="text-gray-400 text-sm mt-1">Hãy thêm option ở phần trên.</div>
+                        <div className="text-white font-bold">
+                          Chưa có option
+                        </div>
+                        <div className="text-gray-400 text-sm mt-1">
+                          Hãy thêm option ở phần trên.
+                        </div>
                       </td>
                     </tr>
                   ) : (
                     options.map((opt) => {
                       const isEditing = editingId === opt.id;
                       return (
-                        <tr key={opt.id} className="border-b border-white/5 hover:bg-white/5 transition">
+                        <tr
+                          key={opt.id}
+                          className="border-b border-white/5 hover:bg-white/5 transition"
+                        >
                           <td className="py-3 px-4">
                             {isEditing ? (
                               <input
                                 value={editDraft.name}
-                                onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
+                                onChange={(e) =>
+                                  setEditDraft((d) => ({
+                                    ...d,
+                                    name: e.target.value,
+                                  }))
+                                }
                                 className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-sm text-white
                                   focus:outline-none focus:border-orange-500/40"
                               />
                             ) : (
-                              <div className="text-white font-bold">{opt.name}</div>
+                              <div className="text-white font-bold">
+                                {opt.name}
+                              </div>
                             )}
                           </td>
 
@@ -379,14 +435,19 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
                               <input
                                 value={String(editDraft.price_adjustment)}
                                 onChange={(e) =>
-                                  setEditDraft((d) => ({ ...d, price_adjustment: e.target.value }))
+                                  setEditDraft((d) => ({
+                                    ...d,
+                                    price_adjustment: e.target.value,
+                                  }))
                                 }
-                                inputMode="decimal"
+                                inputMode="numeric"
                                 className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-sm text-white
                                   focus:outline-none focus:border-orange-500/40"
                               />
                             ) : (
-                              <div className="text-gray-200">{Number(opt.price_adjustment ?? 0).toLocaleString("vi-VN")}</div>
+                              <div className="text-gray-200">
+                                {formatVND(Number(opt.price_adjustment ?? 0))}
+                              </div>
                             )}
                           </td>
 
@@ -395,13 +456,20 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
                               <ToggleSwitch
                                 checked={opt.status === "active"}
                                 disabled={!!togglingMap[opt.id]}
-                                onChange={(next) => toggleOptionStatus(opt, next)}
+                                onChange={(next) =>
+                                  toggleOptionStatus(opt, next)
+                                }
                                 label="Active"
                               />
                               {isEditing ? (
                                 <select
                                   value={editDraft.status}
-                                  onChange={(e) => setEditDraft((d) => ({ ...d, status: e.target.value }))}
+                                  onChange={(e) =>
+                                    setEditDraft((d) => ({
+                                      ...d,
+                                      status: e.target.value,
+                                    }))
+                                  }
                                   className="rounded-xl px-3 py-2 text-sm bg-neutral-950 text-white border border-white/10
                                     focus:outline-none focus:border-orange-500/40 [&>option]:bg-neutral-950 [&>option]:text-white"
                                 >
@@ -483,7 +551,10 @@ export default function ModifierGroupDetailModal({ open, group, onClose, onChang
               await adminModifierApi.deleteOption(deleteItem.id);
               setDetail((cur) => {
                 if (!cur) return cur;
-                return { ...cur, options: cur.options.filter((x) => x.id !== deleteItem.id) };
+                return {
+                  ...cur,
+                  options: cur.options.filter((x) => x.id !== deleteItem.id),
+                };
               });
               toast.success("Đã xoá option");
               setConfirmOpen(false);

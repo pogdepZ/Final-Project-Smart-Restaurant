@@ -136,6 +136,9 @@ exports.getUnpaidOrderByUserId = async (req, res) => {
       return res.status(201).json({ success:false, message: "Thiếu thông tin cần thiết" });
     } 
     const order = await orderService.getUnpaidOrderByUserId(tableId, sessionId);
+
+    console.log("Unpaid order found:", order);
+
     if (!order) {
       return res.status(201).json({ success:false, message: "Bạn không có đơn hàng nào cần được thanh toán!" });
     }

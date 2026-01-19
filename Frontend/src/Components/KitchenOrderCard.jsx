@@ -6,6 +6,8 @@ import {
   Eye,
   PlayCircle,
   AlertTriangle,
+  Check,
+  XCircle,
 } from "lucide-react";
 import { formatTime } from "../utils/orders";
 import OrderTimer, { OrderItemsTimerSummary } from "./OrderTimer";
@@ -15,6 +17,7 @@ export default function KitchenOrderCard({
   onView,
   onStart,
   onComplete,
+  onUpdateItemStatus,
 }) {
   if (!order) return null;
 
@@ -24,6 +27,19 @@ export default function KitchenOrderCard({
   const totalItems = items.reduce(
     (acc, item) => acc + (Number(item.qty) || 0),
     0,
+  );
+
+  // Đếm số item đã hoàn thành
+  const completedItems = items.filter(
+    (it) => it.status === "ready" || it.status === "rejected",
+  ).length;
+  const pendingItems = items.filter(
+    (it) => it.status !== "ready" && it.status !== "rejected",
+  );
+
+  // Kiểm tra tất cả items đã xong chưa
+  const allItemsDone = items.every(
+    (it) => it.status === "ready" || it.status === "rejected",
   );
 
   // Tính prep_time lớn nhất trong các món để hiển thị timer chính
@@ -100,7 +116,7 @@ export default function KitchenOrderCard({
             />
 
             <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs font-bold">
-              {totalItems} món
+              {completedItems}/{items.length} món xong
             </div>
           </div>
         </div>
@@ -110,29 +126,52 @@ export default function KitchenOrderCard({
           {(items || []).slice(0, 4).map((it, idx) => {
             const itemPrepTime = it.prep_time_minutes || 15;
             const itemOverdue = elapsed >= itemPrepTime;
+            const isItemReady = it.status === "ready";
+            const isItemRejected = it.status === "rejected";
+            const isItemPending = !isItemReady && !isItemRejected;
 
             return (
               <div
-                key={idx}
+                key={it.id || idx}
                 className={`flex items-center justify-between gap-3 p-2 rounded-lg transition-all ${
-                  itemOverdue ? "bg-red-500/10 border border-red-500/20" : ""
+                  isItemReady
+                    ? "bg-green-500/10 border border-green-500/20"
+                    : isItemRejected
+                      ? "bg-red-500/10 border border-red-500/20 opacity-50"
+                      : itemOverdue
+                        ? "bg-red-500/10 border border-red-500/20"
+                        : "bg-white/5"
                 }`}
               >
                 <div className="min-w-0 flex items-center gap-2">
-                  {itemOverdue && (
+                  {isItemReady && (
+                    <Check size={14} className="text-green-400 shrink-0" />
+                  )}
+                  {isItemRejected && (
+                    <XCircle size={14} className="text-red-400 shrink-0" />
+                  )}
+                  {isItemPending && itemOverdue && (
                     <AlertTriangle
                       size={14}
                       className="text-red-400 shrink-0"
                     />
                   )}
                   <div
-                    className={`font-semibold truncate ${itemOverdue ? "text-red-300" : "text-white"}`}
+                    className={`font-semibold truncate ${
+                      isItemReady
+                        ? "text-green-300 line-through"
+                        : isItemRejected
+                          ? "text-red-300 line-through"
+                          : itemOverdue
+                            ? "text-red-300"
+                            : "text-white"
+                    }`}
                   >
-                    {it.name}
+                    {it.item_name || it.name}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {itemOverdue && (
+                  {isItemPending && itemOverdue && (
                     <span className="text-[10px] text-red-400 font-mono">
                       +{elapsed - itemPrepTime}m
                     </span>
@@ -140,6 +179,19 @@ export default function KitchenOrderCard({
                   <div className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-200 text-sm font-bold">
                     x{it.qty}
                   </div>
+                  {/* Nút hoàn thành từng item */}
+                  {isItemPending && onUpdateItemStatus && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateItemStatus(order.id, it.id, "ready");
+                      }}
+                      className="p-1.5 rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 transition-colors"
+                      title="Đánh dấu hoàn thành"
+                    >
+                      <Check size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -170,14 +222,21 @@ export default function KitchenOrderCard({
 
           <button
             onClick={onComplete}
+            disabled={!allItemsDone}
             className={`px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 inline-flex items-center justify-center gap-2 ${
-              isUrgent
-                ? "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse"
-                : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.25)]"
+              !allItemsDone
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : isUrgent
+                  ? "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse"
+                  : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.25)]"
             }`}
           >
             <CheckCircle2 size={18} />
-            {isUrgent ? "Hoàn thành ngay!" : "Hoàn thành"}
+            {!allItemsDone
+              ? `${completedItems}/${items.length} xong`
+              : isUrgent
+                ? "Hoàn thành ngay!"
+                : "Hoàn thành đơn"}
           </button>
         </div>
       </div>
