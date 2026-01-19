@@ -147,7 +147,7 @@ export default function OrderDetailModal({
           ) : (
             /* body */
             <ScrollArea>
-              <div className="max-h-105 overflow-x-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="max-h-[80vh] overflow-x-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* left: meta */}
                 <div className="lg:col-span-5 rounded-2xl bg-white/5 border border-white/10 p-4">
                   <div className="flex items-center justify-between">
@@ -185,7 +185,7 @@ export default function OrderDetailModal({
                   </div>
 
                   <ScrollArea>
-                    <div className="sm:max-h-105 overflow-auto">
+                    <div className="sm:max-h-[60vh] overflow-auto">
                       {items.length === 0 ? (
                         <div className="p-6 text-center">
                           <div className="text-white font-bold">Chưa có item</div>

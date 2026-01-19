@@ -210,7 +210,7 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
         </div>
 
         <ScrollArea>
-          <div className="max-h-105 overflow-x-auto p-4 space-y-4">
+          <div className="max-h-[80vh] overflow-x-auto p-4 space-y-4">
             {/* GROUP INFO */}
             <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
               <div className="text-white font-bold">Thông tin group</div>
