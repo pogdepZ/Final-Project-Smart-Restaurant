@@ -1,11 +1,17 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",         
+  host: "smtp.gmail.com", // Khai báo host cụ thể
+  port: 587,              // Dùng port 587 (TLS) thay vì 465 (SSL) để tránh timeout
+  secure: false,          // false cho port 587, true cho port 465
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    pass: process.env.SMTP_PASS, // ⚠️ Bắt buộc phải là App Password
   },
+  tls: {
+    // 👇 Dòng này cực quan trọng trên Render để không bị lỗi kết nối
+    rejectUnauthorized: false
+  }
 });
 
 exports.sendVerifyEmail = async ({ to, name, verifyUrl }) => {

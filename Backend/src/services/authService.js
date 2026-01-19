@@ -118,10 +118,11 @@ exports.register = async ({ name, email, password, role }) => {
     expiresAt,
   });
 
-  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.CLIENT_URL || "http://localhost:3000";
+  console.log('Base URL for email verification:', baseUrl);
   const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
 
-  await sendVerifyEmail({
+  sendVerifyEmail({
     to: user.email,
     name: user.name,
     verifyUrl,
