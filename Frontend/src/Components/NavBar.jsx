@@ -20,7 +20,6 @@ import {
 import { IoRestaurant } from "react-icons/io5";
 import Avatar from "../features/Customer/components/Avatar";
 
-
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -35,7 +34,7 @@ const Navbar = () => {
   // Xác định role hiện tại
   const role = user?.role;
   const cartCount = useSelector(selectTotalItems);
-  const tableNumber = "T05";
+  const tableNumber = localStorage.getItem("tableNumber");
 
   // Check qrToken in localStorage
   const [hasQrToken, setHasQrToken] = useState(false);
@@ -220,17 +219,30 @@ const Navbar = () => {
       >
         {/* User Info Mobile */}
         {isLoggedIn ? (
-          <div className="flex items-center gap-3 mb-8 pb-6 border-b border-white/10">
-            <div className="w-12 h-12 rounded-full bg-neutral-800 border border-orange-500/30 flex items-center justify-center text-orange-500">
-              <User size={24} />
-            </div>
+          <Link
+            to="/profile"
+            onClick={closeMenu}
+            className="flex items-center gap-3 mb-8 pb-6 border-b border-white/10"
+          >
+            <Avatar
+              url={user?.avatarUrl || user?.avatar_url}
+              name={user?.name}
+              size={48}
+            />
+
             <div>
-              <p className="text-white font-bold">Khách hàng</p>
-              <p className="text-orange-500 text-xs font-bold bg-orange-500/10 px-2 py-0.5 rounded-full inline-block mt-1">
-                {tableNumber ? `Đang ngồi ${tableNumber}` : "Chưa có bàn"}
+              <p className="text-white font-bold truncate max-w-[160px]">
+                {user?.name || "Khách hàng"}
               </p>
+
+              {/* Chỉ hiện cho customer hoặc khi role chưa có */}
+              {(role === "customer" || !role) && (
+                <p className="text-orange-500 text-xs font-bold bg-orange-500/10 px-2 py-0.5 rounded-full inline-block mt-1">
+                  {tableNumber ? `Đang ngồi ${tableNumber}` : "Chưa có bàn"}
+                </p>
+              )}
             </div>
-          </div>
+          </Link>
         ) : (
           <div className="mb-8 pb-6 border-b border-white/10">
             <p className="text-gray-400 text-sm mb-4">
