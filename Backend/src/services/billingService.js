@@ -3,6 +3,7 @@ const tableRepository = require("../repositories/tableRepository");
 const tableSessionRepository = require("../repositories/tableSessionRepository");
 const billRequestRepo = require("../repositories/billRequestRepository");
 const socketService = require("./socketService");
+const orderRepository = require("../repositories/orderRepository");
 const db = require("../config/db");
 const tableSessionService = require("./tableSessionService");
 
@@ -129,7 +130,7 @@ class BillingService {
 
       // 5. Lấy thông tin đầy đủ của bàn để gửi socket
       const tableInfo = await tableRepository.findById(tableId);
-
+      
       // 6. Bắn Socket báo bàn đã thanh toán (Clear màn hình Waiter/Kitchen)
       socketService.notifyTableUpdate({
         type: "payment_completed",

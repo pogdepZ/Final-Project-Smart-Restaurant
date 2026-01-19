@@ -70,7 +70,7 @@ class BillingRepository {
     return result.rows[0];
   }
 
-  // 3. Cập nhật Orders (Đánh dấu đã thanh toán và link vào Bill)
+  // 3. Cập nhật Orders (Đánh dấu đã thanh toán và link vào Bill)  
   async markOrdersAsPaid(orderIds, billId) {
     await db.query(
       `UPDATE orders 

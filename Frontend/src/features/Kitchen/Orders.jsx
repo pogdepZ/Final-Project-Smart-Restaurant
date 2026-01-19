@@ -39,7 +39,9 @@ export default function KitchenPage() {
       setOrders((prev) =>
         prev.map((order) => ({
           ...order,
-          items: (order.items || []).filter((item) => item.status === "preparing"),
+          items: (order.items || []).filter(
+            (item) => item.status === "preparing",
+          ),
         })),
       );
       console.log(">>>>>> Filtered Orders:", orders);
@@ -74,10 +76,20 @@ export default function KitchenPage() {
       }
     };
 
+    const handlePaymentCompleted = (data) => {
+      // setOrders((prev) => prev.filter((o) => o.id !== data.orderId));
+      fetchOrders();
+      toast.success(`💰 Thanh toán xong: ${data.table_number || "Mang về"}`);
+
+      console.log("🍽️ [Kitchen] Payment completed:", data);
+    };
+
     socket.on("update_order", handleUpdateOrder);
+    socket.on("payment_completed", handlePaymentCompleted);
 
     return () => {
       socket.off("update_order", handleUpdateOrder);
+      socket.off("payment_completed", handlePaymentCompleted);
     };
   }, [socket, soundEnabled, playNotificationSound]); // <--- Dependency
 
@@ -127,8 +139,7 @@ export default function KitchenPage() {
   const handleUpdateStatus = async (orderId, status) => {
     try {
       const res = await axiosClient.patch(`/orders/${orderId}`, { status });
-      if(res)
-      toast.success("Món đã xong! ✅");
+      if (res) toast.success("Món đã xong! ✅");
       setSelected(null);
       fetchOrders();
       // Socket sẽ trả về update_order với status 'ready', tự động remove khỏi list
