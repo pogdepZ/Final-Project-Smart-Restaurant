@@ -420,17 +420,26 @@ export default function AccountsManagement() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-245">
+          <table className="w-full">
             <thead className="bg-neutral-950/60 border-b border-white/10">
               <tr className="text-left text-xs text-gray-400">
-                <th className="py-3 pr-3 pl-4 w-[25%]">User</th>
-                <th className="py-3 px-3 w-[15%]">Role</th>
-                <th className="py-3 px-3 w-[15%]">Verified</th>
-                <th className="py-3 px-3 w-[15%]">Active</th>
+                <th className="py-3 pr-3 pl-4 w-[40%] sm:w-[25%]">User</th>
+
+                {/* ẩn mobile */}
+                <th className="hidden sm:table-cell py-3 px-3 w-[15%]">Role</th>
+
+                {/* ẩn mobile */}
+                <th className="hidden sm:table-cell py-3 px-3 w-[15%]">Verified</th>
+
+                <th className="py-3 px-3 w-[15%] sm:w-[15%]">Active</th>
+
+                {/* ẩn mobile */}
                 <th className="py-3 px-3 w-[15%]">Actions</th>
-                <th className="py-3 pl-3 pr-4 text-right w-[15%]">Created</th>
+
+                <th className="hidden sm:table-cell py-3 pl-3 pr-4 text-right w-[15%]">Created</th>
               </tr>
             </thead>
+
 
             <tbody>
               {loading
@@ -443,16 +452,17 @@ export default function AccountsManagement() {
                   >
                     <td className="py-3 pr-3 pl-4 align-top">
                       <div className="text-white font-bold">{u.name}</div>
-                      <div className="text-xs text-gray-400 mt-1">{u.email}</div>
+                      <div className="text-xs text-gray-400 mt-1 break-all sm:break-normal">{u.email}</div>
                     </td>
 
-                    <td className="py-3 px-3 align-top">
+                    <td className="hidden sm:table-cell py-3 px-3 align-top">
                       <RolePill role={u.role} />
                     </td>
 
-                    <td className="py-3 px-3 align-top">
+                    <td className="hidden sm:table-cell py-3 px-3 align-top">
                       <VerifyPill isVerified={!!u.is_verified} />
                     </td>
+
 
                     <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-3">
@@ -463,7 +473,7 @@ export default function AccountsManagement() {
                           label="Active"
                         />
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold
+                          className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold
                           ${u.is_actived
                               ? "bg-green-500/10 text-green-200 border-green-500/20"
                               : "bg-red-500/10 text-red-200 border-red-500/20"
@@ -479,15 +489,6 @@ export default function AccountsManagement() {
                       <div className="inline-flex items-center gap-2 justify-end">
                         <button
                           type="button"
-                          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
-                          onClick={() => setDetailUser(u)}
-                        >
-                          View
-                        </button>
-
-                        {/* Xoá account: tuỳ quyền bạn, để sẵn */}
-                        <button
-                          type="button"
                           className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20"
                           onClick={() => requestDelete(u)}
                         >
@@ -496,7 +497,7 @@ export default function AccountsManagement() {
                       </div>
                     </td>
 
-                    <td className="py-3 pl-3 pr-4 align-top text-right">
+                    <td className="hidden sm:table-cell py-3 pl-3 pr-4 align-top text-right">
                       <div className="text-gray-300 text-sm">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString("vi-VN") : "—"}
                       </div>

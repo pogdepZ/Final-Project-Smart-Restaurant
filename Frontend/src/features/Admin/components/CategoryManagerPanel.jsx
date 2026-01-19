@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import ConfirmModal from "../../../Components/ConfirmModal";
 import CreateCategoryModal from "./CreateCategoryModal";
 import { adminMenuApi } from "../../../services/adminMenuApi";
-import { Archive, RefreshCcw } from "lucide-react";
+import { Archive, RefreshCcw, Search } from "lucide-react";
 
 function Field({ label, children }) {
   return (
@@ -29,6 +29,17 @@ function CategoryEditModal({ open, initial, onClose, onSuccess }) {
     setDisplayOrder(Number(initial?.display_order ?? 0));
     setStatus(initial?.status || "active");
   }, [open, initial]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev || "";
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -179,12 +190,16 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search category..."
-            className="bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40"
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm theo tên category..."
+              className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm
+              text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
+            />
+          </div>
 
           <select
             value={statusFilter}

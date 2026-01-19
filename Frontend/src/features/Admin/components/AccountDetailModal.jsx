@@ -65,6 +65,17 @@ export default function AccountDetailModal({ open, item, onClose, onUpdated }) {
     setActiveLocal(item.is_active ?? true); // fallback true
   }, [item]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev || "";
+    };
+  }, [open]);
+
   if (!open || !item) return null;
 
   const setActive = async (next) => {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, Layers } from "lucide-react";
 import { adminMenuApi } from "../../../services/adminMenuApi";
 import { toast } from "react-toastify";
@@ -11,6 +11,17 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
 
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev || "";
+    };
+  }, [open]);
 
   if (!open) return null;
 

@@ -1,5 +1,5 @@
 // src/pages/Admin/AccountManagement/components/CreateStaffAccountModal.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { X, Shield, UserPlus } from "lucide-react";
 import { toast } from "react-toastify";
 import { adminAccountApi } from "../../../services/adminAccountApi";
@@ -24,6 +24,17 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
   const canSubmit = useMemo(() => {
     return name.trim() && email.trim() && password.trim() && role;
   }, [name, email, password, role]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev || "";
+    };
+  }, [open]);
 
   const reset = () => {
     setName("");

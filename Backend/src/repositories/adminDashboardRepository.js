@@ -103,6 +103,8 @@ const ORDER_OK = [
   "READY",
   "preparing",
   "PREPARING",
+  "received",
+  "RECEIVED",
 ];
 
 exports.revenueAndOrders = async ({ from, to }) => {

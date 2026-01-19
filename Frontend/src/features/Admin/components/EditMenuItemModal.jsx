@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect, useRef, useState } from "react";
+
 import { X, Upload, Trash2 } from "lucide-react";
 import { adminMenuApi } from "../../../services/adminMenuApi";
 import MultiSelectCombobox from "../../../Components/MultiSelectCombobox";
@@ -243,11 +244,11 @@ export default function EditMenuItemModal({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-400">Category</label>
                   <select
-                    className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
+                    className="mt-1 bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
                       [&>option]:bg-neutral-900 [&>option]:text-white"
                     value={form.categoryId ?? ""}
                     onChange={(e) =>
@@ -269,7 +270,7 @@ export default function EditMenuItemModal({
                 <div>
                   <label className="text-xs text-gray-400">Status</label>
                   <select
-                    className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
+                    className="mt-1 bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
                       [&>option]:bg-neutral-900 [&>option]:text-white"
                     value={form.status}
                     onChange={(e) => setForm((s) => ({ ...s, status: e.target.value }))}

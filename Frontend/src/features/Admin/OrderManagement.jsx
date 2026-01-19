@@ -64,31 +64,41 @@ function StatusPill({ status }) {
     </span>
   );
 }
-
 function SkeletonRow() {
   return (
     <tr className="border-b border-white/5">
+      {/* Mã đơn */}
       <td className="py-3 pr-3 pl-4">
-        <div className="h-4 w-44 bg-white/5 rounded animate-pulse" />
-        <div className="mt-2 h-3 w-24 bg-white/5 rounded animate-pulse" />
+        <div className="h-4 w-36 bg-white/5 rounded animate-pulse" />
+        <div className="mt-2 h-3 w-20 bg-white/5 rounded animate-pulse" />
       </td>
-      <td className="py-3 px-3">
+
+      {/* Thời gian – desktop only */}
+      <td className="hidden sm:table-cell py-3 px-3">
         <div className="h-4 w-28 bg-white/5 rounded animate-pulse" />
+        <div className="mt-2 h-3 w-36 bg-white/5 rounded animate-pulse" />
       </td>
+
+      {/* Trạng thái */}
       <td className="py-3 px-3">
         <div className="h-6 w-24 bg-white/5 rounded-full animate-pulse" />
       </td>
-      <td className="py-3 px-3">
+
+      {/* Items – desktop only */}
+      <td className="hidden sm:table-cell py-3 px-3">
         <div className="h-4 w-14 bg-white/5 rounded animate-pulse" />
         <div className="mt-2 h-3 w-28 bg-white/5 rounded animate-pulse" />
       </td>
+
+      {/* Tổng tiền */}
       <td className="py-3 pl-3 pr-4 text-right">
         <div className="ml-auto h-4 w-24 bg-white/5 rounded animate-pulse" />
-        <div className="mt-2 ml-auto h-3 w-20 bg-white/5 rounded animate-pulse" />
+        <div className="hidden sm:block mt-2 ml-auto h-3 w-20 bg-white/5 rounded animate-pulse" />
       </td>
     </tr>
   );
 }
+
 
 export default function OrderManagement() {
   // filters
@@ -201,7 +211,7 @@ export default function OrderManagement() {
                       setQ(e.target.value);
                       resetPage();
                     }}
-                    placeholder="VD: ORD-20260112-0008"
+                    placeholder="Mã Đơn Hàng"
                     className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
                   />
                 </div>
@@ -313,14 +323,23 @@ export default function OrderManagement() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-205">
+          {/* mobile: không cần min-width lớn */}
+          <table className="w-full min-w-0 sm:min-w-225">
             <thead className="bg-neutral-950/60 border-b border-white/10">
               <tr className="text-left text-xs text-gray-400">
-                <th className="py-3 pr-3 pl-4 w-55">Mã / Bàn</th>
-                <th className="py-3 px-3 w-55">Thời gian</th>
-                <th className="py-3 px-3 w-40">Trạng thái</th>
-                <th className="py-3 px-3 w-30">Items</th>
-                <th className="py-3 pl-3 pr-4 text-right w-35">Tổng tiền</th>
+                <th className="py-3 pr-3 pl-4 w-[55%] sm:w-40">Mã / Bàn</th>
+
+                {/* Ẩn trên mobile */}
+                <th className="hidden sm:table-cell py-3 px-3 w-55">Thời gian</th>
+
+                <th className="py-3 px-3 w-[20%] sm:w-42.5">Trạng thái</th>
+
+                {/* Ẩn trên mobile */}
+                <th className="hidden sm:table-cell py-3 px-3 w-35">Items</th>
+
+                <th className="py-3 pl-3 pr-4 text-right w-[25%] sm:w-45">
+                  Tổng tiền
+                </th>
               </tr>
             </thead>
 
@@ -334,14 +353,20 @@ export default function OrderManagement() {
                     className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
                     title="Click để xem chi tiết"
                   >
+                    {/* Mã đơn (mobile chỉ cần id + bàn nhỏ) */}
                     <td className="py-3 pr-3 pl-4 align-top">
-                      <div className="text-white font-bold">{o.code}</div>
+                      <div className="text-white font-bold break-all sm:break-normal">
+                        {o.id}
+                      </div>
+
+                      {/* bàn: vẫn cho hiện, nhưng nhỏ */}
                       <div className="text-xs text-gray-400 mt-1">
                         {o.tableName ?? "—"}
                       </div>
                     </td>
 
-                    <td className="py-3 px-3 align-top">
+                    {/* Thời gian: desktop mới hiện */}
+                    <td className="hidden sm:table-cell py-3 px-3 align-top">
                       <div className="text-sm text-gray-200">
                         {formatDateTime(o.createdAt)}
                       </div>
@@ -352,11 +377,13 @@ export default function OrderManagement() {
                       ) : null}
                     </td>
 
+                    {/* Trạng thái */}
                     <td className="py-3 px-3 align-top">
                       <StatusPill status={o.status} />
                     </td>
 
-                    <td className="py-3 px-3 align-top">
+                    {/* Items: desktop mới hiện */}
+                    <td className="hidden sm:table-cell py-3 px-3 align-top">
                       <div className="text-sm text-gray-200 font-semibold">
                         {o.totalItems ?? "—"}
                       </div>
@@ -365,13 +392,14 @@ export default function OrderManagement() {
                       </div>
                     </td>
 
+                    {/* Tổng tiền */}
                     <td className="py-3 pl-3 pr-4 align-top text-right">
                       <div className="text-white font-bold">
-                        {typeof o.totalAmount === "number"
-                          ? formatVND(o.totalAmount)
-                          : "—"}
+                        {typeof o.totalAmount === "number" ? formatVND(o.totalAmount) : "—"}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+
+                      {/* Pay: ẩn trên mobile cho gọn */}
+                      <div className="hidden sm:block text-xs text-gray-500 mt-1">
                         {o.paymentMethod ? `Pay: ${o.paymentMethod}` : "—"}
                       </div>
                     </td>
@@ -391,6 +419,7 @@ export default function OrderManagement() {
             </tbody>
           </table>
         </div>
+
 
         {/* ✅ Pagination */}
         <PaginationBar

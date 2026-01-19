@@ -81,7 +81,6 @@ async function findOrders(filters = {}, { limit = 20, offset = 0 } = {}) {
       o.note,
       o.created_at,
       o.updated_at,
-      ('ORD-' || to_char(o.created_at, 'YYYYMMDD') || '-' || right(replace(o.id::text,'-',''), 6)) AS code,
       COALESCE(oi.total_items, 0)::int AS total_items
     FROM orders o
     LEFT JOIN (
@@ -107,10 +106,9 @@ async function findOrderById(orderId) {
     SELECT
       o.id,
       o.table_id,
-      t.table_number AS table_name,          -- ✅ tên bàn
-      t.location AS table_location,          -- (optional)
-      t.capacity AS table_capacity,          -- (optional)
-
+      t.table_number AS table_name,
+      t.location AS table_location,
+      t.capacity AS table_capacity,
       o.user_id,
       o.guest_name,
       o.total_amount,
@@ -119,12 +117,10 @@ async function findOrderById(orderId) {
       o.note,
       o.created_at,
       o.updated_at,
-
-      ('ORD-' || to_char(o.created_at, 'YYYYMMDD') || '-' || right(replace(o.id::text,'-',''), 6)) AS code,
       COALESCE(oi.total_items, 0)::int AS total_items
 
     FROM orders o
-    LEFT JOIN public.tables t ON t.id = o.table_id   -- ✅ join tables
+    LEFT JOIN public.tables t ON t.id = o.table_id
     LEFT JOIN (
       SELECT order_id, SUM(quantity) AS total_items
       FROM order_items

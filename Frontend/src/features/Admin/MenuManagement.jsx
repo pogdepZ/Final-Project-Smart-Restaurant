@@ -40,6 +40,110 @@ function StatusPill({ status }) {
   );
 }
 
+function MenuItemCard({
+  it,
+  onOpenDetail,
+  onEdit,
+  onDelete,
+  statusLoading,
+  chefLoading,
+  onToggleStatus,
+  onToggleChef,
+}) {
+  return (
+    <div
+      className="p-4 transition cursor-pointer"
+      onClick={onOpenDetail}
+    >
+      {/* top */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-white font-bold truncate">{it.name}</div>
+          <div className="text-xs text-gray-400 mt-1 truncate">{it.categoryName || "—"}</div>
+        </div>
+
+        <div className="text-right">
+          <div className="text-white font-black">
+            {typeof it.price === "number" ? formatVND(it.price) : "—"}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Prep: {it.prepTimeMinutes ?? 0} phút</div>
+        </div>
+      </div>
+
+      {/* middle */}
+      <div className="mt-3 flex flex-wrap items-center gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <ToggleSwitch
+            checked={it.status === "available"}
+            disabled={statusLoading || it.status === "sold_out"}
+            onChange={onToggleStatus}
+            label="Status"
+          />
+          <StatusPill status={it.status} />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ToggleSwitch
+            checked={!!it.isChefRecommended}
+            disabled={chefLoading}
+            onChange={onToggleChef}
+            label="Chef"
+          />
+          <span className={`text-xs ${it.isChefRecommended ? "text-orange-300" : "text-gray-500"}`}>
+            {it.isChefRecommended ? "Yes" : "No"}
+          </span>
+        </div>
+      </div>
+
+      {/* actions */}
+      <div className="mt-3 flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
+          onClick={onEdit}
+        >
+          Edit
+        </button>
+
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20"
+          onClick={onDelete}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MenuItemCardSkeleton() {
+  return (
+    <div className="p-4 border-b border-white/5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="h-4 w-40 bg-white/5 rounded animate-pulse" />
+          <div className="mt-2 h-3 w-24 bg-white/5 rounded animate-pulse" />
+        </div>
+        <div className="text-right">
+          <div className="h-4 w-20 bg-white/5 rounded animate-pulse ml-auto" />
+          <div className="mt-2 h-3 w-16 bg-white/5 rounded animate-pulse ml-auto" />
+        </div>
+      </div>
+
+      <div className="mt-3 flex gap-3">
+        <div className="h-6 w-28 bg-white/5 rounded-full animate-pulse" />
+        <div className="h-6 w-24 bg-white/5 rounded-full animate-pulse" />
+      </div>
+
+      <div className="mt-3 flex justify-end gap-2">
+        <div className="h-8 w-16 bg-white/5 rounded animate-pulse" />
+        <div className="h-8 w-16 bg-white/5 rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 function SkeletonRow() {
   return (
     <tr className="border-b border-white/5">
@@ -371,7 +475,7 @@ export default function MenuManagement() {
           <div className="text-xs text-gray-400">Click 1 dòng để xem chi tiết</div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full min-w-245">
             <thead className="bg-neutral-950/60 border-b border-white/10">
               <tr className="text-left text-xs text-gray-400">
@@ -521,6 +625,37 @@ export default function MenuManagement() {
               ) : null}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile cards (< sm) */}
+        <div className="sm:hidden divide-y divide-white/10">
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, i) => <MenuItemCardSkeleton key={i} />)
+            : uiItems.map((it) => (
+              <MenuItemCard
+                key={it.id}
+                it={it}
+                onOpenDetail={() => setDetailItem(it)}
+                onEdit={() => { setEditItem(it); setEditOpen(true); }}
+                onDelete={() => { setDeleteItem(it); setConfirmOpen(true); }}
+                statusLoading={!!statusMap[it.id]}
+                chefLoading={!!togglingMap[it.id]}
+                onToggleStatus={(next) => toggleStatus(it, next)}
+                onToggleChef={async (next) => {
+                  const id = it.id;
+                  const prev = !!it.isChefRecommended;
+
+                  setUiItems((cur) => cur.map((x) => x.id === id ? { ...x, isChefRecommended: next } : x));
+                  setTogglingMap((m) => ({ ...m, [id]: true }));
+
+                  try { await toggleChef(id, next); }
+                  catch { setUiItems((cur) => cur.map((x) => x.id === id ? { ...x, isChefRecommended: prev } : x)); }
+                  finally {
+                    setTogglingMap((m) => { const c = { ...m }; delete c[id]; return c; });
+                  }
+                }}
+              />
+            ))}
         </div>
 
         {/* ✅ Pagination */}

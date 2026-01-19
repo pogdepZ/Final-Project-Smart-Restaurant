@@ -61,7 +61,7 @@ export default function ModifierManagerPanel({ onReload }) {
   return (
     <div className="mt-6 rounded-2xl bg-neutral-900/60 border border-white/10 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between gap-3">
+      <div className="px-4 py-3 border-b border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-9 h-9 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
             <SlidersHorizontal className="text-orange-500" size={18} />
@@ -74,25 +74,23 @@ export default function ModifierManagerPanel({ onReload }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="px-4 py-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Tìm theo tên group..."
-                className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm theo tên group..."
+              className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm
               text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
-              />
-            </div>
+            />
           </div>
           <button
             onClick={() => setOpenCreate(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
               bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition"
           >
-            + New Modifier
+            + Modifier
           </button>
 
           <button
