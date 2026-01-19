@@ -161,12 +161,9 @@ export default function OrderManagement() {
       playNewOrderSound();
       // Refetch để lấy danh sách mới nhất
       refetch();
-      toast.success(
-        `🍽️ Đơn hàng mới từ Bàn ${data.table_number}!`,
-        {
-          icon: "📋",
-        },
-      );
+      toast.success(`🍽️ Đơn hàng mới từ Bàn ${data.table_number}!`, {
+        icon: "📋",
+      });
     };
 
     // Lắng nghe cập nhật đơn hàng
@@ -182,16 +179,31 @@ export default function OrderManagement() {
       refetch();
     };
 
+    // Lắng nghe thanh toán hoàn tất
+    const handlePaymentCompleted = (data) => {
+      console.log("🔔 OrderManagement: Thanh toán hoàn tất", data);
+      // Refetch để cập nhật trạng thái đơn hàng đã thanh toán
+      refetch();
+      toast.success(
+        `💰 Bàn ${data.table_number} đã thanh toán ${data.total_amount?.toLocaleString("vi-VN")}₫`,
+        {
+          icon: "✅",
+        },
+      );
+    };
+
     socket.on("admin_new_order", handleNewOrder);
     socket.on("admin_order_update", handleOrderUpdate);
     socket.on("new_order", handleNewOrder); // Cũng lắng nghe từ kitchen_room
     socket.on("update_order", handleKitchenOrderUpdate);
+    socket.on("admin_payment_completed", handlePaymentCompleted); // Lắng nghe thanh toán
 
     return () => {
       socket.off("admin_new_order", handleNewOrder);
       socket.off("admin_order_update", handleOrderUpdate);
       socket.off("new_order", handleNewOrder);
       socket.off("update_order", handleKitchenOrderUpdate);
+      socket.off("admin_payment_completed", handlePaymentCompleted);
     };
   }, [socket, refetch, playNewOrderSound]);
 

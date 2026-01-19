@@ -8,6 +8,7 @@ import {
   X,
   MapPin,
   LogOut,
+  ClipboardList,
 } from "lucide-react";
 // 1. Import useDispatch
 import { useSelector, useDispatch } from "react-redux";
@@ -114,8 +115,8 @@ const Navbar = () => {
                 )}
                 <NavLink
                   to="/order-tracking"
-                  label="Đơn của bạn"
-                  icon={<MapPin size={16} />}
+                  label="Theo dõi đơn"
+                  icon={<ClipboardList size={16} />}
                 />
               </>
             )}
@@ -298,6 +299,11 @@ const Navbar = () => {
               <MobileLink
                 to="/cart"
                 label="Giỏ hàng của bạn"
+                onClick={closeMenu}
+              />
+              <MobileLink
+                to="/order-tracking"
+                label="Theo dõi đơn"
                 onClick={closeMenu}
               />
               {isLoggedIn && (
