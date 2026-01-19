@@ -271,7 +271,7 @@ exports.findMenuItemsPublic = async ({
     LEFT JOIN menu_item_photos p 
       ON p.menu_item_id = i.id 
      AND p.is_primary = true
-    LEFT JOIN order_items oi ON oi.menu_item_id = i.id
+    LEFT JOIN order_items oi ON oi.menu_item_id = i.id AND oi.status != 'rejected'
     ${where}
     GROUP BY i.id, c.name, p.url
     ${orderBy}

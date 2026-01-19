@@ -1,15 +1,11 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import AdminNavbar from "../Components/AdminNavbar";
-import AdminToastNotification from "../Components/AdminToastNotification";
 
 export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
       <AdminNavbar />
-
-      {/* Toast Notifications - hiển thị popup real-time */}
-      <AdminToastNotification />
 
       {/* chừa khoảng trống vì navbar fixed */}
       <div className="flex-1 pt-16">

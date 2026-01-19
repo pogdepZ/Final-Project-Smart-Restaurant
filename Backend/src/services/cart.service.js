@@ -374,18 +374,21 @@ async function insertOrderItemModifiersTx(
 async function recalcOrderTotalTx(client, orderId) {
   // total = sum(order_items.subtotal) + sum(order_item_modifiers.price * order_items.quantity)
   // Vì modifiers lưu theo dòng item, và subtotal của item đang chỉ base*qty.
+  // ⚠️ QUAN TRỌNG: Loại trừ các items có status = 'rejected' khỏi tổng tiền
   const res = await client.query(
     `
     with base as (
       select coalesce(sum(subtotal),0) as base_total
       from public.order_items
       where order_id = $1
+        AND status != 'rejected'
     ),
     mods as (
       select coalesce(sum(m.price * i.quantity),0) as mods_total
       from public.order_items i
       join public.order_item_modifiers m on m.order_item_id = i.id
       where i.order_id = $1
+        AND i.status != 'rejected'
     )
     select (base.base_total + mods.mods_total) as total
     from base, mods
@@ -436,7 +439,7 @@ async function syncCartByTableId(
     console.log("sessionId:", sessionId);
 
     const tableSession = await tableSessionRepository.findById(sessionId);
-    
+
     // if(tableSession && tableSession.)
 
     // 1) Kiểm tra đã có order 'received' tại bàn này (và sessionId nếu có) chưa

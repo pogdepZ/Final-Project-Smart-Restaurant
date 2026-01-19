@@ -96,8 +96,12 @@ const TableManagement = () => {
 
     // Lắng nghe khi có khách quét QR / kết thúc session
     socket.on("table_session_update", (payload) => {
+      console.log("TableManagement: table_session_update", payload);
+
+      
       const { type, table } = payload || {};
       if (!table?.id) return;
+
 
       // Cập nhật bàn trong danh sách
       setTables((prev) => prev.map((t) => (t.id === table.id ? table : t)));
@@ -286,7 +290,7 @@ const TableManagement = () => {
     try {
       if (isEditing) {
         await axiosClient.put(`/admin/tables/${formData.id}`, formData);
-        // toast.success("Cập nhật thành công!");
+        toast.success("Cập nhật thành công!");
       } else {
         await axiosClient.post("/admin/tables", formData);
         toast.success("Tạo bàn thành công!");
@@ -320,7 +324,7 @@ const TableManagement = () => {
           );
         }
 
-        // toast.success("Đã tắt bàn");
+        toast.success("Đã tắt bàn");
         fetchTables();
       } catch (err) {
         toast.error("Lỗi cập nhật");
@@ -330,7 +334,7 @@ const TableManagement = () => {
         await axiosClient.patch(`/admin/tables/${table.id}/status`, {
           status: newStatus,
         });
-        // toast.success("Đã bật bàn");
+        toast.success("Đã bật bàn");
         fetchTables();
       } catch (err) {
         toast.error("Lỗi cập nhật");

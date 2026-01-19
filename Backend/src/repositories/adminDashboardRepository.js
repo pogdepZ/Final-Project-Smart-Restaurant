@@ -50,6 +50,7 @@ exports.topOrderedDishes = async (limit = 5) => {
     JOIN orders o ON o.id = oi.order_id
     LEFT JOIN menu_items mi ON mi.id = oi.menu_item_id
     WHERE o.status NOT IN ('pending', 'rejected')
+      AND oi.status != 'rejected'
       AND date_trunc('month', o.created_at) = date_trunc('month', NOW())
       AND mi.id IS NOT NULL
     GROUP BY mi.id, mi.name, mi.category_id
@@ -176,6 +177,7 @@ exports.popularItems = async ({ from, to, limit }) => {
     join orders o on o.id = oi.order_id
     where o.created_at >= $1 and o.created_at < $2
       and lower(o.status) = any($3)
+      and oi.status != 'rejected'
     group by 1
     order by 2 desc
     limit $4

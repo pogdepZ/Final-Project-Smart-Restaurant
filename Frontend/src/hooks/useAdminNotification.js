@@ -89,6 +89,9 @@ export function useAdminNotification() {
     // 2. Cập nhật đơn hàng
     const handleOrderUpdate = (data) => {
       console.log("🔔 Admin nhận cập nhật đơn:", data);
+
+      console.log("Table data:", data);
+
       playUpdateSound();
 
       const statusLabels = {
@@ -115,12 +118,13 @@ export function useAdminNotification() {
     // 3. Cập nhật bàn ăn
     const handleTableUpdate = (data) => {
       console.log("🔔 Admin nhận cập nhật bàn:", data);
+      console.log("Table data:", data);
+
       playUpdateSound();
 
       const statusLabels = {
         available: "Trống",
         occupied: "Có khách",
-        reserved: "Đã đặt",
         inactive: "Không hoạt động",
       };
 

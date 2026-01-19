@@ -247,12 +247,11 @@ exports.updateItemStatus = async (itemId, status) => {
   const updatedItem = await orderRepo.updateItemStatus(itemId, status);
   if (!updatedItem) throw new Error("Món không tồn tại");
 
-  // 2. Nếu Từ chối (rejected) -> Trừ tiền tổng đơn hàng
+  // 2. Nếu Từ chối (rejected) -> Tính lại tổng tiền đơn hàng (loại trừ items rejected)
   if (status === "rejected") {
-    await orderRepo.decreaseOrderTotal(
-      updatedItem.order_id,
-      updatedItem.subtotal,
-    );
+    // Sử dụng recalcOrderTotal thay vì decreaseOrderTotal để tính chính xác
+    // bao gồm cả giá modifiers
+    await orderRepo.recalcOrderTotal(updatedItem.order_id);
   }
 
   // 3. Lấy lại Full Order để bắn Socket (quan trọng để đồng bộ giao diện)

@@ -140,7 +140,7 @@ async function listItems(
       LEFT JOIN menu_item_photos p 
         ON p.menu_item_id = mi.id 
        AND p.is_primary = true
-      LEFT JOIN order_items oi ON oi.menu_item_id = mi.id
+      LEFT JOIN order_items oi ON oi.menu_item_id = mi.id AND oi.status != 'rejected'
       LEFT JOIN orders o ON o.id = oi.order_id AND o.status = 'completed'
       ${whereSql}
       GROUP BY mi.id, mc.name, p.url
@@ -391,7 +391,7 @@ async function findMenuItems({
     LEFT JOIN menu_item_photos p 
       ON p.menu_item_id = mi.id 
      AND p.is_primary = true
-    LEFT JOIN order_items oi ON oi.menu_item_id = mi.id
+    LEFT JOIN order_items oi ON oi.menu_item_id = mi.id AND oi.status != 'rejected'
     LEFT JOIN orders o ON o.id = oi.order_id AND o.status = 'completed'
     ${where}
     GROUP BY mi.id, mc.name, p.url

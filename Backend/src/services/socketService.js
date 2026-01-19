@@ -204,6 +204,7 @@ class SocketService {
   // Thông báo khi có session mới (khách quét QR vào bàn)
   notifyTableSessionUpdate(data) {
     if (!this.io) return;
+    console.log("SocketService: notifyTableSessionUpdate", data);
 
     const { table, session, type } = data;
     console.log(
@@ -235,6 +236,40 @@ class SocketService {
         type === "session_started"
           ? `🟢 Bàn ${table.table_number} có khách mới!`
           : `⚪ Bàn ${table.table_number} đã trống`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Thông báo thanh toán thành công cho admin
+  notifyPaymentCompleted(data) {
+    if (!this.io) return;
+
+    const { table_id, table_number, bill, orders_count, total_amount } = data;
+
+    console.log(
+      "📡 Bắn socket thanh toán thành công - Bàn:",
+      table_number,
+      "- Tổng tiền:",
+      total_amount,
+    );
+
+    // Gửi cho admin room
+    this.io.to("admin_room").emit("admin_payment_completed", {
+      type: "payment_completed",
+      table_id: table_id,
+      table_number: table_number,
+      bill: bill,
+      orders_count: orders_count,
+      total_amount: total_amount,
+      message: `💰 Bàn ${table_number} đã thanh toán ${total_amount?.toLocaleString("vi-VN")}₫`,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Cũng gửi cho kitchen room để waiter biết
+    this.io.to("kitchen_room").emit("payment_completed", {
+      table_id: table_id,
+      table_number: table_number,
+      total_amount: total_amount,
       timestamp: new Date().toISOString(),
     });
   }
