@@ -45,7 +45,11 @@ function TableDetailPopup({ open, table, onClose, onRefresh }) {
       {/* slide panel */}
       <div className="absolute inset-y-0 right-0 w-[92vw] max-w-[420px] sm:max-w-[520px]">
         <div className="h-full rounded-l-3xl border border-white/10 bg-neutral-950 shadow-2xl overflow-hidden">
-          <TableDetailPanel table={table} onClose={onClose} onRefresh={onRefresh} />
+          <TableDetailPanel
+            table={table}
+            onClose={onClose}
+            onRefresh={onRefresh}
+          />
         </div>
       </div>
     </div>
@@ -204,7 +208,8 @@ const TableManagement = () => {
     toast.info("Đang nén file ZIP...");
 
     for (const table of tables) {
-      const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
+      const clientUrl = `${import.meta.env.VITE_APP_BASE_URL}/menu?qrToken=${table.qr_token}`;
+
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
         clientUrl,
       )}`;
@@ -242,7 +247,8 @@ const TableManagement = () => {
     }
 
     for (const table of tables) {
-      const clientUrl = `${window.location.protocol}//${window.location.hostname}:5173/menu?qrToken=${table.qr_token}`;
+      const clientUrl = `${import.meta.env.VITE_APP_BASE_URL}/menu?qrToken=${table.qr_token}`;
+
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
         clientUrl,
       )}`;
@@ -431,7 +437,8 @@ const TableManagement = () => {
           </h1>
 
           <div className="text-sm text-gray-400 mt-2">
-            Tổng: <span className="text-white font-bold">{tables.length}</span> bàn • Active:{" "}
+            Tổng: <span className="text-white font-bold">{tables.length}</span>{" "}
+            bàn • Active:{" "}
             <span className="text-white font-bold">{totalActive}</span>
           </div>
         </div>
@@ -570,7 +577,8 @@ const TableManagement = () => {
               </div>
 
               <div className="md:col-span-12 text-xs text-gray-500">
-                Tip: Click card để mở panel chi tiết dạng popup. Card inactive sẽ mờ đi.
+                Tip: Click card để mở panel chi tiết dạng popup. Card inactive
+                sẽ mờ đi.
               </div>
             </div>
           </div>
@@ -591,9 +599,10 @@ const TableManagement = () => {
                 onClick={() => setSelectedTable(table)}
                 className={`group relative rounded-2xl border p-5 cursor-pointer transition
                   bg-white/5 border-white/10 hover:bg-white/10 hover:border-orange-500/20
-                  ${selectedTable?.id === table.id
-                    ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
-                    : ""
+                  ${
+                    selectedTable?.id === table.id
+                      ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
+                      : ""
                   }
                   ${table.status === "inactive" ? "opacity-60 grayscale" : ""}
                 `}
@@ -602,12 +611,14 @@ const TableManagement = () => {
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg
-                        ${table.status === "active"
-                          ? "bg-orange-500/10 text-orange-300 border border-orange-500/20"
-                          : "bg-white/5 text-gray-400 border border-white/10"
+                        ${
+                          table.status === "active"
+                            ? "bg-orange-500/10 text-orange-300 border border-orange-500/20"
+                            : "bg-white/5 text-gray-400 border border-white/10"
                         }`}
                     >
-                      {String(table.table_number || "").replace(/\D/g, "") || "—"}
+                      {String(table.table_number || "").replace(/\D/g, "") ||
+                        "—"}
                     </div>
 
                     <div>
@@ -615,8 +626,11 @@ const TableManagement = () => {
                         {table.table_number}
                       </div>
                       <div
-                        className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${table.status === "active" ? "text-green-400" : "text-red-400"
-                          }`}
+                        className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${
+                          table.status === "active"
+                            ? "text-green-400"
+                            : "text-red-400"
+                        }`}
                       >
                         {table.status === "active" ? "Online" : "Offline"}
                       </div>
@@ -654,9 +668,10 @@ const TableManagement = () => {
                       handleToggleStatus(table);
                     }}
                     className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border transition
-                      ${table.status === "active"
-                        ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
-                        : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
+                      ${
+                        table.status === "active"
+                          ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
+                          : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
                       }`}
                     title={table.status === "active" ? "Tắt bàn" : "Bật bàn"}
                   >
