@@ -66,12 +66,25 @@ exports.getOrderDetail = async (id) => {
       id: it.id,
       menuItemId: it.menu_item_id,
       name: it.item_name,
+      status: it.status,
       unitPrice: Number(it.price),
       quantity: it.quantity,
       totalPrice: Number(it.subtotal),
       note: it.note,
     })),
   };
+
+  // sắp xếp items theo trạng thái 
+  order.items.sort((a, b) => {
+    const statusOrder = {
+      received: 1,
+      preparing: 2,
+      ready: 3,
+      completed: 4,
+      rejected: 5,
+    };
+    return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+  });
 
   return { order };
 };

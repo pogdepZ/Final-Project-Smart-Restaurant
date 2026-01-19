@@ -149,6 +149,7 @@ async function findOrderItems(orderId) {
       price,
       quantity,
       subtotal,
+      status,
       note
     FROM order_items
     WHERE order_id = $1

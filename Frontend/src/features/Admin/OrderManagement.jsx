@@ -129,8 +129,12 @@ export default function OrderManagement() {
     if (error) toast.error(error);
   }, [error]);
 
+  // console.log("OrderManagement: data", data);
+
   const orders = data?.orders ?? [];
-  console.log(orders[0]);
+
+  console.log("Rendered OrderManagement", orders);
+
   const pagination = data?.pagination ?? {
     page,
     limit,
