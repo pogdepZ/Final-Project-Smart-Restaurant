@@ -12,7 +12,7 @@ import {
 import { toast } from "react-toastify";
 import { orderApi } from "../../services/orderApi";
 import { useSocket } from "../../context/SocketContext";
-import OrderItemStatus from "../../Components/customer/OrderItemStatus";
+import OrderItemStatus from "../../Components/customer/OrderItemStatus"
 import { formatMoneyVND } from "../../utils/orders";
 
 // Map status từ backend sang UI status
