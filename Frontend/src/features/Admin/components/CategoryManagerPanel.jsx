@@ -118,7 +118,10 @@ function CategoryEditModal({ open, initial, onClose, onSuccess }) {
   );
 }
 
-export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCategories }) {
+export default function CategoryManagerPanel({
+  onReloadMenuItems,
+  onReloadCategories,
+}) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -158,7 +161,13 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     return categories.filter((c) => {
-      if (t && !String(c.name || "").toLowerCase().includes(t)) return false;
+      if (
+        t &&
+        !String(c.name || "")
+          .toLowerCase()
+          .includes(t)
+      )
+        return false;
       return true;
     });
   }, [categories, q]);
@@ -270,9 +279,9 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
         onSuccess={() => {
           setOpenCreate(false);
           toast.success("Thêm category thành công");
-          fetchCategories();          // reload list trong panel
-          onReloadCategories?.();     // ✅ reload categories ở MenuManagement
-          onReloadMenuItems?.();      // optional
+          fetchCategories(); // reload list trong panel
+          onReloadCategories?.(); // ✅ reload categories ở MenuManagement
+          onReloadMenuItems?.(); // optional
         }}
       />
 
@@ -307,7 +316,8 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
             </div>
 
             <div className="text-xs text-gray-400">
-              Nếu category này đang có menu items, hãy chọn category thay thế để chuyển món sang.
+              Nếu category này đang có menu items, hãy chọn category thay thế để
+              chuyển món sang.
             </div>
 
             <select
@@ -344,7 +354,9 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
 
           try {
             setDeleting(true);
-            await adminMenuApi.deleteCategory(deleteCat.id, { moveToCategoryId });
+            await adminMenuApi.deleteCategory(deleteCat.id, {
+              moveToCategoryId,
+            });
 
             toast.success("Đã xoá category & chuyển món");
             setConfirmOpen(false);
@@ -352,7 +364,7 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
             setMoveToCategoryId("");
 
             fetchCategories();
-            onReloadCategories?.();       // ✅
+            onReloadCategories?.(); // ✅
             onReloadMenuItems?.();
           } catch (e) {
             toast.error(e?.response?.data?.message || "Không thể xoá category");

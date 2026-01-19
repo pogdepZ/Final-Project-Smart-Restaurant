@@ -60,7 +60,6 @@ function buildRange(period) {
   return { from: start.toISOString(), to: end.toISOString(), month };
 }
 
-
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
 
@@ -76,9 +75,7 @@ export default function AdminDashboard() {
     if (active && payload && payload.length) {
       return (
         <div className="px-3 py-2 rounded-xl bg-neutral-900/95 border border-white/10 shadow-xl">
-          <div className="text-white text-sm font-bold">
-            {label}h
-          </div>
+          <div className="text-white text-sm font-bold">{label}h</div>
           <div className="text-orange-300 text-xs mt-0.5">
             {payload[0].value} đơn
           </div>
@@ -301,12 +298,12 @@ export default function AdminDashboard() {
             isLoading
               ? skeletonRows("orders")
               : (data?.topOrderedDishes || []).slice(0, 5).map((d) => ({
-                key: d.id,
-                title: d.name,
-                subtitle: d.category,
-                value: formatInt(d.orders),
-                valueHint: "lượt",
-              }))
+                  key: d.id,
+                  title: d.name,
+                  subtitle: d.category,
+                  value: formatInt(d.orders),
+                  valueHint: "lượt",
+                }))
           }
         />
 
@@ -322,12 +319,12 @@ export default function AdminDashboard() {
             isLoading
               ? skeletonRows("rating")
               : (data?.topRatedDishes || []).slice(0, 5).map((d) => ({
-                key: d.id,
-                title: d.name,
-                subtitle: d.category,
-                value: `${Number(d.rating || 0).toFixed(1)} ★`,
-                valueHint: `${formatInt(d.reviews)} reviews`,
-              }))
+                  key: d.id,
+                  title: d.name,
+                  subtitle: d.category,
+                  value: `${Number(d.rating || 0).toFixed(1)} ★`,
+                  valueHint: `${formatInt(d.reviews)} reviews`,
+                }))
           }
         />
       </div>
@@ -340,7 +337,7 @@ export default function AdminDashboard() {
               Biểu đồ phân tích
             </div>
           </div>
-          {(ordersDailyLoading || peakLoading || popularLoading) ? (
+          {ordersDailyLoading || peakLoading || popularLoading ? (
             <div className="text-xs text-gray-400">Đang tải charts...</div>
           ) : null}
         </div>
@@ -352,11 +349,13 @@ export default function AdminDashboard() {
               <div>
                 <div className="text-white font-bold">Số đơn theo ngày</div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Theo {PERIODS.find((p) => p.value === ordersDailyPeriod)?.label?.toLowerCase()}
+                  Theo{" "}
+                  {PERIODS.find(
+                    (p) => p.value === ordersDailyPeriod,
+                  )?.label?.toLowerCase()}
                 </div>
               </div>
             </div>
-
 
             <div className="mt-6 h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -405,7 +404,6 @@ export default function AdminDashboard() {
                   />
                 </LineChart>
               </ResponsiveContainer>
-
             </div>
           </div>
 
@@ -415,7 +413,10 @@ export default function AdminDashboard() {
               <div>
                 <div className="text-white font-bold">Mặt hàng phổ biến</div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Theo {PERIODS.find((p) => p.value === popularItemsPeriod)?.label?.toLowerCase()}
+                  Theo{" "}
+                  {PERIODS.find(
+                    (p) => p.value === popularItemsPeriod,
+                  )?.label?.toLowerCase()}
                 </div>
               </div>
 
@@ -484,7 +485,10 @@ export default function AdminDashboard() {
               <div>
                 <div className="text-white font-bold">Giờ cao điểm</div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Orders theo giờ (0–23) • Theo {PERIODS.find((p) => p.value === peakHoursPeriod)?.label?.toLowerCase()}
+                  Orders theo giờ (0–23) • Theo{" "}
+                  {PERIODS.find(
+                    (p) => p.value === peakHoursPeriod,
+                  )?.label?.toLowerCase()}
                 </div>
               </div>
 
@@ -502,18 +506,18 @@ export default function AdminDashboard() {
               </select>
             </div>
 
-
             <div className="mt-3 h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={peakHours}
-                  barSize={22}
-                >
+                <BarChart data={peakHours} barSize={22}>
                   {/* Gradient */}
                   <defs>
                     <linearGradient id="barGlow" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#fb923c" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#ef4444" stopOpacity={0.85} />
+                      <stop
+                        offset="100%"
+                        stopColor="#ef4444"
+                        stopOpacity={0.85}
+                      />
                     </linearGradient>
                   </defs>
 
@@ -546,19 +550,14 @@ export default function AdminDashboard() {
                   <Tooltip
                     content={<DarkTooltip />}
                     cursor={{
-                      fill: "rgba(249, 115, 22, 0.2)"
-                    }} />
+                      fill: "rgba(249, 115, 22, 0.2)",
+                    }}
+                  />
 
                   {/* Bars */}
-                  <Bar
-                    dataKey="orders"
-                    fill="url(#barGlow)"
-                  >
+                  <Bar dataKey="orders" fill="url(#barGlow)">
                     {peakHours.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fillOpacity={0.85}
-                      />
+                      <Cell key={i} fillOpacity={0.85} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -577,12 +576,13 @@ export default function AdminDashboard() {
           <div>
             <div className="text-white font-bold">Gợi ý</div>
             <p className="text-gray-400 text-sm mt-1">
-              Nếu backend chưa có endpoint charts, hãy tạo: <b>/summary</b>, <b>/orders-daily</b>, <b>/peak-hours</b>, <b>/popular-items</b>.
+              Nếu backend chưa có endpoint charts, hãy tạo: <b>/summary</b>,{" "}
+              <b>/orders-daily</b>, <b>/peak-hours</b>, <b>/popular-items</b>.
             </p>
           </div>
         </div>
       </div>
-    </div >
+    </div>
   );
 }
 

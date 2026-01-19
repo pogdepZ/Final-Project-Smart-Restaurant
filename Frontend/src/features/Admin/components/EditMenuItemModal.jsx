@@ -88,7 +88,7 @@ export default function EditMenuItemModal({
         });
 
         setSelectedGroupIds(
-          Array.isArray(full?.modifierGroupIds) ? full.modifierGroupIds : []
+          Array.isArray(full?.modifierGroupIds) ? full.modifierGroupIds : [],
         );
       } catch (e) {
         if (!cancelled) {
@@ -197,7 +197,9 @@ export default function EditMenuItemModal({
       toast.success("Chỉnh sửa thành công");
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || "Update thất bại");
-      toast.error(e?.response?.data?.message || e?.message || "Chỉnh sửa thất bại");
+      toast.error(
+        e?.response?.data?.message || e?.message || "Chỉnh sửa thất bại",
+      );
     } finally {
       setLoading(false);
     }
@@ -238,7 +240,9 @@ export default function EditMenuItemModal({
                 <input
                   className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                   value={form.name}
-                  onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, name: e.target.value }))
+                  }
                   disabled={disabledAll}
                 />
               </div>
@@ -256,7 +260,9 @@ export default function EditMenuItemModal({
                     disabled={disabledAll}
                   >
                     <option value="">
-                      {item?.categoryName ? `${item.categoryName}` : "-- chọn --"}
+                      {item?.categoryName
+                        ? `${item.categoryName}`
+                        : "-- chọn --"}
                     </option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -272,7 +278,9 @@ export default function EditMenuItemModal({
                     className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
                       [&>option]:bg-neutral-900 [&>option]:text-white"
                     value={form.status}
-                    onChange={(e) => setForm((s) => ({ ...s, status: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, status: e.target.value }))
+                    }
                     disabled={disabledAll}
                   >
                     <option value="available">available</option>
@@ -289,7 +297,9 @@ export default function EditMenuItemModal({
                     type="number"
                     className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                     value={form.price}
-                    onChange={(e) => setForm((s) => ({ ...s, price: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, price: e.target.value }))
+                    }
                     disabled={disabledAll}
                   />
                 </div>
@@ -300,7 +310,10 @@ export default function EditMenuItemModal({
                     className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                     value={form.prepTimeMinutes}
                     onChange={(e) =>
-                      setForm((s) => ({ ...s, prepTimeMinutes: e.target.value }))
+                      setForm((s) => ({
+                        ...s,
+                        prepTimeMinutes: e.target.value,
+                      }))
                     }
                     disabled={disabledAll}
                   />
@@ -339,7 +352,9 @@ export default function EditMenuItemModal({
                 </div>
 
                 {loadingPhotos ? (
-                  <div className="mt-4 text-sm text-gray-400">Đang tải ảnh...</div>
+                  <div className="mt-4 text-sm text-gray-400">
+                    Đang tải ảnh...
+                  </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-3 mt-4">
                     {photos.map((p) => (
@@ -348,7 +363,11 @@ export default function EditMenuItemModal({
                         className={`relative group rounded-xl overflow-hidden border
                         ${p.isPrimary ? "border-orange-500" : "border-white/10"}`}
                       >
-                        <img src={p.url} alt="" className="w-full h-24 object-cover" />
+                        <img
+                          src={p.url}
+                          alt=""
+                          className="w-full h-24 object-cover"
+                        />
 
                         {p.isPrimary && (
                           <div className="absolute top-1 left-1 text-[10px] bg-orange-500 text-black px-2 py-0.5 rounded">
@@ -393,7 +412,9 @@ export default function EditMenuItemModal({
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-white font-bold">Modifiers cho món</div>
+                    <div className="text-white font-bold">
+                      Modifiers cho món
+                    </div>
                     <div className="text-xs text-gray-400 mt-0.5">
                       Chọn các nhóm tuỳ chọn (Size, Topping, Spicy…)
                     </div>

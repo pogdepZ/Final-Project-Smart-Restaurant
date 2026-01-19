@@ -58,7 +58,6 @@ function StatusPill({ checked }) {
 }
 
 export default function TableAssignments() {
-
   const [waiters, setWaiters] = useState([]);
   const [tables, setTables] = useState([]);
 
@@ -80,13 +79,14 @@ export default function TableAssignments() {
 
   const selectedWaiter = useMemo(
     () => waiters.find((w) => w.id === selectedWaiterId),
-    [waiters, selectedWaiterId]
+    [waiters, selectedWaiterId],
   );
 
   const dirty = useMemo(() => {
     // compare Set sizes + values
     if (assignedTableIds.size !== initialAssignedIds.size) return true;
-    for (const id of assignedTableIds) if (!initialAssignedIds.has(id)) return true;
+    for (const id of assignedTableIds)
+      if (!initialAssignedIds.has(id)) return true;
     return false;
   }, [assignedTableIds, initialAssignedIds]);
 
@@ -107,7 +107,6 @@ export default function TableAssignments() {
     }
   };
 
-
   const fetchAssignments = async (waiterId) => {
     if (!waiterId) return;
     setLoadingAssign(true);
@@ -122,7 +121,6 @@ export default function TableAssignments() {
       setLoadingAssign(false);
     }
   };
-
 
   useEffect(() => {
     fetchInit();
@@ -160,7 +158,10 @@ export default function TableAssignments() {
     setSaving(true);
     try {
       const tableIds = Array.from(assignedTableIds);
-      const res = await tableApi.saveTableAssignmentsByWaiter(selectedWaiterId, tableIds);
+      const res = await tableApi.saveTableAssignmentsByWaiter(
+        selectedWaiterId,
+        tableIds,
+      );
 
       const savedIds = new Set((res.tableIds || tableIds).map(String));
       setAssignedTableIds(savedIds);
@@ -173,7 +174,6 @@ export default function TableAssignments() {
     }
   };
 
-
   const resetToInitial = () => {
     setAssignedTableIds(new Set(initialAssignedIds));
     toast.info("Đã hoàn tác thay đổi");
@@ -184,7 +184,8 @@ export default function TableAssignments() {
 
     return (tables || [])
       .filter((t) => {
-        if (locationFilter !== "ALL" && t.location !== locationFilter) return false;
+        if (locationFilter !== "ALL" && t.location !== locationFilter)
+          return false;
 
         const isAssigned = assignedTableIds.has(String(t.id));
         if (onlyAssigned === "YES" && !isAssigned) return false;
@@ -196,10 +197,15 @@ export default function TableAssignments() {
         const loc = String(t.location || "").toLowerCase();
         return name.includes(kw) || loc.includes(kw);
       })
-      .sort((a, b) => String(a.table_number).localeCompare(String(b.table_number)));
+      .sort((a, b) =>
+        String(a.table_number).localeCompare(String(b.table_number)),
+      );
   }, [tables, q, locationFilter, onlyAssigned, assignedTableIds]);
 
-  const assignedCount = useMemo(() => assignedTableIds.size, [assignedTableIds]);
+  const assignedCount = useMemo(
+    () => assignedTableIds.size,
+    [assignedTableIds],
+  );
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -224,7 +230,9 @@ export default function TableAssignments() {
             {selectedWaiter ? (
               <>
                 Waiter đang chọn:{" "}
-                <span className="text-white font-bold">{selectedWaiter.name}</span>{" "}
+                <span className="text-white font-bold">
+                  {selectedWaiter.name}
+                </span>{" "}
                 <span className="text-gray-500">({selectedWaiter.email})</span>
               </>
             ) : (
@@ -235,7 +243,10 @@ export default function TableAssignments() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-sm">
-            Assigned: <span className="text-white font-bold">{selectedWaiterId ? assignedCount : "—"}</span>
+            Assigned:{" "}
+            <span className="text-white font-bold">
+              {selectedWaiterId ? assignedCount : "—"}
+            </span>
           </div>
 
           <button
@@ -249,7 +260,9 @@ export default function TableAssignments() {
 
           <button
             onClick={save}
-            disabled={!selectedWaiterId || saving || loadingInit || loadingAssign}
+            disabled={
+              !selectedWaiterId || saving || loadingInit || loadingAssign
+            }
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
               bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition disabled:opacity-60"
             title={!dirty ? "Không có thay đổi" : "Lưu phân công"}
@@ -282,7 +295,9 @@ export default function TableAssignments() {
             <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
               {/* Waiter select */}
               <div className="md:col-span-4">
-                <label className="text-xs text-gray-400 mb-1 block">Waiter</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Waiter
+                </label>
                 <select
                   value={selectedWaiterId}
                   onChange={(e) => setSelectedWaiterId(e.target.value)}
@@ -303,7 +318,9 @@ export default function TableAssignments() {
 
               {/* Search table */}
               <div className="md:col-span-4">
-                <label className="text-xs text-gray-400 mb-1 block">Tìm bàn</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Tìm bàn
+                </label>
                 <div className="relative">
                   <Search
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -320,7 +337,9 @@ export default function TableAssignments() {
 
               {/* Location */}
               <div className="md:col-span-2">
-                <label className="text-xs text-gray-400 mb-1 block">Khu vực</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Khu vực
+                </label>
                 <div className="relative">
                   <MapPin
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -345,7 +364,9 @@ export default function TableAssignments() {
 
               {/* Only assigned */}
               <div className="md:col-span-2">
-                <label className="text-xs text-gray-400 mb-1 block">Hiển thị</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Hiển thị
+                </label>
                 <select
                   value={onlyAssigned}
                   onChange={(e) => setOnlyAssigned(e.target.value)}
@@ -371,9 +392,13 @@ export default function TableAssignments() {
       {/* Table list */}
       <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-          <div className="text-white font-bold">Danh sách bàn (tick để phân công)</div>
+          <div className="text-white font-bold">
+            Danh sách bàn (tick để phân công)
+          </div>
           <div className="text-xs text-gray-400">
-            {loadingInit || loadingAssign ? "Đang tải..." : `Hiển thị: ${filteredTables.length} bàn`}
+            {loadingInit || loadingAssign
+              ? "Đang tải..."
+              : `Hiển thị: ${filteredTables.length} bàn`}
           </div>
         </div>
 
@@ -385,57 +410,70 @@ export default function TableAssignments() {
                 <th className="py-3 px-3 w-[42%]">Bàn</th>
                 <th className="py-3 px-3 w-[20%]">Khu vực</th>
                 <th className="py-3 px-3 w-[15%]">Sức chứa</th>
-                <th className="py-3 pl-3 pr-4 text-right w-[15%]">Trạng thái</th>
+                <th className="py-3 pl-3 pr-4 text-right w-[15%]">
+                  Trạng thái
+                </th>
               </tr>
             </thead>
 
             <tbody>
               {loadingInit || loadingAssign
-                ? Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
+                ? Array.from({ length: 8 }).map((_, i) => (
+                    <SkeletonRow key={i} />
+                  ))
                 : filteredTables.map((t) => {
-                  const checked = assignedTableIds.has(String(t.id));
-                  return (
-                    <tr
-                      key={t.id}
-                      className={`border-b border-white/5 hover:bg-white/5 transition ${!selectedWaiterId ? "opacity-60" : ""
+                    const checked = assignedTableIds.has(String(t.id));
+                    return (
+                      <tr
+                        key={t.id}
+                        className={`border-b border-white/5 hover:bg-white/5 transition ${
+                          !selectedWaiterId ? "opacity-60" : ""
                         }`}
-                    >
-                      <td className="py-3 pr-3 pl-4 align-top">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={!selectedWaiterId || saving}
-                          onChange={() => toggleTable(t.id)}
-                          className="w-4 h-4 accent-orange-500 cursor-pointer"
-                        />
-                      </td>
+                      >
+                        <td className="py-3 pr-3 pl-4 align-top">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={!selectedWaiterId || saving}
+                            onChange={() => toggleTable(t.id)}
+                            className="w-4 h-4 accent-orange-500 cursor-pointer"
+                          />
+                        </td>
 
-                      <td className="py-3 px-3 align-top">
-                        <div className="text-white font-bold">{t.table_number}</div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          ID: <span className="text-gray-500">{t.id}</span>
-                        </div>
-                      </td>
+                        <td className="py-3 px-3 align-top">
+                          <div className="text-white font-bold">
+                            {t.table_number}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            ID: <span className="text-gray-500">{t.id}</span>
+                          </div>
+                        </td>
 
-                      <td className="py-3 px-3 align-top">
-                        <div className="text-gray-200">{t.location || "—"}</div>
-                      </td>
+                        <td className="py-3 px-3 align-top">
+                          <div className="text-gray-200">
+                            {t.location || "—"}
+                          </div>
+                        </td>
 
-                      <td className="py-3 px-3 align-top">
-                        <div className="text-gray-200">{t.capacity ?? "—"}</div>
-                      </td>
+                        <td className="py-3 px-3 align-top">
+                          <div className="text-gray-200">
+                            {t.capacity ?? "—"}
+                          </div>
+                        </td>
 
-                      <td className="py-3 pl-3 pr-4 align-top text-right">
-                        <StatusPill checked={checked} />
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <td className="py-3 pl-3 pr-4 align-top text-right">
+                          <StatusPill checked={checked} />
+                        </td>
+                      </tr>
+                    );
+                  })}
 
               {!loadingInit && !loadingAssign && filteredTables.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-10 text-center">
-                    <div className="text-white font-bold">Không có bàn phù hợp</div>
+                    <div className="text-white font-bold">
+                      Không có bàn phù hợp
+                    </div>
                     <div className="text-gray-400 text-sm mt-1">
                       Thử đổi filter hoặc từ khóa.
                     </div>
@@ -450,7 +488,8 @@ export default function TableAssignments() {
           <div>
             {selectedWaiterId ? (
               <>
-                Đã chọn: <span className="text-gray-300">{assignedCount}</span> bàn
+                Đã chọn: <span className="text-gray-300">{assignedCount}</span>{" "}
+                bàn
               </>
             ) : (
               <>Chọn waiter để bắt đầu.</>

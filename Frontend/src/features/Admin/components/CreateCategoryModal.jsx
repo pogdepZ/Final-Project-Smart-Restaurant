@@ -50,7 +50,7 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
       reset();
     } catch (e) {
       setError(e?.response?.data?.message || "Tạo category thất bại.");
-      toast.error(e?.response?.data?.message || "Tạo category thất bại.")
+      toast.error(e?.response?.data?.message || "Tạo category thất bại.");
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,10 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={handleClose}
+      />
 
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-neutral-950 shadow-2xl overflow-hidden">
@@ -69,8 +72,12 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
                 <Layers className="text-orange-500" size={18} />
               </div>
               <div>
-                <div className="text-white font-black leading-tight">Tạo Category</div>
-                <div className="text-xs text-gray-400 mt-0.5">Thêm nhóm món mới cho menu</div>
+                <div className="text-white font-black leading-tight">
+                  Tạo Category
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">
+                  Thêm nhóm món mới cho menu
+                </div>
               </div>
             </div>
 
@@ -94,7 +101,9 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
             ) : null}
 
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Tên category *</label>
+              <label className="text-xs text-gray-400 mb-1 block">
+                Tên category *
+              </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -116,7 +125,9 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Display order</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Display order
+                </label>
                 <input
                   type="number"
                   value={displayOrder}
@@ -126,7 +137,9 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Status</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Status
+                </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}

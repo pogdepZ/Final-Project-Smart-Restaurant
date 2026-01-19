@@ -50,7 +50,9 @@ function AvatarBlock({ name, avatarUrl }) {
 
       <div className="text-center">
         <div className="text-white font-black text-lg">{name || "—"}</div>
-        <div className="text-gray-400 text-sm">{avatarUrl ? "Avatar" : "No avatar"}</div>
+        <div className="text-gray-400 text-sm">
+          {avatarUrl ? "Avatar" : "No avatar"}
+        </div>
       </div>
     </div>
   );
@@ -100,7 +102,11 @@ export default function AccountDetailModal({ open, item, onClose, onUpdated }) {
             Account detail
           </div>
 
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 transition" type="button">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-white/5 transition"
+            type="button"
+          >
             <X className="text-gray-300" size={18} />
           </button>
         </div>
@@ -138,7 +144,11 @@ export default function AccountDetailModal({ open, item, onClose, onUpdated }) {
             />
             <Row
               label="Created at"
-              value={item.created_at ? new Date(item.created_at).toLocaleString("vi-VN") : "—"}
+              value={
+                item.created_at
+                  ? new Date(item.created_at).toLocaleString("vi-VN")
+                  : "—"
+              }
             />
             <Row label="Preferences" value={item.preferences || "—"} />
           </div>

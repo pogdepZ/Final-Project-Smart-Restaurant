@@ -27,7 +27,9 @@ function OptionRow({ value, onChange, onRemove, disabled }) {
         <label className="text-xs text-gray-400 mb-1 block">Price (+)</label>
         <input
           value={value.price_adjustment}
-          onChange={(e) => onChange({ ...value, price_adjustment: e.target.value })}
+          onChange={(e) =>
+            onChange({ ...value, price_adjustment: e.target.value })
+          }
           inputMode="decimal"
           className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
             focus:outline-none focus:border-orange-500/40 transition"
@@ -107,7 +109,10 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
   if (!open) return null;
 
   const addOptionRow = () => {
-    setOptions((cur) => [...cur, { name: "", price_adjustment: "0", status: "active" }]);
+    setOptions((cur) => [
+      ...cur,
+      { name: "", price_adjustment: "0", status: "active" },
+    ]);
   };
 
   const updateOptionRow = (idx, next) => {
@@ -128,7 +133,8 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
 
     if (min < 0 || max < 0) return toast.error("Min/Max phải >= 0");
     if (max && min > max) return toast.error("Min không được lớn hơn Max");
-    if (selectionType === "single" && max > 1) return toast.error("Single choice thì Max không được > 1");
+    if (selectionType === "single" && max > 1)
+      return toast.error("Single choice thì Max không được > 1");
 
     // validate options (lọc dòng rỗng)
     const cleanedOptions = options
@@ -144,8 +150,10 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
       return toast.error("Cần ít nhất 1 option (hoặc nhập tên option)");
     }
     for (const o of cleanedOptions) {
-      if (o.price_adjustment < 0) return toast.error("Price adjustment phải >= 0");
-      if (o.status !== "active" && o.status !== "inactive") return toast.error("Status option không hợp lệ");
+      if (o.price_adjustment < 0)
+        return toast.error("Price adjustment phải >= 0");
+      if (o.status !== "active" && o.status !== "inactive")
+        return toast.error("Status option không hợp lệ");
     }
 
     setSaving(true);
@@ -174,8 +182,8 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
             name: o.name,
             price_adjustment: o.price_adjustment,
             status: o.status,
-          })
-        )
+          }),
+        ),
       );
 
       toast.success("Đã tạo modifier group + options");
@@ -192,7 +200,11 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
       <div className="w-full max-w-3xl rounded-2xl bg-neutral-950 border border-white/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
           <div className="text-white font-bold">+ Tạo Modifier Group</div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5" disabled={saving}>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-white/5"
+            disabled={saving}
+          >
             <X size={18} className="text-gray-300" />
           </button>
         </div>
@@ -204,7 +216,9 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
 
             <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
               <div className="md:col-span-6">
-                <label className="text-xs text-gray-400 mb-1 block">Tên group</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Tên group
+                </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -216,7 +230,9 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
               </div>
 
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Selection type</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Selection type
+                </label>
                 <select
                   value={selectionType}
                   onChange={(e) => setSelectionType(e.target.value)}
@@ -231,7 +247,9 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
               </div>
 
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Status</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Status
+                </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
@@ -246,7 +264,9 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
               </div>
 
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Min selections</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Min selections
+                </label>
                 <input
                   value={minSelections}
                   onChange={(e) => setMinSelections(e.target.value)}
@@ -258,7 +278,9 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
               </div>
 
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Max selections</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Max selections
+                </label>
                 <input
                   value={maxSelections}
                   onChange={(e) => setMaxSelections(e.target.value)}
@@ -268,12 +290,16 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
                   disabled={saving}
                 />
                 <div className="text-[11px] text-gray-500 mt-1">
-                  {selectionType === "single" ? "Single: max nên là 1" : "Multiple: tuỳ bạn set"}
+                  {selectionType === "single"
+                    ? "Single: max nên là 1"
+                    : "Multiple: tuỳ bạn set"}
                 </div>
               </div>
 
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Display order</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Display order
+                </label>
                 <input
                   value={displayOrder}
                   onChange={(e) => setDisplayOrder(e.target.value)}
@@ -297,7 +323,8 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
               </div>
 
               <div className="md:col-span-12 text-xs text-gray-400">
-                Preview: Min {computed.min} / Max {computed.max} • {selectionType}
+                Preview: Min {computed.min} / Max {computed.max} •{" "}
+                {selectionType}
               </div>
             </div>
           </div>

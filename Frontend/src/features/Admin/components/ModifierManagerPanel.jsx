@@ -36,11 +36,17 @@ export default function ModifierManagerPanel({ onReload }) {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await adminModifierApi.getGroups({ page: 1, limit: 200, sort: "NAME_ASC" });
+      const res = await adminModifierApi.getGroups({
+        page: 1,
+        limit: 200,
+        sort: "NAME_ASC",
+      });
       const data = res?.items ? res : res?.data; // tuỳ interceptor
       setItems(data?.items ?? []);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Không thể tải modifier groups");
+      toast.error(
+        e?.response?.data?.message || "Không thể tải modifier groups",
+      );
     } finally {
       setLoading(false);
     }
@@ -67,7 +73,9 @@ export default function ModifierManagerPanel({ onReload }) {
             <SlidersHorizontal className="text-orange-500" size={18} />
           </div>
           <div className="min-w-0">
-            <div className="text-white font-bold leading-tight">Modifier groups</div>
+            <div className="text-white font-bold leading-tight">
+              Modifier groups
+            </div>
             <div className="text-xs text-gray-400">
               {loading ? "Đang tải..." : `Có ${items.length} groups`}
             </div>
@@ -77,7 +85,10 @@ export default function ModifierManagerPanel({ onReload }) {
         <div className="flex items-center gap-2">
           <div className="px-4 py-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                size={18}
+              />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -110,7 +121,9 @@ export default function ModifierManagerPanel({ onReload }) {
       <div className="px-4">
         {loading ? (
           <div className="py-2">
-            {Array.from({ length: 6 }).map((_, i) => <SkeletonItem key={i} />)}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonItem key={i} />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-10 text-center">
@@ -120,20 +133,30 @@ export default function ModifierManagerPanel({ onReload }) {
         ) : (
           <div className="divide-y divide-white/5">
             {filtered.map((it) => (
-              <div key={it.id} className="py-3 flex items-start justify-between gap-3"
+              <div
+                key={it.id}
+                className="py-3 flex items-start justify-between gap-3"
                 onClick={() => {
                   setDetailGroup(it);
                   setDetailOpen(true);
-                }}>
-
+                }}
+              >
                 <div className="min-w-0">
                   <div className="text-white font-bold truncate">{it.name}</div>
 
                   <div className="text-xs text-gray-400 mt-1">
-                    {it.selection_type === "single" ? "Single choice" : "Multiple choice"} •{" "}
-                    {it.is_required ? "Required" : "Optional"} • Min {it.min_selections ?? 0} / Max{" "}
-                    {it.max_selections ?? 0} •{" "}
-                    <span className={it.status === "active" ? "text-green-300" : "text-yellow-300"}>
+                    {it.selection_type === "single"
+                      ? "Single choice"
+                      : "Multiple choice"}{" "}
+                    • {it.is_required ? "Required" : "Optional"} • Min{" "}
+                    {it.min_selections ?? 0} / Max {it.max_selections ?? 0} •{" "}
+                    <span
+                      className={
+                        it.status === "active"
+                          ? "text-green-300"
+                          : "text-yellow-300"
+                      }
+                    >
                       {it.status}
                     </span>
                     {typeof it.options_count === "number" ? (

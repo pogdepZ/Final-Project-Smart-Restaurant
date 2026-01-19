@@ -26,15 +26,29 @@ import ModifierManagerPanel from "./components/ModifierManagerPanel";
 import { adminMenuApi } from "../../services/adminMenuApi";
 
 const STATUS_META = {
-  available: { label: "Available", className: "bg-green-500/10 text-green-300 border-green-500/20" },
-  unavailable: { label: "Unavailable", className: "bg-yellow-500/10 text-yellow-300 border-yellow-500/20" },
-  sold_out: { label: "Sold out", className: "bg-red-500/10 text-red-300 border-red-500/20" },
+  available: {
+    label: "Available",
+    className: "bg-green-500/10 text-green-300 border-green-500/20",
+  },
+  unavailable: {
+    label: "Unavailable",
+    className: "bg-yellow-500/10 text-yellow-300 border-yellow-500/20",
+  },
+  sold_out: {
+    label: "Sold out",
+    className: "bg-red-500/10 text-red-300 border-red-500/20",
+  },
 };
 
 function StatusPill({ status }) {
-  const meta = STATUS_META[status] || { label: status || "—", className: "bg-white/5 text-gray-200 border-white/10" };
+  const meta = STATUS_META[status] || {
+    label: status || "—",
+    className: "bg-white/5 text-gray-200 border-white/10",
+  };
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${meta.className}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${meta.className}`}
+    >
       {meta.label}
     </span>
   );
@@ -75,16 +89,16 @@ export default function MenuManagement() {
   const [editItem, setEditItem] = useState(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [detailItem, setDetailItem] = useState(null);     // xem chi tiết
-  const [deleteItem, setDeleteItem] = useState(null);     // confirm xoá
+  const [detailItem, setDetailItem] = useState(null); // xem chi tiết
+  const [deleteItem, setDeleteItem] = useState(null); // confirm xoá
   const [deleting, setDeleting] = useState(false);
-
 
   // paging
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
-  const { toggle: toggleChef, isLoading: toggleLoading } = useToggleChefRecommended();
+  const { toggle: toggleChef, isLoading: toggleLoading } =
+    useToggleChefRecommended();
 
   const toggleStatus = async (it, nextChecked) => {
     const id = it.id;
@@ -93,7 +107,7 @@ export default function MenuManagement() {
 
     // optimistic
     setUiItems((cur) =>
-      cur.map((x) => (x.id === id ? { ...x, status: nextStatus } : x))
+      cur.map((x) => (x.id === id ? { ...x, status: nextStatus } : x)),
     );
     setStatusMap((m) => ({ ...m, [id]: true }));
 
@@ -111,7 +125,7 @@ export default function MenuManagement() {
     } catch (err) {
       // rollback
       setUiItems((cur) =>
-        cur.map((x) => (x.id === id ? { ...x, status: prevStatus } : x))
+        cur.map((x) => (x.id === id ? { ...x, status: prevStatus } : x)),
       );
       toast.error(err?.response?.data?.message || "Đổi status thất bại");
     } finally {
@@ -123,7 +137,6 @@ export default function MenuManagement() {
     }
   };
 
-
   const params = useMemo(
     () => ({
       q,
@@ -134,7 +147,7 @@ export default function MenuManagement() {
       page,
       limit,
     }),
-    [q, categoryId, status, chefOnly, sort, page, limit]
+    [q, categoryId, status, chefOnly, sort, page, limit],
   );
 
   const {
@@ -145,7 +158,12 @@ export default function MenuManagement() {
   const { data, isLoading, error, refetch } = useAdminMenuItems(params);
 
   const items = data?.items ?? [];
-  const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 1 };
+  const pagination = data?.pagination ?? {
+    page,
+    limit,
+    total: 0,
+    totalPages: 1,
+  };
 
   // ✅ local UI items để optimistic
   const [uiItems, setUiItems] = useState([]);
@@ -229,7 +247,6 @@ export default function MenuManagement() {
             Refresh
           </button>
         </div>
-
       </div>
 
       {/* Filters */}
@@ -243,9 +260,14 @@ export default function MenuManagement() {
             <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
               {/* Search */}
               <div className="md:col-span-4">
-                <label className="text-xs text-gray-400 mb-1 block">Tìm theo tên</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Tìm theo tên
+                </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    size={18}
+                  />
                   <input
                     value={q}
                     onChange={(e) => {
@@ -260,9 +282,14 @@ export default function MenuManagement() {
 
               {/* Category */}
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Category</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Category
+                </label>
                 <div className="relative">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <Tag
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    size={18}
+                  />
                   <select
                     value={categoryId}
                     onChange={(e) => {
@@ -287,9 +314,14 @@ export default function MenuManagement() {
 
               {/* Status */}
               <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Status</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Status
+                </label>
                 <div className="relative">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <Tag
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    size={18}
+                  />
                   <select
                     value={status}
                     onChange={(e) => {
@@ -314,7 +346,10 @@ export default function MenuManagement() {
               <div className="md:col-span-2">
                 <label className="text-xs text-gray-400 mb-1 block">Sort</label>
                 <div className="relative">
-                  <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <ArrowUpDown
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    size={18}
+                  />
                   <select
                     value={sort}
                     onChange={(e) => {
@@ -347,16 +382,23 @@ export default function MenuManagement() {
                     resetPage();
                   }}
                   className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition
-                    ${chefOnly
-                      ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
-                      : "bg-white/5 border-white/10 text-gray-200 hover:bg-white/10"}`}
+                    ${
+                      chefOnly
+                        ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
+                        : "bg-white/5 border-white/10 text-gray-200 hover:bg-white/10"
+                    }`}
                 >
-                  <Star size={16} className={chefOnly ? "text-orange-400" : "text-gray-400"} />
+                  <Star
+                    size={16}
+                    className={chefOnly ? "text-orange-400" : "text-gray-400"}
+                  />
                   Chef recommended
                 </button>
 
                 <div className="text-xs text-gray-400">
-                  {catLoading ? "Đang tải categories..." : `Có ${categories.length} categories`}
+                  {catLoading
+                    ? "Đang tải categories..."
+                    : `Có ${categories.length} categories`}
                 </div>
               </div>
             </div>
@@ -368,7 +410,9 @@ export default function MenuManagement() {
       <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
           <div className="text-white font-bold">Danh sách menu items</div>
-          <div className="text-xs text-gray-400">Click 1 dòng để xem chi tiết</div>
+          <div className="text-xs text-gray-400">
+            Click 1 dòng để xem chi tiết
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -385,134 +429,152 @@ export default function MenuManagement() {
 
             <tbody>
               {isLoading
-                ? Array.from({ length: limit }).slice(0, 8).map((_, i) => <SkeletonRow key={i} />)
+                ? Array.from({ length: limit })
+                    .slice(0, 8)
+                    .map((_, i) => <SkeletonRow key={i} />)
                 : uiItems.map((it) => (
-                  <tr
-                    key={it.id}
-                    onClick={() => setDetailItem(it)}
-                    className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
-                  >
-                    <td className="py-3 pr-3 pl-4 align-top">
-                      <div className="text-white font-bold">{it.name}</div>
-                      <div className="text-xs text-gray-400 mt-1">{it.categoryName || "—"}</div>
-                    </td>
-
-                    <td
-                      className="py-3 px-3 align-top"
-                      onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal khi toggle
+                    <tr
+                      key={it.id}
+                      onClick={() => setDetailItem(it)}
+                      className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
                     >
-                      <div className="flex items-center gap-3">
-
-                        <div className="flex items-center gap-2">
-                          <ToggleSwitch
-                            checked={it.status === "available"}
-                            disabled={!!statusMap[it.id] || it.status === "sold_out"} // sold_out thì khoá
-                            onChange={(nextChecked) => toggleStatus(it, nextChecked)}
-                            label="Status"
-                          />
-                          <StatusPill status={it.status} />
+                      <td className="py-3 pr-3 pl-4 align-top">
+                        <div className="text-white font-bold">{it.name}</div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {it.categoryName || "—"}
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-
-                    {/* ✅ cột Chef = toggle mượt */}
-                    <td className="py-3 px-3 align-top">
-                      <div
-                        className="inline-flex items-center gap-2"
-                        onClick={(e) => e.stopPropagation()} // không mở modal
+                      <td
+                        className="py-3 px-3 align-top"
+                        onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal khi toggle
                       >
-                        <ToggleSwitch
-                          checked={!!it.isChefRecommended}
-                          disabled={!!togglingMap[it.id]}
-                          onChange={async (next) => {
-                            const id = it.id;
-                            const prev = !!it.isChefRecommended;
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <ToggleSwitch
+                              checked={it.status === "available"}
+                              disabled={
+                                !!statusMap[it.id] || it.status === "sold_out"
+                              } // sold_out thì khoá
+                              onChange={(nextChecked) =>
+                                toggleStatus(it, nextChecked)
+                              }
+                              label="Status"
+                            />
+                            <StatusPill status={it.status} />
+                          </div>
+                        </div>
+                      </td>
 
-                            // optimistic UI
-                            setUiItems((cur) =>
-                              cur.map((x) =>
-                                x.id === id ? { ...x, isChefRecommended: next } : x
-                              )
-                            );
-                            setTogglingMap((m) => ({ ...m, [id]: true }));
+                      {/* ✅ cột Chef = toggle mượt */}
+                      <td className="py-3 px-3 align-top">
+                        <div
+                          className="inline-flex items-center gap-2"
+                          onClick={(e) => e.stopPropagation()} // không mở modal
+                        >
+                          <ToggleSwitch
+                            checked={!!it.isChefRecommended}
+                            disabled={!!togglingMap[it.id]}
+                            onChange={async (next) => {
+                              const id = it.id;
+                              const prev = !!it.isChefRecommended;
 
-                            try {
-                              await toggleChef(id, next);
-                              // success: giữ state như hiện tại
-                            } catch (err) {
-                              // rollback nếu fail
+                              // optimistic UI
                               setUiItems((cur) =>
                                 cur.map((x) =>
-                                  x.id === id ? { ...x, isChefRecommended: prev } : x
-                                )
+                                  x.id === id
+                                    ? { ...x, isChefRecommended: next }
+                                    : x,
+                                ),
                               );
-                            } finally {
-                              setTogglingMap((m) => {
-                                const clone = { ...m };
-                                delete clone[id];
-                                return clone;
-                              });
-                            }
-                          }}
-                          label="Chef recommended"
-                        />
+                              setTogglingMap((m) => ({ ...m, [id]: true }));
 
-                        <span
-                          className={`text-xs ${it.isChefRecommended ? "text-orange-300" : "text-gray-500"
+                              try {
+                                await toggleChef(id, next);
+                                // success: giữ state như hiện tại
+                              } catch (err) {
+                                // rollback nếu fail
+                                setUiItems((cur) =>
+                                  cur.map((x) =>
+                                    x.id === id
+                                      ? { ...x, isChefRecommended: prev }
+                                      : x,
+                                  ),
+                                );
+                              } finally {
+                                setTogglingMap((m) => {
+                                  const clone = { ...m };
+                                  delete clone[id];
+                                  return clone;
+                                });
+                              }
+                            }}
+                            label="Chef recommended"
+                          />
+
+                          <span
+                            className={`text-xs ${
+                              it.isChefRecommended
+                                ? "text-orange-300"
+                                : "text-gray-500"
                             }`}
+                          >
+                            {it.isChefRecommended ? "Yes" : "No"}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td
+                        className="py-3 px-3 align-top"
+                        onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal
+                      >
+                        <div
+                          className="inline-flex items-center gap-2 justify-end"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          {it.isChefRecommended ? "Yes" : "No"}
-                        </span>
-                      </div>
-                    </td>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
+                            onClick={() => {
+                              setEditItem(it); // mở modal edit
+                              setEditOpen(true);
+                            }}
+                          >
+                            Edit
+                          </button>
 
-                    <td
-                      className="py-3 px-3 align-top"
-                      onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal
-                    >
-                      <div className="inline-flex items-center gap-2 justify-end"
-                        onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
-                          onClick={() => {
-                            setEditItem(it);   // mở modal edit
-                            setEditOpen(true);
-                          }}
-                        >
-                          Edit
-                        </button>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20"
+                            onClick={() => {
+                              setDeleteItem(it);
+                              setConfirmOpen(true);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
 
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20"
-                          onClick={() => {
-                            setDeleteItem(it);
-                            setConfirmOpen(true);
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-
-
-                    <td className="py-3 pl-3 pr-4 align-top text-right">
-                      <div className="text-white font-bold">
-                        {typeof it.price === "number" ? formatVND(it.price) : "—"}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Prep: {it.prepTimeMinutes ?? 0} phút
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-3 pl-3 pr-4 align-top text-right">
+                        <div className="text-white font-bold">
+                          {typeof it.price === "number"
+                            ? formatVND(it.price)
+                            : "—"}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Prep: {it.prepTimeMinutes ?? 0} phút
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
 
               {!isLoading && items.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-10 text-center">
-                    <div className="text-white font-bold">Không có món phù hợp</div>
+                    <div className="text-white font-bold">
+                      Không có món phù hợp
+                    </div>
                     <div className="text-gray-400 text-sm mt-1">
                       Thử đổi filter hoặc từ khóa tìm kiếm.
                     </div>
@@ -552,17 +614,15 @@ export default function MenuManagement() {
         onClose={() => setDetailItem(null)}
       />
 
-
       <CreateCategoryModal
         open={openCreateCategory}
         onClose={() => setOpenCreateCategory(false)}
         onSuccess={async () => {
           setOpenCreateCategory(false);
           await refetchCategories(); // ✅ reload categories (filter + create item)
-          refetch();                 // ✅ reload menu items nếu bạn muốn
+          refetch(); // ✅ reload menu items nếu bạn muốn
         }}
       />
-
 
       <CreateMenuItemModal
         open={openCreateItem}
@@ -578,9 +638,14 @@ export default function MenuManagement() {
         open={editOpen}
         item={editItem}
         categories={categories}
-        onClose={() => { setEditOpen(false); setEditItem(null); }}
+        onClose={() => {
+          setEditOpen(false);
+          setEditItem(null);
+        }}
         onUpdated={(updated) => {
-          setUiItems((cur) => cur.map((x) => x.id === updated.id ? { ...x, ...updated } : x));
+          setUiItems((cur) =>
+            cur.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)),
+          );
         }}
       />
 
@@ -604,7 +669,7 @@ export default function MenuManagement() {
             setUiItems((cur) => cur.filter((x) => x.id !== deleteItem.id));
             toast.success("Đã xoá món");
             setConfirmOpen(false);
-            setDeleteItem(null);     // ✅ reset đúng
+            setDeleteItem(null); // ✅ reset đúng
           } catch (e) {
             toast.error(e?.response?.data?.message || "Xoá thất bại");
           } finally {

@@ -130,9 +130,8 @@ export default function OrderDetailModal({
   if (!open) return null;
 
   const items = order?.items ?? [];
-  
-  console.log("AdminOrderDetailModal: order", order);
 
+  console.log("AdminOrderDetailModal: order", order);
 
   return (
     <div className="fixed inset-0 z-50">

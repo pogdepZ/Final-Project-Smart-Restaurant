@@ -28,17 +28,37 @@ import { adminAccountApi } from "../../services/adminAccountApi";
  */
 
 const ROLE_META = {
-  superadmin: { label: "Super Admin", className: "bg-red-500/10 text-red-200 border-red-500/20" },
-  admin: { label: "Admin", className: "bg-orange-500/10 text-orange-200 border-orange-500/20" },
-  waiter: { label: "Waiter", className: "bg-blue-500/10 text-blue-200 border-blue-500/20" },
-  kitchen: { label: "Kitchen", className: "bg-purple-500/10 text-purple-200 border-purple-500/20" },
-  customer: { label: "Customer", className: "bg-white/5 text-gray-200 border-white/10" },
+  superadmin: {
+    label: "Super Admin",
+    className: "bg-red-500/10 text-red-200 border-red-500/20",
+  },
+  admin: {
+    label: "Admin",
+    className: "bg-orange-500/10 text-orange-200 border-orange-500/20",
+  },
+  waiter: {
+    label: "Waiter",
+    className: "bg-blue-500/10 text-blue-200 border-blue-500/20",
+  },
+  kitchen: {
+    label: "Kitchen",
+    className: "bg-purple-500/10 text-purple-200 border-purple-500/20",
+  },
+  customer: {
+    label: "Customer",
+    className: "bg-white/5 text-gray-200 border-white/10",
+  },
 };
 
 function RolePill({ role }) {
-  const meta = ROLE_META[role] || { label: role || "—", className: "bg-white/5 text-gray-200 border-white/10" };
+  const meta = ROLE_META[role] || {
+    label: role || "—",
+    className: "bg-white/5 text-gray-200 border-white/10",
+  };
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${meta.className}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${meta.className}`}
+    >
       {meta.label}
     </span>
   );
@@ -135,7 +155,10 @@ export default function AccountsManagement() {
       const res = await adminAccountApi.getAccounts(params);
       setData(res);
     } catch (e) {
-      const msg = e?.response?.data?.message || e?.message || "Không thể tải danh sách account";
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "Không thể tải danh sách account";
       setError(msg);
       toast.error(msg);
     } finally {
@@ -149,7 +172,12 @@ export default function AccountsManagement() {
   }, [params]);
 
   const accounts = data?.items ?? [];
-  const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 1 };
+  const pagination = data?.pagination ?? {
+    page,
+    limit,
+    total: 0,
+    totalPages: 1,
+  };
   const totalPages = pagination.totalPages || 1;
 
   useEffect(() => {
@@ -178,17 +206,19 @@ export default function AccountsManagement() {
 
     // optimistic
     setUiAccounts((cur) =>
-      cur.map((x) => (x.id === id ? { ...x, is_actived: nextChecked } : x))
+      cur.map((x) => (x.id === id ? { ...x, is_actived: nextChecked } : x)),
     );
     setTogglingActiveMap((m) => ({ ...m, [id]: true }));
 
     try {
       await adminAccountApi.setActived(id, nextChecked);
-      toast.success(nextChecked ? "Đã kích hoạt tài khoản" : "Đã vô hiệu hoá tài khoản");
+      toast.success(
+        nextChecked ? "Đã kích hoạt tài khoản" : "Đã vô hiệu hoá tài khoản",
+      );
     } catch (e) {
       // rollback
       setUiAccounts((cur) =>
-        cur.map((x) => (x.id === id ? { ...x, is_actived: prev } : x))
+        cur.map((x) => (x.id === id ? { ...x, is_actived: prev } : x)),
       );
       toast.error(e?.response?.data?.message || "Đổi trạng thái thất bại");
     } finally {
@@ -199,7 +229,6 @@ export default function AccountsManagement() {
       });
     }
   };
-
 
   // Delete (optional): chỉ gợi ý vì staff/admin cần cẩn thận
   const requestDelete = (u) => {
@@ -258,8 +287,7 @@ export default function AccountsManagement() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
                bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition"
             >
-              <UserPlus size={16} />
-              + Add staff
+              <UserPlus size={16} />+ Add staff
             </button>
           )}
 
@@ -280,9 +308,10 @@ export default function AccountsManagement() {
           type="button"
           onClick={() => setTab("USER")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition
-            ${tab === "USER"
-              ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
-              : "bg-white/5 border-white/10 text-gray-200 hover:bg-white/10"
+            ${
+              tab === "USER"
+                ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
+                : "bg-white/5 border-white/10 text-gray-200 hover:bg-white/10"
             }`}
         >
           <Users size={16} />
@@ -293,9 +322,10 @@ export default function AccountsManagement() {
           type="button"
           onClick={() => setTab("STAFF")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition
-            ${tab === "STAFF"
-              ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
-              : "bg-white/5 border-white/10 text-gray-200 hover:bg-white/10"
+            ${
+              tab === "STAFF"
+                ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
+                : "bg-white/5 border-white/10 text-gray-200 hover:bg-white/10"
             }`}
         >
           <Shield size={16} />
@@ -320,9 +350,14 @@ export default function AccountsManagement() {
             <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
               {/* Search */}
               <div className="md:col-span-5">
-                <label className="text-xs text-gray-400 mb-1 block">Tìm theo tên / email</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Tìm theo tên / email
+                </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    size={18}
+                  />
                   <input
                     value={q}
                     onChange={(e) => {
@@ -361,7 +396,9 @@ export default function AccountsManagement() {
 
               {/* Verified */}
               <div className="md:col-span-2">
-                <label className="text-xs text-gray-400 mb-1 block">Verified</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  Verified
+                </label>
                 <select
                   value={verified}
                   onChange={(e) => {
@@ -403,7 +440,8 @@ export default function AccountsManagement() {
               </div>
 
               <div className="md:col-span-12 text-xs text-gray-500">
-                Tip: Click 1 dòng để xem chi tiết. Với Staff, bạn có thể tạo tài khoản <b>Admin</b> ngay trong modal.
+                Tip: Click 1 dòng để xem chi tiết. Với Staff, bạn có thể tạo tài
+                khoản <b>Admin</b> ngay trong modal.
               </div>
             </div>
           </div>
@@ -416,7 +454,9 @@ export default function AccountsManagement() {
           <div className="text-white font-bold">
             {tab === "USER" ? "Danh sách Users (Customer)" : "Danh sách Staff"}
           </div>
-          <div className="text-xs text-gray-400">Click 1 dòng để xem chi tiết</div>
+          <div className="text-xs text-gray-400">
+            Click 1 dòng để xem chi tiết
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -434,80 +474,94 @@ export default function AccountsManagement() {
 
             <tbody>
               {loading
-                ? Array.from({ length: limit }).slice(0, 8).map((_, i) => <SkeletonRow key={i} />)
+                ? Array.from({ length: limit })
+                    .slice(0, 8)
+                    .map((_, i) => <SkeletonRow key={i} />)
                 : uiAccounts.map((u) => (
-                  <tr
-                    key={u.id}
-                    onClick={() => setDetailUser(u)}
-                    className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
-                  >
-                    <td className="py-3 pr-3 pl-4 align-top">
-                      <div className="text-white font-bold">{u.name}</div>
-                      <div className="text-xs text-gray-400 mt-1">{u.email}</div>
-                    </td>
+                    <tr
+                      key={u.id}
+                      onClick={() => setDetailUser(u)}
+                      className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer"
+                    >
+                      <td className="py-3 pr-3 pl-4 align-top">
+                        <div className="text-white font-bold">{u.name}</div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {u.email}
+                        </div>
+                      </td>
 
-                    <td className="py-3 px-3 align-top">
-                      <RolePill role={u.role} />
-                    </td>
+                      <td className="py-3 px-3 align-top">
+                        <RolePill role={u.role} />
+                      </td>
 
-                    <td className="py-3 px-3 align-top">
-                      <VerifyPill isVerified={!!u.is_verified} />
-                    </td>
+                      <td className="py-3 px-3 align-top">
+                        <VerifyPill isVerified={!!u.is_verified} />
+                      </td>
 
-                    <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-3">
-                        <ToggleSwitch
-                          checked={!!u.is_actived}
-                          disabled={!!togglingActiveMap[u.id]}
-                          onChange={(next) => toggleActive(u, next)}
-                          label="Active"
-                        />
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold
-                          ${u.is_actived
+                      <td
+                        className="py-3 px-3 align-top"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-3">
+                          <ToggleSwitch
+                            checked={!!u.is_actived}
+                            disabled={!!togglingActiveMap[u.id]}
+                            onChange={(next) => toggleActive(u, next)}
+                            label="Active"
+                          />
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold
+                          ${
+                            u.is_actived
                               ? "bg-green-500/10 text-green-200 border-green-500/20"
                               : "bg-red-500/10 text-red-200 border-red-500/20"
-                            }`}
-                        >
-                          {u.is_actived ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                    </td>
+                          }`}
+                          >
+                            {u.is_actived ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                      </td>
 
+                      <td
+                        className="py-3 px-3 align-top"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="inline-flex items-center gap-2 justify-end">
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
+                            onClick={() => setDetailUser(u)}
+                          >
+                            View
+                          </button>
 
-                    <td className="py-3 px-3 align-top" onClick={(e) => e.stopPropagation()}>
-                      <div className="inline-flex items-center gap-2 justify-end">
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
-                          onClick={() => setDetailUser(u)}
-                        >
-                          View
-                        </button>
+                          {/* Xoá account: tuỳ quyền bạn, để sẵn */}
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20"
+                            onClick={() => requestDelete(u)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
 
-                        {/* Xoá account: tuỳ quyền bạn, để sẵn */}
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20"
-                          onClick={() => requestDelete(u)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-
-                    <td className="py-3 pl-3 pr-4 align-top text-right">
-                      <div className="text-gray-300 text-sm">
-                        {u.created_at ? new Date(u.created_at).toLocaleDateString("vi-VN") : "—"}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-3 pl-3 pr-4 align-top text-right">
+                        <div className="text-gray-300 text-sm">
+                          {u.created_at
+                            ? new Date(u.created_at).toLocaleDateString("vi-VN")
+                            : "—"}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
 
               {!loading && uiAccounts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-10 text-center">
-                    <div className="text-white font-bold">Không có account phù hợp</div>
+                    <div className="text-white font-bold">
+                      Không có account phù hợp
+                    </div>
                     <div className="text-gray-400 text-sm mt-1">
                       Thử đổi filter hoặc từ khóa tìm kiếm.
                     </div>
@@ -548,7 +602,9 @@ export default function AccountsManagement() {
         onClose={() => setDetailUser(null)}
         onUpdated={(updated) => {
           setDetailUser(updated);
-          setUiAccounts((cur) => cur.map((x) => x.id === updated.id ? { ...x, ...updated } : x));
+          setUiAccounts((cur) =>
+            cur.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)),
+          );
         }}
       />
 

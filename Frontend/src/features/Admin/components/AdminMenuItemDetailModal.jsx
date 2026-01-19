@@ -56,7 +56,8 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
   const itemId = item?.id;
 
   // ✅ useMemo phải đặt TRƯỚC return condition
-  const selectedGroupIds = detail?.modifierGroupIds || item?.modifierGroupIds || [];
+  const selectedGroupIds =
+    detail?.modifierGroupIds || item?.modifierGroupIds || [];
 
   const selectedGroups = useMemo(() => {
     if (!Array.isArray(selectedGroupIds) || !selectedGroupIds.length) return [];
@@ -75,8 +76,6 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
       document.body.style.overflow = prevOverflow || "";
     };
   }, [open]);
-
-
 
   useEffect(() => {
     if (!open || !itemId) return;
@@ -101,7 +100,11 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
         setAllGroups(groupsRes?.groups || groupsRes?.data?.groups || []);
       } catch (e) {
         if (cancelled) return;
-        setError(e?.response?.data?.message || e?.message || "Không tải được chi tiết món.");
+        setError(
+          e?.response?.data?.message ||
+            e?.message ||
+            "Không tải được chi tiết món.",
+        );
         setDetail(null);
       } finally {
         if (!cancelled) {
@@ -123,7 +126,10 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
   if (!itemId) {
     return (
       <div className="fixed inset-0 z-50">
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+        <div
+          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          onClick={onClose}
+        />
         <div className="absolute inset-0 flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-neutral-950 p-6 text-gray-200">
             Không có ID món ăn (item.id bị thiếu).
@@ -207,11 +213,19 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
                     <InfoRow label="Category" value={view?.categoryName} />
                     <InfoRow
                       label="Giá"
-                      value={typeof view?.price === "number" ? formatVND(view.price) : "—"}
+                      value={
+                        typeof view?.price === "number"
+                          ? formatVND(view.price)
+                          : "—"
+                      }
                     />
                     <InfoRow
                       label="Prep time"
-                      value={view?.prepTimeMinutes != null ? `${view.prepTimeMinutes} phút` : "—"}
+                      value={
+                        view?.prepTimeMinutes != null
+                          ? `${view.prepTimeMinutes} phút`
+                          : "—"
+                      }
                     />
                     <InfoRow
                       label="Chef recommend"
@@ -224,8 +238,11 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
                     <div className="text-white font-bold mb-2">Modifiers</div>
 
                     {loadingGroups ? (
-                      <div className="text-sm text-gray-500">Đang tải modifiers...</div>
-                    ) : Array.isArray(selectedGroupIds) && selectedGroupIds.length ? (
+                      <div className="text-sm text-gray-500">
+                        Đang tải modifiers...
+                      </div>
+                    ) : Array.isArray(selectedGroupIds) &&
+                      selectedGroupIds.length ? (
                       selectedGroups.length ? (
                         <div className="space-y-2">
                           {selectedGroups.map((g) => (
@@ -234,9 +251,12 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
                               className="rounded-xl border border-white/10 bg-neutral-950/40 p-3"
                             >
                               <div className="flex items-start justify-between gap-2">
-                                <div className="text-sm text-white font-semibold">{g.name}</div>
+                                <div className="text-sm text-white font-semibold">
+                                  {g.name}
+                                </div>
                                 <div className="text-xs text-gray-400 text-right">
-                                  {g.selectionType} • {g.isRequired ? "required" : "optional"} • min{" "}
+                                  {g.selectionType} •{" "}
+                                  {g.isRequired ? "required" : "optional"} • min{" "}
                                   {g.minSelections} / max {g.maxSelections}
                                 </div>
                               </div>
@@ -256,18 +276,23 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="mt-2 text-xs text-gray-500">Không có option</div>
+                                <div className="mt-2 text-xs text-gray-500">
+                                  Không có option
+                                </div>
                               )}
                             </div>
                           ))}
                         </div>
                       ) : (
                         <div className="text-sm text-gray-500">
-                          Món có gắn modifier nhưng không tìm thấy group (có thể group inactive / đã xoá).
+                          Món có gắn modifier nhưng không tìm thấy group (có thể
+                          group inactive / đã xoá).
                         </div>
                       )
                     ) : (
-                      <div className="text-sm text-gray-500">Món này chưa gắn modifier group.</div>
+                      <div className="text-sm text-gray-500">
+                        Món này chưa gắn modifier group.
+                      </div>
                     )}
                   </div>
                 </div>

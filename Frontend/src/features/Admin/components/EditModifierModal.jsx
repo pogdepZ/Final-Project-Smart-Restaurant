@@ -28,7 +28,9 @@ export default function EditModifierModal({ open, item, onClose, onUpdated }) {
         description: description.trim(),
       });
       toast.success("Đã cập nhật modifier");
-      onUpdated?.(res?.item || { ...item, name: n, description: description.trim() });
+      onUpdated?.(
+        res?.item || { ...item, name: n, description: description.trim() },
+      );
       onClose?.();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Cập nhật thất bại");

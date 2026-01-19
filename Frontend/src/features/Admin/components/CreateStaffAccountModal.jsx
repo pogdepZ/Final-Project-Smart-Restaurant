@@ -121,7 +121,9 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
             </div>
 
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Mật khẩu</label>
+              <label className="text-xs text-gray-400 mb-1 block">
+                Mật khẩu
+              </label>
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -138,7 +140,9 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
           <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 px-3 py-2">
             <div>
               <div className="text-white text-sm font-bold">Verified</div>
-              <div className="text-gray-400 text-xs">Đánh dấu đã xác thực email</div>
+              <div className="text-gray-400 text-xs">
+                Đánh dấu đã xác thực email
+              </div>
             </div>
             <input
               type="checkbox"
@@ -164,9 +168,10 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
             disabled={!canSubmit || loading}
             onClick={submit}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl transition border
-              ${(!canSubmit || loading)
-                ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
+              ${
+                !canSubmit || loading
+                  ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
               }`}
           >
             <UserPlus size={16} />
