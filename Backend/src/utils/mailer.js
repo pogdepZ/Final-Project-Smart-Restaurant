@@ -13,7 +13,6 @@ async function sendEmail({ to, subject, html }) {
 
 exports.sendVerifyEmail = async ({ to, name, verifyUrl }) => {
   const subject = "Xác thực email - Lumière Bistro";
-
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.6">
       <h2>Xin chào ${name || ""},</h2>
