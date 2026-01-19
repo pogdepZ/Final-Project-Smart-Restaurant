@@ -74,7 +74,7 @@ export default function CreateMenuItemModal({
   if (!open) return null;
 
   const handleUploadImage = async () => {
-    if (!imageFile) return setError("Vui lòng chọn file ảnh.");
+    if (!imageFile) return toast.error("Vui lòng chọn file ảnh.");
 
     try {
       setUploading(true);
@@ -91,7 +91,7 @@ export default function CreateMenuItemModal({
 
       setImageUrl(url);
     } catch (e) {
-      setError(
+      toast.error(
         e?.response?.data?.message || e?.message || "Upload ảnh thất bại.",
       );
     } finally {
@@ -125,13 +125,13 @@ export default function CreateMenuItemModal({
     const numPrice = Number(price);
 
     if (!categoryId || categoryId === "ALL")
-      return setError("Vui lòng chọn category.");
-    if (!trimmed) return setError("Vui lòng nhập tên món.");
+      return toast.error("Vui lòng chọn category.");
+    if (!trimmed) return toast.error("Vui lòng nhập tên món.");
     if (!Number.isFinite(numPrice) || numPrice <= 0)
-      return setError("Giá phải là số > 0.");
-    if (!status) return setError("Vui lòng chọn trạng thái.");
-    if (isUploading) return setError("Ảnh đang upload, vui lòng chờ.");
-    if (!imageUrl) return setError("Vui lòng upload ảnh món ăn trước khi tạo.");
+      return toast.error("Giá phải là số > 0.");
+    if (!status) return toast.error("Vui lòng chọn trạng thái.");
+    if (isUploading) return toast.error("Ảnh đang upload, vui lòng chờ.");
+    if (!imageUrl) return toast.error("Vui lòng upload ảnh món ăn trước khi tạo.");
 
     try {
       setLoading(true);
@@ -163,7 +163,7 @@ export default function CreateMenuItemModal({
       toast.success("Thêm món thành công");
       reset();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || "Tạo món thất bại.");
+      toast.error(e?.response?.data?.message || e?.message || "Tạo món thất bại.");
     } finally {
       setLoading(false);
     }
@@ -208,12 +208,6 @@ export default function CreateMenuItemModal({
           <ScrollArea>
             {/* body */}
             <div className="p-5 space-y-4 overflow-y-auto flex-1">
-              {error ? (
-                <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-                  {error}
-                </div>
-              ) : null}
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">
@@ -414,11 +408,10 @@ export default function CreateMenuItemModal({
                 <button
                   type="button"
                   onClick={() => setChefRecommended((v) => !v)}
-                  className={`px-4 py-2 rounded-xl border transition ${
-                    isChefRecommended
-                      ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
-                      : "bg-neutral-950/40 border-white/10 text-gray-200 hover:bg-white/10"
-                  }`}
+                  className={`px-4 py-2 rounded-xl border transition ${isChefRecommended
+                    ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
+                    : "bg-neutral-950/40 border-white/10 text-gray-200 hover:bg-white/10"
+                    }`}
                 >
                   {isChefRecommended ? "ON" : "OFF"}
                 </button>

@@ -309,14 +309,6 @@ export default function MenuManagement() {
           </div>
 
           <button
-            onClick={() => setOpenCreateCategory(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-              bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition"
-          >
-            + Category
-          </button>
-
-          <button
             onClick={() => setOpenCreateItem(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl 
                bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition"
@@ -686,18 +678,6 @@ export default function MenuManagement() {
         item={detailItem}
         onClose={() => setDetailItem(null)}
       />
-
-
-      <CreateCategoryModal
-        open={openCreateCategory}
-        onClose={() => setOpenCreateCategory(false)}
-        onSuccess={async () => {
-          setOpenCreateCategory(false);
-          await refetchCategories(); // ✅ reload categories (filter + create item)
-          refetch();                 // ✅ reload menu items nếu bạn muốn
-        }}
-      />
-
 
       <CreateMenuItemModal
         open={openCreateItem}

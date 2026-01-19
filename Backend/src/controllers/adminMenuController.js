@@ -11,7 +11,7 @@ exports.getCategories = async (req, res) => {
     const data = await service.getCategories(req.query);
     return res.json(data);
   } catch (e) {
-    return sendError(res, e, "getCategories error");
+    return sendError(res, e, "Không thể tải categories");
   }
 };
 
@@ -20,14 +20,14 @@ exports.getMenuItems = async (req, res) => {
     const data = await service.getMenuItems(req.query);
     return res.json(data);
   } catch (e) {
-    return sendError(res, e, "Get menu items failed");
+    return sendError(res, e, "Không thể tải menu");
   }
 };
 
 exports.getMenuItemDetail = async (req, res) => {
   try {
     const data = await service.getMenuItemDetail(req.params.id);
-    if (!data) return res.status(404).json({ message: "Menu item not found" });
+    if (!data) return res.status(404).json({ message: "Không thể tải món này" });
     return res.json(data);
   } catch (e) {
     return sendError(res, e, "Server error");
@@ -47,7 +47,7 @@ exports.updateMenuItem = async (req, res) => {
   try {
     const updated = await service.updateMenuItem(req.params.id, req.body);
     if (!updated)
-      return res.status(404).json({ message: "Menu item not found" });
+      return res.status(404).json({ message: "Không thể tải món này" });
     return res.json({ message: "Updated", id: updated.id });
   } catch (e) {
     return sendError(res, e, "Server error");
@@ -57,7 +57,7 @@ exports.updateMenuItem = async (req, res) => {
 exports.toggleChefRecommended = async (req, res) => {
   try {
     const row = await service.toggleChefRecommended(req.params.id, req.body);
-    if (!row) return res.status(404).json({ message: "Menu item not found" });
+    if (!row) return res.status(404).json({ message: "Không thể tải món này" });
     return res.json({ id: row.id, isChefRecommended: row.is_chef_recommended });
   } catch (e) {
     return sendError(res, e, "Server error");
@@ -76,7 +76,7 @@ exports.createCategory = async (req, res) => {
 exports.deleteMenuItem = async (req, res) => {
   try {
     const row = await service.deleteMenuItem(req.params.id);
-    if (!row) return res.status(404).json({ message: "Menu item not found" });
+    if (!row) return res.status(404).json({ message: "Không thể tải món này" });
     return res.json({ message: "Deleted", id: row.id });
   } catch (e) {
     return sendError(res, e, "Server error");
@@ -114,7 +114,7 @@ exports.uploadPhotos = async (req, res, next) => {
     // multer-cloudinary sẽ trả file info ở req.files
     const files = req.files || [];
     if (!files.length) {
-      return res.status(400).json({ message: "No files uploaded" });
+      return res.status(400).json({ message: "Không có ảnh nào đăng tải" });
     }
 
     // CloudinaryStorage trả URL ở file.path

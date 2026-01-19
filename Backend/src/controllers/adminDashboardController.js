@@ -14,7 +14,9 @@ exports.getAdminDashboard = async (req, res) => {
       column: err?.column,
       constraint: err?.constraint,
     });
-    return res.status(500).json({ message: "Dashboard error" });
+    return res
+      .status(500)
+      .json({ message: "Không tải được dữ liệu trang chủ" });
   }
 };
 
@@ -25,7 +27,7 @@ exports.getSummary = async (req, res) => {
     return res.json(data);
   } catch (e) {
     console.error("getSummary error:", e);
-    return res.status(500).json({ message: "Dashboard error" });
+    return res.status(500).json({ message: "Không thể tổng kết dữ liệu" });
   }
 };
 
@@ -36,7 +38,7 @@ exports.getOrdersDaily = async (req, res) => {
     return res.json(data);
   } catch (e) {
     console.error("getOrdersDaily error:", e);
-    return res.status(500).json({ message: "Dashboard error" });
+    return res.status(500).json({ message: "Không thể tải biểu đồ đơn hàng" });
   }
 };
 
@@ -47,7 +49,7 @@ exports.getPeakHours = async (req, res) => {
     return res.json(data);
   } catch (e) {
     console.error("getPeakHours error:", e);
-    return res.status(500).json({ message: "Dashboard error" });
+    return res.status(500).json({ message: "Không thể tải biểu đồ khung giờ" });
   }
 };
 
@@ -62,7 +64,7 @@ exports.getPopularItems = async (req, res) => {
     return res.json(data);
   } catch (e) {
     console.error("getPopularItems error:", e);
-    return res.status(500).json({ message: "Dashboard error" });
+    return res.status(500).json({ message: "Không thể tải biểu đồ món ăn" });
   }
 };
 
@@ -76,7 +78,7 @@ exports.getRevenue = async (req, res) => {
     console.error("getRevenue error:", err);
 
     const status = err.status || 500;
-    const message = err.message || "Revenue error";
+    const message = err.message || "Không thể tải doanh thu";
     return res.status(status).json({ message });
   }
 };

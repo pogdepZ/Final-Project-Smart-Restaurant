@@ -76,11 +76,10 @@ function NotificationItem({ notification, onRead, onRemove, onClick }) {
 
   return (
     <div
-      className={`relative p-3 rounded-xl border transition-all cursor-pointer hover:bg-white/5 ${
-        notification.read
+      className={`relative p-3 rounded-xl border transition-all cursor-pointer hover:bg-white/5 ${notification.read
           ? "bg-transparent border-white/5 opacity-60"
           : "bg-white/5 border-white/10"
-      }`}
+        }`}
       onClick={() => onClick?.(notification)}
     >
       {/* Unread indicator */}
@@ -212,7 +211,7 @@ export default function AdminNotificationCenter() {
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-96 max-h-[70vh] bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 top-full mt-2 w-[70vw] sm:w-96 max-h-[70vh] bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Header */}
           <div className="sticky top-0 bg-neutral-900 border-b border-white/10 p-4 flex items-center justify-between">
             <div>

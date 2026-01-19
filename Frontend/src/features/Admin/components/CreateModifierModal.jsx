@@ -217,7 +217,7 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
 
               <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
                 <div className="md:col-span-6">
-                  <label className="text-xs text-gray-400 mb-1 block">Tên group</label>
+                  <label className="text-xs text-gray-400 mb-1 block">Tên group *</label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -318,7 +318,7 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
             {/* OPTIONS */}
             <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-white font-bold">Options</div>
+                <div className="text-white font-bold">Options *</div>
                 <button
                   type="button"
                   onClick={addOptionRow}
