@@ -6,7 +6,7 @@ import SignIn from "../features/Auth/SignIn/SignIn";
 import SignUp from "../features/Auth/SignUp/SignUp";
 
 // Layouts
-import Layout from "../layouts/Layout";
+
 import AdminLayout from "../layouts/AdminLayout";
 import WaiterLayout from "../layouts/WaiterLayout";
 import KitchenLayout from "../layouts/KitchenLayout";
@@ -36,12 +36,9 @@ import TableAssignments from "../features/Admin/TableAssignments";
 
 // Waiter
 import WaiterOrders from "../features/Waiter/Orders";
-import WaiterTables from "../features/Waiter/Tables";
-import WaiterNotifications from "../features/Waiter/Notifications"; // (NEW) Thông báo gọi phục vụ
 
 // Kitchen
 import KitchenOrders from "../features/Kitchen/Orders";
-import KitchenHistory from "../features/Kitchen/History"; // (NEW) Lịch sử món đã nấu
 import CustomerLayout from "../layouts/CustomerLayout";
 import Booking from "../features/Customer/Booking";
 import VerifyEmail from "../features/Auth/VerifyEmail/VerifyEmail";
@@ -217,16 +214,7 @@ const routers = [
           {
             path: "orders",
             element: <WaiterOrders />,
-          },
-          {
-            path: "tables",
-            element: <WaiterTables />,
-          },
-          // (NEW) Xem các yêu cầu hỗ trợ từ khách
-          {
-            path: "notifications",
-            element: <WaiterNotifications />,
-          },
+          },     
         ],
       },
     ],
@@ -238,6 +226,7 @@ const routers = [
     element: <ProtectedRoute roles={["kitchen"]} />,
     children: [
       {
+        element: <KitchenLayout/>,
         children: [
           {
             index: true,
@@ -246,11 +235,6 @@ const routers = [
           {
             path: "orders",
             element: <KitchenOrders />,
-          },
-          // (NEW) Xem lại các món đã trả trong ngày
-          {
-            path: "history",
-            element: <KitchenHistory />,
           },
         ],
       },

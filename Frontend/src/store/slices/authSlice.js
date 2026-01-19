@@ -31,9 +31,11 @@ export const loginThunk = createAsyncThunk(
       // server thường trả: { token/accessToken, user }
       const res = await axiosClient.post("/auth/login", userData);
 
+
       const accessToken = res?.accessToken || null;
       const user = res?.user || null;
 
+      console.log('loginThunk received user:', user);
       return { accessToken, user };
     } catch (err) {
       const msg =
@@ -86,11 +88,15 @@ const authSlice = createSlice({
       }
 
       if (typeof user !== "undefined") {
-        state.user = user;
-        if (user) localStorage.setItem("user", JSON.stringify(user));
+        state.user = user ? { ...(state.user || {}), ...user } : null;
+
+        console.log("Updating user in authSlice:", state.user);
+
+        if (state.user) localStorage.setItem("user", JSON.stringify(state.user));
         else localStorage.removeItem("user");
       }
     },
+
     updateUser: (state, action) => {
       const patch = action.payload || {};
       state.user = { ...(state.user || {}), ...patch };
@@ -125,6 +131,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginThunk.fulfilled, (state, action) => {
+        console.log(action.payload)
         state.isLoading = false;
         state.accessToken = action.payload.accessToken;
         state.user = action.payload.user;
@@ -155,7 +162,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         toast.success(
           action.payload?.message ||
-            "Register successful and please verify your email",
+          "Register successful and please verify your email",
         );
       })
       .addCase(registerThunk.rejected, (state, action) => {
