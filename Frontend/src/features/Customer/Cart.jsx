@@ -74,7 +74,7 @@ const Cart = () => {
     const qrToken = localStorage.getItem("qrToken");
     if (!qrToken) {
       toast.warning("Bạn cần quét QR của bàn trước khi đặt món!");
-      navigate(tableCode ? `/menu/${tableCode}` : "/scan");
+      navigate(`/menu/`);
       return;
     }
 

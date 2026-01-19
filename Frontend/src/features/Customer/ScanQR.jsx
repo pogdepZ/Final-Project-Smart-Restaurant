@@ -28,27 +28,31 @@ const ScanQR = () => {
 
         console.log("existingTableSession:", existingTableSession);
 
-        if(existingTableSession.hasSession && existingTableSession.sessions) {
-          if(existingTableSession.sessions.tableId === tableCode) {
+        if (existingTableSession.hasSession && existingTableSession.sessions) {
+          if (existingTableSession.sessions.tableId === tableCode) {
             // Nếu có rồi thì chuyển thẳng vào menu
-            toast.success(`Bạn đã có phiên làm việc với bàn ${existingTableSession.sessions.tableNumber}. Đang chuyển đến thực đơn...`);
+            toast.success(
+              `Bạn đã có phiên làm việc với bàn ${existingTableSession.sessions.tableNumber}. Đang chuyển đến thực đơn...`,
+            );
             handleLoginSuccess(existingTableSession.sessions);
             return;
           } else {
             // Nếu có nhưng khác bàn thì báo lỗi
             setStatus("error");
-            setErrorMessage(`Bạn đã có phiên làm việc với bàn ${existingTableSession.sessions.tableNumber}. Vui lòng kết thúc phiên làm việc hoặc thông báo cho nhân viên trước khi sử dụng bàn khác.`);
+            setErrorMessage(
+              `Bạn đã có phiên làm việc với bàn ${existingTableSession.sessions.tableNumber}. Vui lòng kết thúc phiên làm việc hoặc thông báo cho nhân viên trước khi sử dụng bàn khác.`,
+            );
             return;
           }
         }
 
         // Gọi API để kiểm tra bàn và tạo session mới
 
-        const sessionId = localStorage.getItem('')
+        const sessionId = localStorage.getItem("");
 
         const response = await tableApi.checkAndCreateSession(
           tableCode,
-          user?.id
+          user?.id,
         );
 
         console.log("checkAndCreateSession response:", response);
@@ -69,7 +73,7 @@ const ScanQR = () => {
           setStatus("error");
           setErrorMessage(
             response.message ||
-              "Bàn này không khả dụng hoặc session không hợp lệ."
+              "Bàn này không khả dụng hoặc session không hợp lệ.",
           );
         }
       } catch (error) {
@@ -101,6 +105,9 @@ const ScanQR = () => {
     localStorage.setItem("sessionToken", session.sessionToken);
     localStorage.setItem("tableNumber", session.tableNumber);
 
+    // Dispatch custom event để SocketContext biết cần kết nối lại
+    window.dispatchEvent(new Event("qrTokenSet"));
+
     // Chuyển hướng sang Menu sau 1s
     setTimeout(() => {
       navigate(`/menu/${tableCode}`);
@@ -117,14 +124,14 @@ const ScanQR = () => {
       const response = await tableApi.verifyBookingAndActivateSession(
         tableCode,
         bookingCode,
-        user?.id
+        user?.id,
       );
 
       if (response.success) {
         handleLoginSuccess(response.data.tableSession);
       } else {
         setErrorMessage(
-          response.message || "Mã xác nhận không đúng. Vui lòng thử lại."
+          response.message || "Mã xác nhận không đúng. Vui lòng thử lại.",
         );
       }
     } catch (error) {
