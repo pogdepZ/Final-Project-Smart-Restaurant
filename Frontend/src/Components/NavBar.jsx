@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import {
   ShoppingBag,
   User,
@@ -21,8 +22,10 @@ import {
 import { IoRestaurant } from "react-icons/io5";
 import Avatar from "../features/Customer/components/Avatar";
 import logo from "../assets/logo.png";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const Navbar = () => {
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -59,7 +62,7 @@ const Navbar = () => {
     dispatch(logout()); // Gọi Redux action logout
     closeMenu();
     navigate("/"); // (Tuỳ chọn) Chuyển về trang chủ sau khi đăng xuất
-    toast.success("Đăng xuất thành công");
+    toast.success(t("navbar.logoutSuccess"));
   };
 
   useEffect(() => {
@@ -113,18 +116,18 @@ const Navbar = () => {
             {/* Mặc định cho customer */}
             {(!role || role === "customer") && (
               <>
-                <NavLink to="/" label="Trang chủ" />
-                <NavLink to="/menu" label="Thực đơn" />
+                <NavLink to="/" label={t("navbar.home")} />
+                <NavLink to="/menu" label={t("navbar.menu")} />
                 {!hasQrToken && (
                   <NavLink
                     to="/booking"
-                    label="Sơ đồ bàn"
+                    label={t("navbar.tableMap")}
                     icon={<MapPin size={16} />}
                   />
                 )}
                 <NavLink
                   to="/order-tracking"
-                  label="Theo dõi đơn"
+                  label={t("navbar.orderTracking")}
                   icon={<ClipboardList size={16} />}
                 />
               </>
@@ -133,6 +136,11 @@ const Navbar = () => {
 
           {/* 3. RIGHT ACTIONS */}
           <div className="flex items-center gap-3 z-50">
+            {/* Language Switcher - Only show for customer interface */}
+            {(!role || role === "customer") && (
+              <LanguageSwitcher className="hidden sm:block" />
+            )}
+
             {/* Giỏ hàng */}
             {role != "admin" && role != "waiter" && role != "kitchen" && (
               <>
@@ -175,7 +183,7 @@ const Navbar = () => {
                 {/* Logout */}
                 <button
                   onClick={handleLogout}
-                  title="Đăng xuất"
+                  title={t("navbar.logout")}
                   className="p-2 text-gray-400 hover:text-red-500 transition-colors hover:bg-white/5 rounded-full"
                 >
                   <LogOut size={20} />
@@ -187,13 +195,13 @@ const Navbar = () => {
                   to="/signin"
                   className="text-sm font-medium text-gray-300 hover:text-white"
                 >
-                  Đăng nhập
+                  {t("navbar.login")}
                 </Link>
                 <Link
                   to="/signup"
                   className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-lg transition-all"
                 >
-                  Đăng ký
+                  {t("navbar.register")}
                 </Link>
               </div>
             )}
@@ -242,36 +250,36 @@ const Navbar = () => {
 
             <div>
               <p className="text-white font-bold truncate max-w-[160px]">
-                {user?.name || "Khách hàng"}
+                {user?.name || t("navbar.customer")}
               </p>
 
               {/* Chỉ hiện cho customer hoặc khi role chưa có */}
               {(role === "customer" || !role) && (
                 <p className="text-orange-500 text-xs font-bold bg-orange-500/10 px-2 py-0.5 rounded-full inline-block mt-1">
-                  {tableNumber ? `Đang ngồi ${tableNumber}` : "Chưa có bàn"}
+                  {tableNumber
+                    ? t("navbar.sittingAt", { table: tableNumber })
+                    : t("navbar.noTable")}
                 </p>
               )}
             </div>
           </Link>
         ) : (
           <div className="mb-8 pb-6 border-b border-white/10">
-            <p className="text-gray-400 text-sm mb-4">
-              Chào mừng đến với Smart Resto!
-            </p>
+            <p className="text-gray-400 text-sm mb-4">{t("navbar.welcome")}</p>
             <div className="grid grid-cols-2 gap-3">
               <Link
                 to="/signin"
                 onClick={closeMenu}
                 className="py-2.5 text-center rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 text-sm font-medium"
               >
-                Đăng nhập
+                {t("navbar.login")}
               </Link>
               <Link
                 to="/signup"
                 onClick={closeMenu}
                 className="py-2.5 text-center rounded-lg bg-orange-500 text-white font-bold hover:bg-orange-600 text-sm"
               >
-                Đăng ký
+                {t("navbar.register")}
               </Link>
             </div>
           </div>
@@ -296,35 +304,46 @@ const Navbar = () => {
           )}
           {(!role || role === "customer") && (
             <>
-              <MobileLink to="/" label="Trang chủ" onClick={closeMenu} />
-              <MobileLink to="/menu" label="Thực đơn" onClick={closeMenu} />
+              <MobileLink to="/" label={t("navbar.home")} onClick={closeMenu} />
+              <MobileLink
+                to="/menu"
+                label={t("navbar.menu")}
+                onClick={closeMenu}
+              />
               {!hasQrToken && (
                 <MobileLink
                   to="/booking"
-                  label="Sơ đồ bàn / Đặt chỗ"
+                  label={t("navbar.booking")}
                   onClick={closeMenu}
                 />
               )}
               <MobileLink
                 to="/cart"
-                label="Giỏ hàng của bạn"
+                label={t("navbar.yourCart")}
                 onClick={closeMenu}
               />
               <MobileLink
                 to="/order-tracking"
-                label="Theo dõi đơn"
+                label={t("navbar.orderTracking")}
                 onClick={closeMenu}
               />
               {isLoggedIn && (
                 <MobileLink
                   to="/history"
-                  label="Lịch sử đơn hàng"
+                  label={t("navbar.orderHistory")}
                   onClick={closeMenu}
                 />
               )}
             </>
           )}
         </div>
+
+        {/* Language Switcher for Mobile */}
+        {(!role || role === "customer") && (
+          <div className="py-4 border-t border-white/10 mt-4">
+            <LanguageSwitcher />
+          </div>
+        )}
 
         {/* Footer Mobile Menu */}
         <div className="mt-auto mb-8">
@@ -334,7 +353,7 @@ const Navbar = () => {
               onClick={handleLogout}
               className="flex items-center gap-2 text-red-500 font-medium hover:text-red-400 w-full py-3 rounded-xl hover:bg-white/5 transition-colors"
             >
-              <LogOut size={20} /> Đăng xuất
+              <LogOut size={20} /> {t("navbar.logout")}
             </button>
           )}
           <p className="text-xs text-gray-600 mt-6 text-center">

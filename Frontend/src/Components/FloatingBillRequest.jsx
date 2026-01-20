@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Receipt, CheckCircle, Bell, X, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { billRequestApi } from "../services/billRequestApi";
 import { orderApi } from "../services/orderApi";
 import { useSocket } from "../context/SocketContext";
 
 const FloatingBillRequest = ({ tableId, sessionId }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | pending | acknowledged
@@ -39,32 +41,35 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
       if (String(data.tableId) === String(tableId)) {
         if (data.type === "acknowledged") {
           setStatus("acknowledged");
-          toast.info("Nhân viên đang đến bàn của bạn!");
+          toast.info(t("bill.staffComing"));
         }
       }
     };
 
     socket.on("bill_request_update", handleUpdate);
     return () => socket.off("bill_request_update", handleUpdate);
-  }, [socket, tableId]);
+  }, [socket, tableId, t]);
 
   const handleRequest = async () => {
     if (status !== "idle") return;
 
     const user = localStorage.getItem("user");
-    
+
     const userId = user ? JSON.parse(user).id : null;
 
     // console.log("Requesting bill with:", { tableId, sessionId, userId });
 
-    const response = await orderApi.getUnpaidOrderByUserId(userId, tableId, sessionId);
+    const response = await orderApi.getUnpaidOrderByUserId(
+      userId,
+      tableId,
+      sessionId,
+    );
 
-    if(response && response.success === false){
-      toast.error(response.message || "Bạn chưa có đơn hàng nào để yêu cầu thanh toán.");
+    if (response && response.success === false) {
+      toast.error(response.message || t("bill.noOrderToRequest"));
       return;
     }
 
-    
     setLoading(true);
     try {
       const res = await billRequestApi.requestBill({ tableId, sessionId });
@@ -72,12 +77,12 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
       setIsOpen(false);
 
       if (res.alreadyRequested) {
-        toast.info("Yêu cầu đã được gửi. Vui lòng chờ!");
+        toast.info(t("bill.alreadyRequested"));
       } else {
-        toast.success("🧾 Đã gửi yêu cầu thanh toán!");
+        toast.success(t("bill.requestSent"));
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Lỗi gửi yêu cầu");
+      toast.error(err.response?.data?.message || t("bill.requestError"));
     } finally {
       setLoading(false);
     }
@@ -91,7 +96,7 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
       <div className="fixed bottom-20 right-4 z-40">
         <div className="px-4 py-3 rounded-2xl bg-green-500/20 border border-green-500/30 text-green-400 font-bold flex items-center gap-2 shadow-lg animate-pulse">
           <CheckCircle size={20} />
-          <span className="text-sm">Nhân viên đang đến</span>
+          <span className="text-sm">{t("bill.staffOnTheWay")}</span>
         </div>
       </div>
     );
@@ -103,7 +108,7 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
       <div className="fixed bottom-20 right-4 z-40">
         <div className="px-4 py-3 rounded-2xl bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 font-bold flex items-center gap-2 shadow-lg">
           <Bell size={20} className="animate-bounce" />
-          <span className="text-sm">Đang chờ nhân viên...</span>
+          <span className="text-sm">{t("bill.waitingForStaff")}</span>
         </div>
       </div>
     );
@@ -130,8 +135,12 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
                   <Receipt size={20} className="text-orange-500" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold">Yêu cầu thanh toán</h3>
-                  <p className="text-gray-400 text-xs">Nhân viên sẽ đến ngay</p>
+                  <h3 className="text-white font-bold">
+                    {t("bill.requestBill")}
+                  </h3>
+                  <p className="text-gray-400 text-xs">
+                    {t("bill.staffWillCome")}
+                  </p>
                 </div>
               </div>
               <button
@@ -145,8 +154,7 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
             {/* Content */}
             <div className="p-5">
               <p className="text-gray-300 text-sm text-center mb-6">
-                Bạn muốn thanh toán ngay bây giờ? Nhân viên sẽ mang hóa đơn đến
-                bàn của bạn.
+                {t("bill.confirmRequestMessage")}
               </p>
 
               <div className="flex gap-3">
@@ -154,7 +162,7 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
                   onClick={() => setIsOpen(false)}
                   className="flex-1 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-medium transition-all"
                 >
-                  Để sau
+                  {t("bill.later")}
                 </button>
                 <button
                   onClick={handleRequest}
@@ -166,7 +174,7 @@ const FloatingBillRequest = ({ tableId, sessionId }) => {
                   ) : (
                     <Receipt size={18} />
                   )}
-                  {loading ? "Đang gửi..." : "Gửi yêu cầu"}
+                  {loading ? t("bill.sending") : t("bill.sendRequest")}
                 </button>
               </div>
             </div>

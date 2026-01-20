@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Receipt, CheckCircle, Loader2, Bell } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { billRequestApi } from "../services/billRequestApi";
 import { useSocket } from "../context/SocketContext";
 
 const RequestBillButton = ({ tableId, sessionId, className = "" }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [requested, setRequested] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -39,7 +41,7 @@ const RequestBillButton = ({ tableId, sessionId, className = "" }) => {
       if (data.tableId === tableId) {
         if (data.type === "acknowledged") {
           setAcknowledged(true);
-          toast.info("Nhân viên đang đến bàn của bạn!", {
+          toast.info(t("bill.staffComing"), {
             icon: "🏃",
           });
         }
@@ -63,14 +65,14 @@ const RequestBillButton = ({ tableId, sessionId, className = "" }) => {
       setRequested(true);
 
       if (res.alreadyRequested) {
-        toast.info("Yêu cầu đã được gửi trước đó. Vui lòng chờ!");
+        toast.info(t("bill.alreadyRequested"));
       } else {
-        toast.success("Đã gửi yêu cầu thanh toán. Nhân viên sẽ đến ngay!", {
+        toast.success(t("bill.requestSent"), {
           icon: "🧾",
         });
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Lỗi gửi yêu cầu");
+      toast.error(err.response?.data?.message || t("bill.requestError"));
     } finally {
       setLoading(false);
     }
@@ -84,7 +86,7 @@ const RequestBillButton = ({ tableId, sessionId, className = "" }) => {
         className={`px-6 py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 font-bold flex items-center justify-center gap-2 ${className}`}
       >
         <CheckCircle size={20} />
-        Nhân viên đang đến
+        {t("bill.staffOnTheWay")}
       </button>
     );
   }
@@ -97,7 +99,7 @@ const RequestBillButton = ({ tableId, sessionId, className = "" }) => {
         className={`px-6 py-3 rounded-xl bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 font-bold flex items-center justify-center gap-2 animate-pulse ${className}`}
       >
         <Bell size={20} className="animate-bounce" />
-        Đang chờ nhân viên...
+        {t("bill.waitingForStaff")}
       </button>
     );
   }
@@ -114,7 +116,7 @@ const RequestBillButton = ({ tableId, sessionId, className = "" }) => {
       ) : (
         <Receipt size={20} />
       )}
-      {loading ? "Đang gửi..." : "Yêu cầu thanh toán"}
+      {loading ? t("bill.sending") : t("bill.requestBill")}
     </button>
   );
 };

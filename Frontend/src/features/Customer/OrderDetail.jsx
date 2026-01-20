@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { orderApi } from "../../services/orderApi";
 import { formatMoneyVND } from "../../utils/orders";
 
@@ -14,6 +15,7 @@ const badge = (uiStatus) => {
 };
 
 const OrderDetail = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
 
   const [order, setOrder] = useState(null);
@@ -32,7 +34,7 @@ const OrderDetail = () => {
         setOrder(res);
       } catch (e) {
         if (!mounted) return;
-        setError(e?.response?.data?.message || "Không tải được chi tiết đơn");
+        setError(e?.response?.data?.message || t("order.detail.loadFailed"));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -44,27 +46,27 @@ const OrderDetail = () => {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-black">Chi tiết đơn</h1>
+        <h1 className="text-2xl font-black">{t("order.detail.title")}</h1>
         <Link
           to="/history"
           className="text-xs text-orange-400 font-bold hover:underline"
         >
-          ← Quay lại lịch sử
+          {t("order.detail.backToHistory")}
         </Link>
       </div>
 
       {loading ? (
-        <p className="text-white/50">Đang tải...</p>
+        <p className="text-white/50">{t("order.detail.loading")}</p>
       ) : error ? (
         <p className="text-red-400">{error}</p>
       ) : !order ? (
-        <p className="text-white/50">Không có dữ liệu.</p>
+        <p className="text-white/50">{t("order.detail.noData")}</p>
       ) : (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-white font-black">
-                Bàn: {order.table_number || "—"}
+                {t("order.detail.table")}: {order.table_number || "—"}
               </p>
               <p className="text-xs text-white/50">
                 {new Date(order.created_at).toLocaleString("vi-VN")}
@@ -109,7 +111,7 @@ const OrderDetail = () => {
 
                     {it.note && (
                       <p className="text-xs text-white/50 mt-0.5">
-                        Note: {it.note}
+                        {t("order.detail.orderNote")}: {it.note}
                       </p>
                     )}
 
@@ -137,7 +139,8 @@ const OrderDetail = () => {
 
           {order.note ? (
             <div className="mt-4 text-sm text-white/70">
-              <span className="text-white/50">Ghi chú đơn:</span> {order.note}
+              <span className="text-white/50">{t("order.detail.note")}:</span>{" "}
+              {order.note}
             </div>
           ) : null}
         </div>

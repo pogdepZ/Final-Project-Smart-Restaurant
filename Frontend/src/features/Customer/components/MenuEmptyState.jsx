@@ -1,9 +1,11 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export default function MenuEmptyState() {
+  const { t } = useTranslation();
   return (
     <div className="text-center py-20 opacity-60">
-      <p>Không tìm thấy món nào phù hợp.</p>
+      <p>{t("menu.noItemsFound")}</p>
     </div>
   );
 }

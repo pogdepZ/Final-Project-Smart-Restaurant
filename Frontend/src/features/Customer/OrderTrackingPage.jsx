@@ -10,6 +10,7 @@ import {
   Bell,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { orderApi } from "../../services/orderApi";
 import useCustomerSocket from "../../hooks/useCustomerSocket";
 import OrderItemStatus from "../../Components/customer/OrderItemStatus";
@@ -32,6 +33,7 @@ const mapItemStatus = (status) => {
 
 const OrderTrackingPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   // Sử dụng hook chung - socket events đã được xử lý ở CustomerLayout
   const { isConnected, lastUpdate } = useCustomerSocket(false);
   const [orders, setOrders] = useState([]);
@@ -44,7 +46,7 @@ const OrderTrackingPage = () => {
 
   const fetchOrders = useCallback(async () => {
     if (!qrToken) {
-      setError("Vui lòng quét mã QR trên bàn để xem đơn hàng");
+      setError(t("order.tracking.scanQRToView"));
       setLoading(false);
       return;
     }
@@ -83,7 +85,7 @@ const OrderTrackingPage = () => {
       }
     } catch (err) {
       console.error("Failed to fetch orders:", err);
-      setError(err?.response?.data?.message || "Không thể tải đơn hàng");
+      setError(err?.response?.data?.message || t("errors.loadFailed"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -140,16 +142,16 @@ const OrderTrackingPage = () => {
           <AlertCircle size={40} className="text-orange-500" />
         </div>
         <h2 className="text-xl font-bold text-white mb-2">
-          Chưa có thông tin bàn
+          {t("order.tracking.noTableInfo")}
         </h2>
         <p className="text-gray-400 text-center mb-6">
-          Vui lòng quét mã QR trên bàn để xem đơn hàng của bạn
+          {t("order.tracking.scanQRToView")}
         </p>
         <Link
           to="/booking"
           className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all"
         >
-          Xem sơ đồ bàn
+          {t("order.tracking.viewTableMap")}
         </Link>
       </div>
     );
@@ -171,7 +173,7 @@ const OrderTrackingPage = () => {
           onClick={() => navigate(-1)}
           className="text-orange-500 hover:text-orange-400 font-medium"
         >
-          Quay lại
+          {t("order.tracking.goBack")}
         </button>
       </div>
     );
@@ -184,15 +186,17 @@ const OrderTrackingPage = () => {
         <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
           <ChefHat size={40} className="text-gray-500" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Chưa có đơn hàng</h2>
+        <h2 className="text-xl font-bold text-white mb-2">
+          {t("order.tracking.noOrders")}
+        </h2>
         <p className="text-gray-400 text-center mb-6">
-          Bạn chưa đặt món nào. Hãy khám phá thực đơn của chúng tôi!
+          {t("order.tracking.noOrdersDesc")}
         </p>
         <Link
           to="/menu"
           className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all"
         >
-          Xem thực đơn
+          {t("order.tracking.viewMenu")}
         </Link>
       </div>
     );
@@ -216,12 +220,12 @@ const OrderTrackingPage = () => {
 
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold text-white">
-              Theo dõi đơn hàng
+              {t("order.tracking.title")}
             </h1>
             {isConnected && (
               <span
                 className="w-2 h-2 bg-green-500 rounded-full animate-pulse"
-                title="Kết nối thời gian thực"
+                title={t("order.tracking.realTimeConnected")}
               />
             )}
           </div>
@@ -265,13 +269,17 @@ const OrderTrackingPage = () => {
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm text-gray-400">Mã đơn hàng</p>
+                  <p className="text-sm text-gray-400">
+                    {t("order.orderCode")}
+                  </p>
                   <p className="font-semibold text-white">
                     {selectedOrder.code}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-400">Bàn số</p>
+                  <p className="text-sm text-gray-400">
+                    {t("order.tableNumber")}
+                  </p>
                   <p className="font-semibold text-white">
                     {selectedOrder.tableNumber}
                   </p>
@@ -283,7 +291,7 @@ const OrderTrackingPage = () => {
                 <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                   <CheckCircle2 className="text-green-500" size={24} />
                   <span className="font-medium text-green-400">
-                    Tất cả món đã sẵn sàng!
+                    {t("order.tracking.allReady")}
                   </span>
                 </div>
               ) : (
@@ -291,11 +299,17 @@ const OrderTrackingPage = () => {
                   <Clock className="text-orange-500" size={24} />
                   <div>
                     <p className="font-medium text-orange-400">
-                      Đang chuẩn bị ({summary.ready}/
-                      {summary.total - summary.rejected} món)
+                      {t("order.tracking.preparing")} (
+                      {t("order.tracking.itemsReady", {
+                        ready: summary.ready,
+                        total: summary.total - summary.rejected,
+                      })}
+                      )
                     </p>
                     <p className="text-sm text-orange-300/70">
-                      Dự kiến: ~{selectedOrder.estimatedTime} phút
+                      {t("order.tracking.estimated", {
+                        time: selectedOrder.estimatedTime,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -308,26 +322,34 @@ const OrderTrackingPage = () => {
                 <p className="text-2xl font-bold text-gray-400">
                   {summary.queued}
                 </p>
-                <p className="text-xs text-gray-500">Đang chờ</p>
+                <p className="text-xs text-gray-500">
+                  {t("order.tracking.queued")}
+                </p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-orange-500">
                   {summary.cooking}
                 </p>
-                <p className="text-xs text-orange-400">Đang nấu</p>
+                <p className="text-xs text-orange-400">
+                  {t("order.tracking.cooking")}
+                </p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-green-500">
                   {summary.ready}
                 </p>
-                <p className="text-xs text-green-400">Sẵn sàng</p>
+                <p className="text-xs text-green-400">
+                  {t("order.tracking.ready")}
+                </p>
               </div>
             </div>
 
             {/* Items List */}
             <div>
               <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
-                Chi tiết món ({selectedOrder.items.length} món)
+                {t("order.tracking.itemDetails", {
+                  count: selectedOrder.items.length,
+                })}
               </h2>
               <div className="space-y-3">
                 {selectedOrder.items
@@ -355,7 +377,9 @@ const OrderTrackingPage = () => {
 
         {/* Auto-refresh notice */}
         <p className="text-center text-xs text-gray-500">
-          {isConnected ? "🔗 Kết nối thời gian thực" : "⚠️ Kết nối bị mất"}
+          {isConnected
+            ? t("order.tracking.connected")
+            : t("order.tracking.disconnected")}
         </p>
       </main>
     </div>

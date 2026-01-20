@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X,
   Printer,
@@ -54,6 +55,7 @@ const getStripe = async () => {
 };
 
 const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
+  const { t } = useTranslation();
   const [billData, setBillData] = useState(null);
   const [discountType, setDiscountType] = useState("none");
   const [discountValue, setDiscountValue] = useState(0);
@@ -103,7 +105,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
         });
         setBillData(res);
       } catch (err) {
-        toast.error(err.response?.data?.message || "Lỗi tải hóa đơn");
+        toast.error(err.response?.data?.message || t("errors.loadFailed"));
         onClose();
       } finally {
         setCalculating(false);
@@ -392,7 +394,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     if (doc) {
       const fileName = `Bill_${tableName}_${new Date().getTime()}.pdf`;
       doc.save(fileName);
-      toast.success("Đã tải hóa đơn về máy!");
+      toast.success(t("bill.downloaded"));
     }
   };
 
@@ -405,7 +407,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
       // 1. Load Stripe
       const stripe = await getStripe();
       if (!stripe) {
-        throw new Error("Không thể kết nối Stripe");
+        throw new Error(t("bill.stripeConnectFailed"));
       }
       setStripePromise(stripe);
 
@@ -419,11 +421,11 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
         setClientSecret(result.clientSecret);
         setShowStripeForm(true);
       } else {
-        throw new Error("Không thể tạo phiên thanh toán");
+        throw new Error(t("bill.stripeSessionFailed"));
       }
     } catch (err) {
       console.error("Stripe init error:", err);
-      toast.error(err.message || "Lỗi khởi tạo Stripe");
+      toast.error(err.message || t("bill.stripeError"));
     } finally {
       setStripeLoading(false);
     }
@@ -445,13 +447,13 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
         setStripeSessionId(result.sessionId);
         setShowStripeQR(true);
         setPaymentStatus(null);
-        toast.success("Đã tạo mã QR Stripe! Quét để thanh toán");
+        toast.success(t("bill.stripeQRCreated"));
       } else {
-        throw new Error("Không thể tạo link thanh toán");
+        throw new Error(t("bill.stripePaymentLinkFailed"));
       }
     } catch (err) {
       console.error("Stripe QR error:", err);
-      toast.error(err.message || "Lỗi tạo QR Stripe");
+      toast.error(err.message || t("bill.stripeQRError"));
     } finally {
       setStripeLoading(false);
     }
@@ -467,7 +469,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
 
       if (result.status === "complete") {
         setPaymentStatus("complete");
-        toast.success("Thanh toán thành công!");
+        toast.success(t("bill.paymentSuccess"));
 
         // Xử lý thanh toán thành công
         await billApi.checkoutBill(tableId, {
@@ -491,12 +493,12 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
         return false; // Tiếp tục polling
       } else {
         setPaymentStatus("failed");
-        toast.error("Thanh toán thất bại hoặc đã hủy");
+        toast.error(t("bill.paymentFailedOrCancelled"));
         return true; // Dừng polling
       }
     } catch (err) {
       console.error("Check payment error:", err);
-      toast.error("Lỗi kiểm tra thanh toán");
+      toast.error(t("bill.checkError"));
       return false;
     } finally {
       setCheckingPayment(false);
@@ -527,7 +529,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
   // Validate và áp dụng coupon
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      setCouponError("Vui lòng nhập mã giảm giá");
+      setCouponError(t("bill.enterCouponPlease"));
       return;
     }
 
@@ -548,7 +550,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
         toast.success(result.message);
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Mã không hợp lệ";
+      const errorMsg = err.response?.data?.message || t("bill.invalidCode");
       setCouponError(errorMsg);
       setAppliedCoupon(null);
     } finally {
@@ -567,7 +569,9 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     if (!billData) return;
     if (
       !window.confirm(
-        `Xác nhận thanh toán ${formatMoneyVND(billData.final_amount)}?`,
+        t("bill.confirmPaymentAmount", {
+          amount: formatMoneyVND(billData.final_amount),
+        }),
       )
     )
       return;
@@ -589,12 +593,12 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
         coupon_id: appliedCoupon?.coupon?.id || null,
       });
 
-      toast.success("Thanh toán thành công!");
+      toast.success(t("bill.paymentSuccess"));
       handlePrint();
       if (onPaymentSuccess) onPaymentSuccess();
       onClose();
     } catch (err) {
-      toast.error("Lỗi thanh toán");
+      toast.error(t("bill.paymentFailed"));
     } finally {
       setLoading(false);
     }
@@ -603,7 +607,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
   if (!billData && calculating)
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center text-white">
-        Đang tính tiền...
+        {t("bill.calculating")}
       </div>
     );
   if (!billData) return null;
@@ -615,11 +619,9 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
         <div className="p-5 border-b border-white/10 flex justify-between items-center bg-white/5">
           <div>
             <h3 className="text-white font-bold text-lg">
-              Thanh Toán: {tableName}
+              {t("bill.paymentFor")}: {tableName}
             </h3>
-            <p className="text-gray-400 text-xs">
-              Vui lòng kiểm tra kỹ trước khi chốt bill
-            </p>
+            <p className="text-gray-400 text-xs">{t("bill.checkBefore")}</p>
           </div>
           <button
             onClick={onClose}
@@ -635,10 +637,10 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
           <div className="space-y-4">
             <div className="flex justify-between items-end px-1">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Chi tiết đơn hàng
+                {t("bill.orderDetails")}
               </span>
               <span className="text-xs text-gray-500">
-                {billData.items.length} món
+                {t("bill.items", { count: billData.items.length })}
               </span>
             </div>
 
@@ -662,7 +664,8 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                           {item.name}
                         </span>
                         <span className="text-[11px] text-gray-500 font-medium mt-0.5">
-                          Đơn giá: {formatMoneyVND(item.price_base)}
+                          {t("bill.unitPrice")}:{" "}
+                          {formatMoneyVND(item.price_base)}
                         </span>
                       </div>
                     </div>
@@ -716,7 +719,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
             <div className="flex items-center gap-2 mb-3">
               <Tag size={16} className="text-purple-400" />
               <label className="text-sm font-bold text-purple-300">
-                Mã giảm giá
+                {t("bill.couponCode")}
               </label>
             </div>
 
@@ -734,15 +737,15 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                     <div className="text-green-300/70 text-xs">
                       {appliedCoupon.coupon.description ||
                         (appliedCoupon.coupon.discount_type === "percent"
-                          ? `Giảm ${appliedCoupon.coupon.discount_value}%`
-                          : `Giảm ${formatMoneyVND(appliedCoupon.coupon.discount_value)}`)}
+                          ? `${t("bill.reduce")} ${appliedCoupon.coupon.discount_value}%`
+                          : `${t("bill.reduce")} ${formatMoneyVND(appliedCoupon.coupon.discount_value)}`)}
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={handleRemoveCoupon}
                   className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-all"
-                  title="Xóa mã"
+                  title={t("bill.removeCoupon")}
                 >
                   <XCircle size={18} />
                 </button>
@@ -761,7 +764,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleApplyCoupon();
                     }}
-                    placeholder="Nhập mã giảm giá..."
+                    placeholder={t("bill.enterCoupon")}
                     className={`flex-1 bg-black/40 text-white border rounded-lg px-3 py-2.5 text-sm outline-none transition-colors ${
                       couponError
                         ? "border-red-500/50 focus:border-red-500"
@@ -776,7 +779,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                     {couponLoading ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : (
-                      "Áp dụng"
+                      t("bill.applyCoupon")
                     )}
                   </button>
                 </div>
@@ -797,7 +800,8 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
               className={`bg-white/5 p-3 rounded-xl border border-white/5 space-y-2 ${appliedCoupon ? "opacity-50" : ""}`}
             >
               <label className="text-xs font-bold text-gray-400 uppercase">
-                Giảm giá thủ công {appliedCoupon && "(Đã dùng mã)"}
+                {t("bill.manualDiscount")}{" "}
+                {appliedCoupon && t("bill.usingCoupon")}
               </label>
               {/* Thêm min-w-0 để tránh lỗi tràn layout trên grid */}
               <div className="flex gap-2 min-w-0">
@@ -810,9 +814,9 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                   }}
                   disabled={!!appliedCoupon}
                 >
-                  <option value="none">Không</option>
-                  <option value="percent">%</option>
-                  <option value="fixed">VNĐ</option>
+                  <option value="none">{t("bill.none")}</option>
+                  <option value="percent">{t("bill.percent")}</option>
+                  <option value="fixed">{t("bill.fixed")}</option>
                 </select>
                 <input
                   type="number"
@@ -828,18 +832,30 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
             {/* Payment Method - Đã thêm background để cân đối với bên trái */}
             <div className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2">
               <label className="text-xs font-bold text-gray-400 uppercase block">
-                Thanh toán bằng
+                {t("bill.paymentBy")}
               </label>
               <div className="flex gap-2 flex-wrap">
                 {[
                   {
                     id: "cash",
                     icon: <Banknote size={16} />,
-                    label: "Tiền mặt",
+                    label: t("bill.cash"),
                   },
-                  { id: "card", icon: <CreditCard size={16} />, label: "Thẻ" },
-                  { id: "transfer", icon: <QrCode size={16} />, label: "QR" },
-                  { id: "stripe", icon: <Wallet size={16} />, label: "Stripe" },
+                  {
+                    id: "card",
+                    icon: <CreditCard size={16} />,
+                    label: t("bill.card"),
+                  },
+                  {
+                    id: "transfer",
+                    icon: <QrCode size={16} />,
+                    label: t("bill.transfer"),
+                  },
+                  {
+                    id: "stripe",
+                    icon: <Wallet size={16} />,
+                    label: t("bill.stripe"),
+                  },
                 ].map((m) => (
                   <button
                     key={m.id}
@@ -870,22 +886,22 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                 {qrBankUrl ? (
                   <img
                     src={qrBankUrl}
-                    alt="QR Chuyển khoản"
+                    alt={t("bill.qrTransfer")}
                     className="w-48 h-48 object-contain"
                   />
                 ) : (
                   <div className="w-48 h-48 flex items-center justify-center text-black">
-                    Đang tạo QR...
+                    {t("bill.creatingQR")}
                   </div>
                 )}
               </div>
               <div className="mt-2 text-center space-y-1">
-                <p className="text-gray-400 text-xs">Quét mã để thanh toán</p>
+                <p className="text-gray-400 text-xs">{t("bill.scanToPayQR")}</p>
                 <p className="text-orange-500 font-bold text-lg">
                   {formatMoneyVND(billData.final_amount)}
                 </p>
                 <p className="text-gray-500 text-xs font-mono">
-                  ND: TT BAN {tableName}
+                  {t("bill.content")}: TT BAN {tableName}
                 </p>
               </div>
             </div>
@@ -896,10 +912,10 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
             <div className="flex flex-col items-center animate-in zoom-in-95 duration-300 p-4 bg-white/5 rounded-xl border border-white/10">
               <Wallet size={48} className="text-purple-500 mb-3" />
               <h4 className="text-white font-bold mb-2">
-                Thanh toán qua Stripe
+                {t("bill.stripePayment")}
               </h4>
               <p className="text-gray-400 text-sm text-center mb-4">
-                Hỗ trợ Visa, Mastercard, Apple Pay, Google Pay
+                {t("bill.stripeSupport")}
               </p>
 
               <div className="flex gap-3 w-full">
@@ -911,12 +927,12 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                   {stripeLoading ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      Đang tạo...
+                      {t("bill.creating")}
                     </>
                   ) : (
                     <>
                       <QrCode size={18} />
-                      QR Code
+                      {t("bill.qrCodeBtn")}
                     </>
                   )}
                 </button>
@@ -929,12 +945,12 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                   {stripeLoading ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      Đang tạo...
+                      {t("bill.creating")}
                     </>
                   ) : (
                     <>
                       <CreditCard size={18} />
-                      Nhập thẻ
+                      {t("bill.enterCard")}
                     </>
                   )}
                 </button>
@@ -946,10 +962,10 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
           {paymentMethod === "stripe" && showStripeQR && stripePaymentUrl && (
             <div className="flex flex-col items-center animate-in zoom-in-95 duration-300 p-6 bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-xl border border-purple-500/30">
               <h4 className="text-white font-bold mb-2 text-lg">
-                🔒 Quét QR để thanh toán Stripe
+                {t("bill.scanStripeQR")}
               </h4>
               <p className="text-gray-300 text-sm text-center mb-4">
-                Quét mã QR bằng điện thoại để mở trang thanh toán
+                {t("bill.scanStripeDesc")}
               </p>
 
               <div className="bg-white p-4 rounded-xl shadow-lg">
@@ -967,17 +983,17 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                 </p>
                 {paymentStatus === "pending" && (
                   <p className="text-yellow-400 text-xs animate-pulse">
-                    ⏳ Chờ khách thanh toán...
+                    {t("bill.waitingPayment")}
                   </p>
                 )}
                 {paymentStatus === "complete" && (
                   <p className="text-green-400 text-xs">
-                    ✅ Đã thanh toán thành công!
+                    {t("bill.paidSuccess")}
                   </p>
                 )}
                 {!paymentStatus && (
                   <p className="text-gray-400 text-xs">
-                    Thanh toán an toàn qua Stripe
+                    {t("bill.securePayment")}
                   </p>
                 )}
               </div>
@@ -988,7 +1004,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                   className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all flex items-center justify-center gap-2"
                 >
                   <ExternalLink size={16} />
-                  Mở link
+                  {t("bill.openLink")}
                 </button>
                 <button
                   onClick={() => {
@@ -998,7 +1014,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                   }}
                   className="flex-1 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-all"
                 >
-                  Hủy
+                  {t("bill.cancel")}
                 </button>
               </div>
 
@@ -1011,19 +1027,18 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                 {checkingPayment ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    Đang kiểm tra...
+                    {t("bill.checking")}
                   </>
                 ) : (
                   <>
                     <CreditCard size={18} />
-                    Kiểm tra thanh toán
+                    {t("bill.checkPayment")}
                   </>
                 )}
               </button>
 
               <div className="mt-4 text-xs text-gray-500 text-center">
-                💡 Hệ thống tự động kiểm tra mỗi 5 giây hoặc bấm "Kiểm tra thanh
-                toán"
+                {t("bill.autoCheckHint")}
               </div>
             </div>
           )}
@@ -1038,7 +1053,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                   fallback={
                     <div className="flex items-center justify-center p-8 text-orange-500">
                       <Loader2 className="animate-spin mr-2" size={24} />
-                      <span>Đang tải form thanh toán...</span>
+                      <span>{t("bill.loadingPaymentForm")}</span>
                     </div>
                   }
                 >
@@ -1064,13 +1079,13 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
           {/* Totals */}
           <div className="space-y-2 bg-black/40 p-4 rounded-xl border border-white/5">
             <div className="flex justify-between text-sm text-gray-400">
-              <span>Tạm tính</span>{" "}
+              <span>{t("bill.subtotal")}</span>{" "}
               <span>{formatMoneyVND(billData.subtotal)}</span>
             </div>
             {billData.discount_amount > 0 && (
               <div className="flex justify-between text-sm text-green-400">
                 <span className="flex items-center gap-1">
-                  Giảm giá
+                  {t("bill.discount")}
                   {appliedCoupon && (
                     <span className="text-[10px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded">
                       {appliedCoupon.coupon.code}
@@ -1081,11 +1096,11 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
               </div>
             )}
             <div className="flex justify-between text-sm text-gray-400">
-              <span>VAT (10%)</span>
+              <span>{t("bill.vat")}</span>
               <span>{formatMoneyVND(billData.tax_amount)}</span>
             </div>
             <div className="flex justify-between text-2xl font-black text-orange-500 pt-2 border-t border-white/10">
-              <span>TỔNG</span>
+              <span>{t("bill.grandTotal")}</span>
               <span>{formatMoneyVND(billData.final_amount)}</span>
             </div>
           </div>
@@ -1096,7 +1111,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
           <button
             onClick={handleDownload}
             className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all"
-            title="Tải PDF"
+            title={t("bill.downloadPDF")}
           >
             <FileDown size={20} />
           </button>
@@ -1104,7 +1119,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
           <button
             onClick={handlePrint}
             className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all"
-            title="In Bill Nhiệt"
+            title={t("bill.printBill")}
           >
             <Printer size={20} />
           </button>
@@ -1120,10 +1135,10 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
               className="flex-1 bg-linear-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-xl font-bold shadow-lg shadow-green-900/20 disabled:opacity-50 transition-all"
             >
               {loading
-                ? "Đang xử lý..."
+                ? t("bill.processing")
                 : paymentMethod === "stripe"
-                  ? "Sử dụng Stripe ở trên"
-                  : "XÁC NHẬN THANH TOÁN"}
+                  ? t("bill.useStripeAbove")
+                  : t("bill.confirmPayment")}
             </button>
           )}
         </div>

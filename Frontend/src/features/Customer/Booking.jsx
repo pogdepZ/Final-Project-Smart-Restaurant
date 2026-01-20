@@ -3,9 +3,11 @@ import QRCode from "react-qr-code";
 import { MapPin, X, Users, Armchair } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { tableApi } from "../../services/tableApi";
 
 const Booking = () => {
+  const { t } = useTranslation();
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +26,7 @@ const Booking = () => {
     if (!Array.isArray(tablesData)) return [];
 
     const grouped = tablesData.reduce((acc, table) => {
-      const locationName = table.location || "Khu vực khác";
+      const locationName = table.location || t("table.booking.otherArea");
 
       if (!acc[locationName]) {
         acc[locationName] = [];
@@ -58,7 +60,7 @@ const Booking = () => {
         setAreas(processedData);
       } catch (err) {
         console.error(err);
-        toast.error(err?.message || "Lỗi tải danh sách bàn");
+        toast.error(err?.message || t("table.booking.loadError"));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -77,7 +79,7 @@ const Booking = () => {
       table.status === "occupied" || table.current_session_id != null;
     if (isOccupied) {
       toast.warning(
-        `Bàn ${table.table_number} đang có khách, vui lòng chọn bàn khác!`,
+        t("table.booking.tableOccupied", { table: table.table_number }),
       );
       return;
     }
@@ -102,7 +104,7 @@ const Booking = () => {
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-white">
         <div className="flex flex-col items-center gap-2">
           <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-          <p>Đang tải sơ đồ...</p>
+          <p>{t("table.booking.loading")}</p>
         </div>
       </div>
     );
@@ -114,24 +116,28 @@ const Booking = () => {
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-            <MapPin className="text-orange-500" /> Sơ Đồ Bàn Ăn
+            <MapPin className="text-orange-500" /> {t("table.booking.title")}
           </h1>
-          <p className="text-gray-400">Chọn bàn trống để lấy mã QR gọi món</p>
+          <p className="text-gray-400">{t("table.booking.subtitle")}</p>
         </div>
 
         {/* Legend */}
         <div className="flex flex-wrap justify-center gap-4 mb-10 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-neutral-800 border border-white/20" />
-            <span className="text-gray-300">Bàn Trống</span>
+            <span className="text-gray-300">
+              {t("table.booking.available")}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-orange-500/20 border border-orange-500" />
-            <span className="text-orange-500 font-bold">Đang Có Khách</span>
+            <span className="text-orange-500 font-bold">
+              {t("table.booking.occupied")}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-red-900/20 border border-red-500/50" />
-            <span className="text-red-400">Đã Đặt Trước</span>
+            <span className="text-red-400">{t("table.booking.reserved")}</span>
           </div>
         </div>
 
@@ -139,7 +145,7 @@ const Booking = () => {
         <div className="space-y-10">
           {areas.length === 0 ? (
             <div className="text-center text-gray-400 py-10">
-              Không tìm thấy bàn nào phù hợp.
+              {t("table.booking.noTables")}
             </div>
           ) : (
             areas.map((area) => (
@@ -210,21 +216,25 @@ const Booking = () => {
 
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <Users size={12} />
-                          <span>{getSeats(table)} chỗ</span>
+                          <span>
+                            {t("table.booking.seats", {
+                              count: getSeats(table),
+                            })}
+                          </span>
                         </div>
 
                         {isOccupied && (
                           <>
                             <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                             <span className="text-[10px] text-orange-400 font-bold uppercase mt-1">
-                              Đang có khách
+                              {t("table.booking.occupied")}
                             </span>
                           </>
                         )}
 
                         {isReserved && (
                           <span className="text-[10px] text-red-400 font-bold uppercase mt-1">
-                            Đã đặt trước
+                            {t("table.booking.reserved")}
                           </span>
                         )}
                       </button>
@@ -253,7 +263,7 @@ const Booking = () => {
                 {selectedTable.table_number}
               </h3>
               <p className="text-orange-500 text-sm font-medium mb-6">
-                Quét mã để gọi món
+                {t("table.booking.scanToOrder")}
               </p>
 
               <div className="bg-white p-4 rounded-xl inline-block mb-6 mx-auto">
@@ -265,15 +275,14 @@ const Booking = () => {
               </div>
 
               <p className="text-gray-400 text-sm mb-6 px-4">
-                Sử dụng Camera hoặc Zalo để quét mã trên. <br />
-                Hệ thống sẽ tự động nhận diện bàn của bạn.
+                {t("table.booking.scanInstruction")}
               </p>
 
               <button
                 onClick={handleSimulateScan}
                 className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-all active:scale-95"
               >
-                Vào bàn ngay (Giả lập)
+                {t("table.booking.enterNow")}
               </button>
             </div>
           </div>

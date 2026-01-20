@@ -1,14 +1,18 @@
+import { useTranslation } from "react-i18next";
+
 export default function ConfirmModal({
   open,
-  title = "Xác nhận",
+  title,
   description,
-  confirmText = "Xác nhận",
-  cancelText = "Huỷ",
+  confirmText,
+  cancelText,
   danger = false,
   onConfirm,
   onClose,
   loading = false,
 }) {
+  const { t } = useTranslation();
+
   if (!open) return null;
 
   return (
@@ -20,7 +24,9 @@ export default function ConfirmModal({
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-neutral-950 shadow-2xl">
           <div className="p-5">
-            <div className="text-white font-black text-lg">{title}</div>
+            <div className="text-white font-black text-lg">
+              {title || t("common.confirm")}
+            </div>
             {description ? (
               <div className="text-gray-400 text-sm mt-2">{description}</div>
             ) : null}
@@ -32,18 +38,21 @@ export default function ConfirmModal({
               disabled={loading}
               className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
             >
-              {cancelText}
+              {cancelText || t("common.cancel")}
             </button>
 
             <button
               onClick={onConfirm}
               disabled={loading}
-              className={`px-4 py-2 rounded-xl border ${danger
-                ? "bg-red-500/20 border-red-500/30 text-red-200 hover:bg-red-500/30"
-                : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
-                }`}
+              className={`px-4 py-2 rounded-xl border ${
+                danger
+                  ? "bg-red-500/20 border-red-500/30 text-red-200 hover:bg-red-500/30"
+                  : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
+              }`}
             >
-              {loading ? "Đang xử lý..." : confirmText}
+              {loading
+                ? t("common.processing")
+                : confirmText || t("common.confirm")}
             </button>
           </div>
         </div>

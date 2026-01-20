@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import FoodDetailPopup from "./DetailFoodPopup";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -23,10 +24,12 @@ import MenuErrorState from "./components/MenuErrorState";
 import MenuEmptyState from "./components/MenuEmptyState";
 import MenuList from "./components/MenuList";
 import Navbar from "../../Components/NavBar";
+import useFuzzySearch from "../../hooks/useFuzzySearch";
 
 const PAGE_SIZE = 12;
 
 export default function Menu() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const cartCount = useSelector(selectTotalItems);
   const cartId = useSelector(selectCartId);
@@ -118,11 +121,11 @@ export default function Menu() {
             p.set("page", String(pageV));
             return p;
           },
-          { replace }
+          { replace },
         );
       }, 80);
     },
-    [setSearchParams]
+    [setSearchParams],
   );
 
   // ===== init from URL (1 lần) =====
@@ -178,7 +181,7 @@ export default function Menu() {
         page: String(p),
       });
     },
-    [syncUrl, appliedSearch, activeCategoryId, sort, onlyChef]
+    [syncUrl, appliedSearch, activeCategoryId, sort, onlyChef],
   );
 
   // ===== fetchPage (locked) =====
@@ -226,7 +229,7 @@ export default function Menu() {
         }));
 
         setItems((prev) =>
-          nextPage === 1 ? normalized : prev.concat(normalized)
+          nextPage === 1 ? normalized : prev.concat(normalized),
         );
         setPage(nextPage);
 
@@ -248,7 +251,7 @@ export default function Menu() {
         inFlightRef.current = false;
       }
     },
-    [appliedSearch, activeCategoryId, sort, onlyChef, onPageSync, error]
+    [appliedSearch, activeCategoryId, sort, onlyChef, onPageSync, error],
   );
 
   // ===== reset list when appliedSearch/category/sort/chef changes =====
@@ -296,7 +299,7 @@ export default function Menu() {
 
         fetchPage(pageRef.current + 1, { reason: "auto" });
       },
-      { root: null, rootMargin: "650px", threshold: 0 }
+      { root: null, rootMargin: "650px", threshold: 0 },
     );
 
     observerRef.current.observe(el);
@@ -355,7 +358,7 @@ export default function Menu() {
         image: item.image_url || item.image || null,
         modifiers: [], // sau này lấy modifiers user chọn
         note: "",
-      })
+      }),
     );
 
     // UI animation giữ nguyên
@@ -373,7 +376,7 @@ export default function Menu() {
       });
     }, 700);
 
-    toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
+    toast.success(t("menu.addedToCart", { name: item.name }), {
       position: "bottom-right",
       autoClose: 1200,
     });
@@ -381,23 +384,50 @@ export default function Menu() {
 
   const disabledSearch = useMemo(
     () => searchInput.trim() === appliedSearch.trim(),
-    [searchInput, appliedSearch]
+    [searchInput, appliedSearch],
   );
 
-  const handleSelectRelated = useCallback(async (id) => {
-  try {
-    const res = await menuApi.getMenuItemById(id);
-    const item = res?.data ?? res;
-    setSelectedFood(item);
-  } catch (e) {
-    toast.error(e?.message || "Không tải được món liên quan");
-  }
-}, []);
+  // ===== Fuzzy Search - filter items client-side while typing =====
+  const { results: fuzzyFilteredItems, hasSearchTerm: isFuzzySearchActive } =
+    useFuzzySearch(
+      items,
+      searchInput, // Use real-time input for fuzzy filtering
+      {
+        keys: [
+          { name: "name", weight: 0.6 },
+          { name: "description", weight: 0.25 },
+          { name: "categoryName", weight: 0.15 },
+        ],
+        threshold: 0.4, // Allow typos like "caesa sald" -> "Caesar Salad"
+        minMatchCharLength: 2,
+      },
+    );
+
+  // Display items: use fuzzy filtered if searching, otherwise show all
+  const displayItems = useMemo(() => {
+    if (isFuzzySearchActive && searchInput.trim().length >= 2) {
+      return fuzzyFilteredItems;
+    }
+    return items;
+  }, [isFuzzySearchActive, searchInput, fuzzyFilteredItems, items]);
+
+  const handleSelectRelated = useCallback(
+    async (id) => {
+      try {
+        const res = await menuApi.getMenuItemById(id);
+        const item = res?.data ?? res;
+        setSelectedFood(item);
+      } catch (e) {
+        toast.error(e?.message || t("errors.loadRelatedFailed"));
+      }
+    },
+    [t],
+  );
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
       <Navbar></Navbar>
-      
+
       {/* HEADER */}
       <MenuHeader
         tableCode={tableCode}
@@ -413,6 +443,10 @@ export default function Menu() {
         categories={categories}
         activeCategoryId={activeCategoryId}
         setActiveCategoryId={setActiveCategoryId}
+        // Fuzzy search props
+        fuzzyResultCount={displayItems.length}
+        isFuzzySearchActive={isFuzzySearchActive}
+        totalItemsCount={items.length}
       />
 
       {/* LIST */}
@@ -424,20 +458,29 @@ export default function Menu() {
             error={error}
             onRetry={() => fetchPage(1, { reason: "user" })}
           />
-        ) : items.length > 0 ? (
+        ) : displayItems.length > 0 ? (
           <MenuList
-            items={items}
+            items={displayItems}
             addedItems={addedItems}
             onSelectFood={(item) => setSelectedFood(item)}
             onAddToCart={handleAddToCart}
             sentinelRef={sentinelRef}
             loadingMore={loadingMore}
-            hasMore={hasMore}
+            hasMore={hasMore && !isFuzzySearchActive}
             error={error}
             onRetryLoadMore={() =>
               fetchPage(pageRef.current + 1, { reason: "user" })
             }
           />
+        ) : items.length > 0 && isFuzzySearchActive ? (
+          <div className="text-center py-12">
+            <p className="text-neutral-400 text-lg">
+              {t("menu.noResults")} "{searchInput}"
+            </p>
+            <p className="text-neutral-500 text-sm mt-2">
+              {t("menu.tryOtherKeywords")}
+            </p>
+          </div>
         ) : (
           <MenuEmptyState />
         )}
@@ -451,7 +494,7 @@ export default function Menu() {
           onConfirm={(payload) => {
             dispatch(addToCartLocal(payload));
             setSelectedFood(null);
-            toast.success(`Đã thêm ${payload.name} vào giỏ!`);
+            toast.success(t("menu.addedToCart", { name: payload.name }));
           }}
         />
       )}

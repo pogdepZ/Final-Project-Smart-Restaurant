@@ -6,6 +6,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { stripeApi } from "../services/stripeApi";
 import { formatMoneyVND } from "../utils/orders";
 
@@ -17,6 +18,7 @@ const StripeCheckoutForm = ({
   onCancel,
   paymentIntentId,
 }) => {
+  const { t } = useTranslation();
   const stripe = useStripe();
   const elements = useElements();
 
@@ -55,19 +57,19 @@ const StripeCheckoutForm = ({
 
         if (result.success) {
           setPaymentStatus("succeeded");
-          toast.success("🎉 Thanh toán thành công!");
+          toast.success(t("bill.paymentSuccess"));
 
           setTimeout(() => {
             if (onSuccess) onSuccess(result);
           }, 1500);
         } else {
-          throw new Error(result.message || "Lỗi xác nhận thanh toán");
+          throw new Error(result.message || t("stripe.confirmError"));
         }
       }
     } catch (err) {
       setPaymentStatus("failed");
-      setErrorMessage(err.message || "Đã có lỗi xảy ra");
-      toast.error(err.message || "Lỗi thanh toán");
+      setErrorMessage(err.message || t("stripe.genericError"));
+      toast.error(err.message || t("stripe.paymentError"));
     } finally {
       setIsProcessing(false);
     }
@@ -81,11 +83,9 @@ const StripeCheckoutForm = ({
           <CheckCircle size={48} className="text-green-500" />
         </div>
         <h3 className="text-xl font-bold text-white mb-2">
-          Thanh toán thành công!
+          {t("bill.paymentSuccess")}
         </h3>
-        <p className="text-gray-400">
-          Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi.
-        </p>
+        <p className="text-gray-400">{t("stripe.thankYouMessage")}</p>
       </div>
     );
   }
@@ -94,7 +94,9 @@ const StripeCheckoutForm = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header */}
       <div className="text-center pb-4 border-b border-white/10">
-        <p className="text-gray-400 text-sm">Thanh toán cho {tableName}</p>
+        <p className="text-gray-400 text-sm">
+          {t("stripe.paymentFor")} {tableName}
+        </p>
         <p className="text-3xl font-bold text-orange-500 mt-1">
           {formatMoneyVND(amount)}
         </p>
@@ -125,7 +127,7 @@ const StripeCheckoutForm = ({
           disabled={isProcessing}
           className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition-all disabled:opacity-50"
         >
-          Hủy
+          {t("common.cancel")}
         </button>
         <button
           type="submit"
@@ -135,17 +137,17 @@ const StripeCheckoutForm = ({
           {isProcessing ? (
             <>
               <Loader2 size={18} className="animate-spin" />
-              Đang xử lý...
+              {t("common.processing")}
             </>
           ) : (
-            `Thanh toán ${formatMoneyVND(amount)}`
+            t("stripe.payAmount", { amount: formatMoneyVND(amount) })
           )}
         </button>
       </div>
 
       {/* Security Note */}
       <p className="text-center text-gray-500 text-xs">
-        🔒 Thanh toán được bảo mật bởi Stripe
+        🔒 {t("stripe.securedByStripe")}
       </p>
     </form>
   );

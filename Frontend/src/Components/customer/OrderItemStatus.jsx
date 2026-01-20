@@ -1,46 +1,49 @@
 import React from "react";
 import { Clock, ChefHat, CheckCircle, Loader2, XCircle } from "lucide-react";
-
-const statusConfig = {
-  Queued: {
-    icon: Clock,
-    label: "Đang chờ",
-    bgColor: "bg-gray-500/10",
-    textColor: "text-gray-400",
-    borderColor: "border-gray-500/20",
-    progressColor: "bg-gray-500",
-    progressWidth: "33%",
-  },
-  Cooking: {
-    icon: ChefHat,
-    label: "Đang nấu",
-    bgColor: "bg-orange-500/10",
-    textColor: "text-orange-400",
-    borderColor: "border-orange-500/20",
-    progressColor: "bg-orange-500",
-    progressWidth: "66%",
-  },
-  Ready: {
-    icon: CheckCircle,
-    label: "Sẵn sàng",
-    bgColor: "bg-green-500/10",
-    textColor: "text-green-400",
-    borderColor: "border-green-500/20",
-    progressColor: "bg-green-500",
-    progressWidth: "100%",
-  },
-  Rejected: {
-    icon: XCircle,
-    label: "Từ chối",
-    bgColor: "bg-red-500/10",
-    textColor: "text-red-400",
-    borderColor: "border-red-500/20",
-    progressColor: "bg-red-500",
-    progressWidth: "0%",
-  },
-};
+import { useTranslation } from "react-i18next";
 
 const OrderItemStatus = ({ item }) => {
+  const { t } = useTranslation();
+
+  const statusConfig = {
+    Queued: {
+      icon: Clock,
+      label: t("order.status.queued"),
+      bgColor: "bg-gray-500/10",
+      textColor: "text-gray-400",
+      borderColor: "border-gray-500/20",
+      progressColor: "bg-gray-500",
+      progressWidth: "33%",
+    },
+    Cooking: {
+      icon: ChefHat,
+      label: t("order.status.cooking"),
+      bgColor: "bg-orange-500/10",
+      textColor: "text-orange-400",
+      borderColor: "border-orange-500/20",
+      progressColor: "bg-orange-500",
+      progressWidth: "66%",
+    },
+    Ready: {
+      icon: CheckCircle,
+      label: t("order.status.ready"),
+      bgColor: "bg-green-500/10",
+      textColor: "text-green-400",
+      borderColor: "border-green-500/20",
+      progressColor: "bg-green-500",
+      progressWidth: "100%",
+    },
+    Rejected: {
+      icon: XCircle,
+      label: t("order.status.rejected"),
+      bgColor: "bg-red-500/10",
+      textColor: "text-red-400",
+      borderColor: "border-red-500/20",
+      progressColor: "bg-red-500",
+      progressWidth: "0%",
+    },
+  };
+
   const config = statusConfig[item.status] || statusConfig.Queued;
   const Icon = config.icon;
 

@@ -1,16 +1,36 @@
 import * as yup from "yup";
 
-export const resetSchema = yup.object({
-   password: yup
+export const getResetSchema = (t) =>
+  yup.object({
+    password: yup
       .string()
-      .required("Vui lòng nhập mật khẩu.")
-      .min(8, "Mật khẩu tối thiểu 8 ký tự.")
-      .matches(/[A-Z]/, "Mật khẩu cần ít nhất 1 chữ hoa.")
-      .matches(/[a-z]/, "Mật khẩu cần ít nhất 1 chữ thường.")
-      .matches(/[0-9]/, "Mật khẩu cần ít nhất 1 số.")
-      .matches(/[^A-Za-z0-9]/, "Mật khẩu cần ít nhất 1 ký tự đặc biệt."),
+      .required(t("auth.validation.passwordRequired"))
+      .min(8, t("auth.validation.passwordMin8"))
+      .matches(/[A-Z]/, t("auth.validation.passwordUppercase"))
+      .matches(/[a-z]/, t("auth.validation.passwordLowercase"))
+      .matches(/[0-9]/, t("auth.validation.passwordNumber"))
+      .matches(/[^A-Za-z0-9]/, t("auth.validation.passwordSpecial")),
     confirmPassword: yup
       .string()
-      .required("Vui lòng nhập lại mật khẩu.")
-      .oneOf([yup.ref("password")], "Mật khẩu nhập lại không khớp."),
+      .required(t("auth.validation.confirmRequired"))
+      .oneOf([yup.ref("password")], t("auth.validation.passwordMismatch")),
+  });
+
+// Default schema for backward compatibility
+export const resetSchema = yup.object({
+  password: yup
+    .string()
+    .required("Please enter your password.")
+    .min(8, "Password must be at least 8 characters.")
+    .matches(/[A-Z]/, "Password must have at least 1 uppercase letter.")
+    .matches(/[a-z]/, "Password must have at least 1 lowercase letter.")
+    .matches(/[0-9]/, "Password must have at least 1 number.")
+    .matches(
+      /[^A-Za-z0-9]/,
+      "Password must have at least 1 special character.",
+    ),
+  confirmPassword: yup
+    .string()
+    .required("Please confirm your password.")
+    .oneOf([yup.ref("password")], "Passwords do not match."),
 });
