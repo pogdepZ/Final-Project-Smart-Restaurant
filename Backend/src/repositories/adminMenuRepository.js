@@ -640,6 +640,17 @@ async function deletePhoto(photoId, menuItemId) {
   return rows[0] || null;
 }
 
+async function countItemsByCategory(categoryId) {
+  const sql = `
+    SELECT COUNT(*)::int AS cnt
+    FROM menu_items
+    WHERE category_id = $1
+      AND (is_deleted IS NULL OR is_deleted = false)
+  `;
+  const { rows } = await db.query(sql, [categoryId]);
+  return rows?.[0]?.cnt ?? 0;
+}
+
 module.exports = {
   listCategories,
   countItems,
@@ -663,4 +674,5 @@ module.exports = {
   setPrimaryPhotoTx,
   ensureHasPrimaryTx,
   deletePhoto,
+  countItemsByCategory,
 };

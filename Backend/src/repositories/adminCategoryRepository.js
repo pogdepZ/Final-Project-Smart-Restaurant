@@ -127,7 +127,7 @@ exports.hasActiveOrders = async (categoryId) => {
 exports.hasMenuItems = async (categoryId) => {
   const rs = await db.query(
     `SELECT 1 FROM menu_items WHERE category_id = $1 AND is_deleted = false LIMIT 1`,
-    [categoryId]
+    [categoryId],
   );
   return rs.rowCount > 0;
 };
@@ -135,7 +135,7 @@ exports.hasMenuItems = async (categoryId) => {
 exports.existsActive = async (id) => {
   const rs = await db.query(
     `SELECT 1 FROM menu_categories WHERE id=$1 AND is_deleted=false LIMIT 1`,
-    [id]
+    [id],
   );
   return rs.rowCount > 0;
 };

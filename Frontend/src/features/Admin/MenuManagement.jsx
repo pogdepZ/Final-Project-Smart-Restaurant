@@ -58,6 +58,9 @@ function MenuItemCard({
         <div className="min-w-0">
           <div className="text-white font-bold truncate">{it.name}</div>
           <div className="text-xs text-gray-400 mt-1 truncate">{it.categoryName || "—"}</div>
+          <div className="text-[11px] text-gray-500 mt-1">
+            Ngày tạo: {formatDate(it.createdAt || it.created_at)}
+          </div>
         </div>
 
         <div className="text-right">
@@ -159,6 +162,13 @@ function SkeletonRow() {
     </tr>
   );
 }
+
+function formatDate(dt) {
+  if (!dt) return "—";
+  const d = new Date(dt);
+  return d.toLocaleDateString("vi-VN"); // 20/01/2026
+}
+
 
 export default function MenuManagement() {
   const [q, setQ] = useState("");
@@ -448,11 +458,12 @@ export default function MenuManagement() {
           <table className="w-full min-w-245">
             <thead className="bg-neutral-950/60 border-b border-white/10">
               <tr className="text-left text-xs text-gray-400">
-                <th className="py-3 pr-3 pl-4 w-[45%]">Món / Category</th>
+                <th className="py-3 pr-3 pl-4 w-[40%]">Món / Category</th>
                 <th className="py-3 px-3 w-[15%]">Status</th>
-                <th className="py-3 px-3 w-[15%]">Chef</th>
-                <th className="py-3 px-3 w-[15%]">Actions</th>
-                <th className="py-3 pl-3 pr-4 text-right w-[25%]">Giá</th>
+                <th className="py-3 px-3 w-[12%]">Chef</th>
+                <th className="py-3 px-3 w-[13%]">Ngày tạo</th>
+                <th className="py-3 px-3 w-[10%]">Actions</th>
+                <th className="py-3 pl-3 pr-4 text-right w-[10%]">Giá</th>
               </tr>
             </thead>
 
@@ -533,6 +544,12 @@ export default function MenuManagement() {
                         >
                           {it.isChefRecommended ? "Yes" : "No"}
                         </span>
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-3 align-top">
+                      <div className="text-sm text-gray-200">
+                        {formatDate(it.createdAt || it.created_at)}
                       </div>
                     </td>
 
