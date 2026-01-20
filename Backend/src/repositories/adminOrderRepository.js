@@ -149,21 +149,25 @@ async function findOrderItems(orderId) {
       oi.subtotal,
       oi.status,
       oi.note,
+
       COALESCE(
-        (
-          SELECT json_agg(json_build_object(
+        json_agg(
+          jsonb_build_object(
             'id', oim.id,
             'modifier_option_id', oim.modifier_option_id,
             'modifier_name', oim.modifier_name,
             'price', oim.price
-          ))
-          FROM order_item_modifiers oim
-          WHERE oim.order_item_id = oi.id
-        ),
+          )
+        ) FILTER (WHERE oim.id IS NOT NULL),
         '[]'
       ) AS modifiers
+
     FROM order_items oi
+    LEFT JOIN order_item_modifiers oim 
+      ON oim.order_item_id = oi.id
+
     WHERE oi.order_id = $1
+    GROUP BY oi.id
     ORDER BY oi.id ASC
   `;
 
