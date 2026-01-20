@@ -15,6 +15,9 @@ const upload = require("../../config/cloudinary");
 const adminMenuController = require("../../controllers/adminMenuController");
 const adminCategoryController = require("../../controllers/adminCategoryController");
 
+const validate = require("../../middlewares/validate");
+const { createItemSchema } = require("../../validations/menuValidation");
+
 // Categories
 router.get(
   "/categories",
@@ -32,7 +35,9 @@ router.get(
   adminMenuController.getMenuItemDetail,
 );
 
-router.post("/items", protect, adminOnly, adminMenuController.createMenuItem);
+router.post("/items", protect, adminOnly, validate(createItemSchema), adminMenuController.createMenuItem);
+
+
 router.patch(
   "/items/:id",
   protect,

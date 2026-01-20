@@ -26,7 +26,8 @@ const TableDetailPanel = ({ table: initialTable, onClose, onRefresh }) => {
 
   if (!table) return null;
 
-  const clientUrl = `${import.meta.env.VITE_FRONTEND_BASE_URL}/menu?qrToken=${table.qr_token}`;
+  const feBaseUrl = import.meta.env.VITE_FRONTEND_BASE_URL;
+  const clientUrl = `${feBaseUrl}/menu?qrToken=${table.qr_token}`;
 
   const tokenDate = new Date(table.created_at).toLocaleDateString("vi-VN", {
     year: "numeric",
