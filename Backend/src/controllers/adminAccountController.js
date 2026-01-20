@@ -74,3 +74,22 @@ exports.setActived = async (req, res, next) => {
     next(e);
   }
 };
+
+exports.updateAccount = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { name, role } = req.body || {};
+
+    const result = await adminAccountService.updateAccount(id, { name, role });
+
+    return res.json({
+      message: "Cập nhật tài khoản thành công",
+      item: result,
+    });
+  } catch (err) {
+    // Lỗi dành cho người dùng
+    const status = err?.status || 500;
+    const message = err?.publicMessage || "Không thể cập nhật tài khoản";
+    return res.status(status).json({ message });
+  }
+};

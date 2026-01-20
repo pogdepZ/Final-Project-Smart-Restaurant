@@ -235,3 +235,63 @@ exports.setActived = async ({ id, is_actived }) => {
 
   return updated;
 };
+
+const ALLOWED_ROLES = new Set(["admin", "waiter", "kitchen", "customer"]);
+
+function badRequest(publicMessage) {
+  const e = new Error(publicMessage);
+  e.status = 400;
+  e.publicMessage = publicMessage;
+  return e;
+}
+
+function forbidden(publicMessage) {
+  const e = new Error(publicMessage);
+  e.status = 403;
+  e.publicMessage = publicMessage;
+  return e;
+}
+
+function notFound(publicMessage) {
+  const e = new Error(publicMessage);
+  e.status = 404;
+  e.publicMessage = publicMessage;
+  return e;
+}
+
+exports.updateAccount = async (id, { name, role }) => {
+  if (!id) throw badRequest("Thiếu id tài khoản");
+
+  const current = await adminAccountRepo.findById(id);
+  if (!current) throw notFound("Tài khoản không tồn tại");
+
+  // ❌ Không cho sửa customer
+  if (String(current.role || "").toLowerCase() === "customer") {
+    throw forbidden("Tài khoản customer không thể chỉnh sửa");
+  }
+
+  // Validate payload (cho phép patch partial)
+  const patch = {};
+
+  if (name !== undefined) {
+    const trimmed = String(name || "").trim();
+    if (!trimmed) throw badRequest("Tên không hợp lệ");
+    if (trimmed.length > 80) throw badRequest("Tên quá dài (tối đa 80 ký tự)");
+    patch.name = trimmed;
+  }
+
+  if (role !== undefined) {
+    const nextRole = String(role || "").toLowerCase();
+    if (!ALLOWED_ROLES.has(nextRole)) {
+      throw badRequest("Role không hợp lệ");
+    }
+    patch.role = nextRole;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    throw badRequest("Không có dữ liệu để cập nhật");
+  }
+
+  const updated = await adminAccountRepo.updateAccount(id, patch);
+  return updated;
+};
