@@ -14,7 +14,6 @@ function Field({ label, children }) {
   );
 }
 
-// ✅ Modal EDIT category (đúng chức năng)
 function CategoryEditModal({ open, initial, onClose, onSuccess }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -133,16 +132,13 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // filters
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  // create/edit
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [editCat, setEditCat] = useState(null);
 
-  // delete
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteCat, setDeleteCat] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -278,19 +274,17 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
         )}
       </div>
 
-      {/* ✅ Create */}
       <CreateCategoryModal
         open={openCreate}
         onClose={() => setOpenCreate(false)}
         onSuccess={() => {
           setOpenCreate(false);
-          fetchCategories();          // reload list trong panel
-          onReloadCategories?.();     // ✅ reload categories ở MenuManagement
-          onReloadMenuItems?.();      // optional
+          fetchCategories(); 
+          onReloadCategories?.(); 
+          onReloadMenuItems?.();
         }}
       />
 
-      {/* ✅ Edit */}
       <CategoryEditModal
         open={openEdit}
         initial={editCat}
@@ -306,7 +300,6 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
         }}
       />
 
-      {/* ✅ Delete (có chuyển category) */}
       <ConfirmModal
         open={confirmOpen}
         danger
@@ -366,7 +359,7 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
             setMoveToCategoryId("");
 
             fetchCategories();
-            onReloadCategories?.();       // ✅
+            onReloadCategories?.();
             onReloadMenuItems?.();
           } catch (e) {
             toast.error(e?.response?.data?.message || "Không thể xoá category");

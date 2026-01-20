@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, User, Shield, BadgeCheck, BadgeX } from "lucide-react";
 import { toast } from "react-toastify";
-import ToggleSwitch from "../../../Components/ToggleSwitch";
 import { adminAccountApi } from "../../../services/adminAccountApi";
 
 function Row({ label, value }) {
@@ -19,7 +18,7 @@ function AvatarBlock({ name, avatarUrl }) {
   const initial = useMemo(() => {
     if (!name) return "U";
 
-    const parts = name.trim().split(/\s+/); // tách theo khoảng trắng
+    const parts = name.trim().split(/\s+/);
     const lastWord = parts[parts.length - 1];
 
     return lastWord[0]?.toUpperCase() || "U";
@@ -62,7 +61,7 @@ export default function AccountDetailModal({ open, item, onClose, onUpdated }) {
 
   useEffect(() => {
     if (!item) return;
-    setActiveLocal(item.is_active ?? true); // fallback true
+    setActiveLocal(item.is_active ?? true);
   }, [item]);
 
   useEffect(() => {
@@ -89,7 +88,6 @@ export default function AccountDetailModal({ open, item, onClose, onUpdated }) {
       const res = await adminAccountApi.setActive(item.id, next);
       toast.success(next ? "Đã set Active" : "Đã set Inactive");
 
-      // báo ngược cho parent cập nhật uiItems nếu muốn
       onUpdated?.(res?.item || { ...item, is_active: next });
     } catch (e) {
       setActiveLocal(prev);
@@ -118,10 +116,8 @@ export default function AccountDetailModal({ open, item, onClose, onUpdated }) {
 
         {/* Body */}
         <div className="p-4 space-y-4">
-          {/* ✅ Avatar on top */}
           <AvatarBlock name={item.name} avatarUrl={item.avatar_url} />
 
-          {/* Detail rows */}
           <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
             <Row label="Email" value={item.email} />
             <Row

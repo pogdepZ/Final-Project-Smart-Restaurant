@@ -49,13 +49,11 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ thêm state cho modifier groups
   const [allGroups, setAllGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
   const itemId = item?.id;
 
-  // ✅ useMemo phải đặt TRƯỚC return condition
   const selectedGroupIds = detail?.modifierGroupIds || item?.modifierGroupIds || [];
 
   const selectedGroups = useMemo(() => {
@@ -88,11 +86,10 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
         setLoading(true);
         setError("");
 
-        // chạy song song: detail + groups
         setLoadingGroups(true);
         const [detailRes, groupsRes] = await Promise.all([
           adminMenuApi.getMenuItemDetail(itemId),
-          adminMenuApi.getModifierGroups({ status: "ALL" }), // ALL để khỏi mất group inactive
+          adminMenuApi.getModifierGroups({ status: "ALL" }),
         ]);
 
         if (cancelled) return;
@@ -116,10 +113,8 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
     };
   }, [open, itemId]);
 
-  // ✅ return condition đặt SAU hooks
   if (!open) return null;
 
-  // ✅ thêm guard UI: open=true nhưng chưa có itemId
   if (!itemId) {
     return (
       <div className="fixed inset-0 z-50">
@@ -219,7 +214,6 @@ export default function AdminMenuItemDetailModal({ open, item, onClose }) {
                     />
                   </div>
 
-                  {/* ✅ MODIFIERS */}
                   <div className="mt-4 pt-4 border-t border-white/10">
                     <div className="text-white font-bold mb-2">Modifiers</div>
 
