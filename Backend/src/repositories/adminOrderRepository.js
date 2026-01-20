@@ -12,7 +12,6 @@ function buildWhere({ q, status, statuses, from, to } = {}) {
   const where = [];
   const params = [];
 
-  // ✅ group statuses has priority
   if (Array.isArray(statuses) && statuses.length) {
     params.push(statuses.map((s) => String(s).toLowerCase()));
     where.push(`lower(o.status) = ANY($${params.length}::text[])`);
@@ -33,14 +32,21 @@ function buildWhere({ q, status, statuses, from, to } = {}) {
     where.push(`o.created_at < (($${params.length}::date) + interval '1 day')`);
   }
 
-  // search by computed code
   const qTrim = String(q || "").trim();
   if (qTrim) {
     params.push(`%${qTrim}%`);
+    const p = params.length;
+
     where.push(`
       (
+        -- code ORD-YYYYMMDD-XXXXXX
         ('ORD-' || to_char(o.created_at, 'YYYYMMDD') || '-' || right(replace(o.id::text,'-',''), 6))
-        ILIKE $${params.length}
+          ILIKE $${p}
+
+        OR o.id::text ILIKE $${p}
+        OR COALESCE(t.table_number, '') ILIKE $${p}
+        OR COALESCE(t.location, '') ILIKE $${p}
+        OR COALESCE(o.guest_name, '') ILIKE $${p}
       )
     `);
   }
@@ -55,12 +61,14 @@ async function countOrders(filters = {}) {
   const sql = `
     SELECT COUNT(*)::int AS total
     FROM orders o
+    LEFT JOIN tables t ON t.id = o.table_id
     ${whereSql}
   `;
 
   const result = await db.query(sql, params);
-  return result.rows[0]?.total ?? 0;
+  return result.rows?.[0]?.total || 0;
 }
+
 
 /**
  * Find orders with pagination
@@ -81,8 +89,11 @@ async function findOrders(filters = {}, { limit = 20, offset = 0 } = {}) {
       o.note,
       o.created_at,
       o.updated_at,
-      COALESCE(oi.total_items, 0)::int AS total_items
+      COALESCE(oi.total_items, 0)::int AS total_items,
+      t.table_number AS table_name,
+      t.location AS table_location
     FROM orders o
+    LEFT JOIN tables t ON t.id = o.table_id
     LEFT JOIN (
       SELECT order_id, SUM(quantity) AS total_items
       FROM order_items
