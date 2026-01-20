@@ -17,7 +17,6 @@ import AdminMenuItemDetailModal from "./components/AdminMenuItemDetailModal";
 import PaginationBar from "../../Components/PaginationBar";
 import ToggleSwitch from "../../Components/ToggleSwitch";
 import { useToggleChefRecommended } from "../../hooks/useToggleChefRecommended";
-import CreateCategoryModal from "./components/CreateCategoryModal";
 import CreateMenuItemModal from "./components/CreateMenuItemModal";
 import EditMenuItemModal from "./components/EditMenuItemModal";
 import ConfirmModal from "../../Components/ConfirmModal";
@@ -37,6 +36,110 @@ function StatusPill({ status }) {
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-bold ${meta.className}`}>
       {meta.label}
     </span>
+  );
+}
+
+function MenuItemCard({
+  it,
+  onOpenDetail,
+  onEdit,
+  onDelete,
+  statusLoading,
+  chefLoading,
+  onToggleStatus,
+  onToggleChef,
+}) {
+  return (
+    <div
+      className="p-4 transition cursor-pointer"
+      onClick={onOpenDetail}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-white font-bold truncate">{it.name}</div>
+          <div className="text-xs text-gray-400 mt-1 truncate">{it.categoryName || "—"}</div>
+          <div className="text-[11px] text-gray-500 mt-1">
+            Ngày tạo: {formatDate(it.createdAt || it.created_at)}
+          </div>
+        </div>
+
+        <div className="text-right">
+          <div className="text-white font-black">
+            {typeof it.price === "number" ? formatVND(it.price) : "—"}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Prep: {it.prepTimeMinutes ?? 0} phút</div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <ToggleSwitch
+            checked={it.status === "available"}
+            disabled={statusLoading || it.status === "sold_out"}
+            onChange={onToggleStatus}
+            label="Status"
+          />
+          <StatusPill status={it.status} />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ToggleSwitch
+            checked={!!it.isChefRecommended}
+            disabled={chefLoading}
+            onChange={onToggleChef}
+            label="Chef"
+          />
+          <span className={`text-xs ${it.isChefRecommended ? "text-orange-300" : "text-gray-500"}`}>
+            {it.isChefRecommended ? "Yes" : "No"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
+          onClick={onEdit}
+        >
+          Edit
+        </button>
+
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 hover:bg-red-500/20"
+          onClick={onDelete}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MenuItemCardSkeleton() {
+  return (
+    <div className="p-4 border-b border-white/5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="h-4 w-40 bg-white/5 rounded animate-pulse" />
+          <div className="mt-2 h-3 w-24 bg-white/5 rounded animate-pulse" />
+        </div>
+        <div className="text-right">
+          <div className="h-4 w-20 bg-white/5 rounded animate-pulse ml-auto" />
+          <div className="mt-2 h-3 w-16 bg-white/5 rounded animate-pulse ml-auto" />
+        </div>
+      </div>
+
+      <div className="mt-3 flex gap-3">
+        <div className="h-6 w-28 bg-white/5 rounded-full animate-pulse" />
+        <div className="h-6 w-24 bg-white/5 rounded-full animate-pulse" />
+      </div>
+
+      <div className="mt-3 flex justify-end gap-2">
+        <div className="h-8 w-16 bg-white/5 rounded animate-pulse" />
+        <div className="h-8 w-16 bg-white/5 rounded animate-pulse" />
+      </div>
+    </div>
   );
 }
 
@@ -60,27 +163,30 @@ function SkeletonRow() {
   );
 }
 
+function formatDate(dt) {
+  if (!dt) return "—";
+  const d = new Date(dt);
+  return d.toLocaleDateString("vi-VN"); // 20/01/2026
+}
+
+
 export default function MenuManagement() {
-  // filters (server-side)
   const [q, setQ] = useState("");
   const [categoryId, setCategoryId] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [chefOnly, setChefOnly] = useState(false);
   const [sort, setSort] = useState("NEWEST");
 
-  const [openCreateCategory, setOpenCreateCategory] = useState(false);
   const [openCreateItem, setOpenCreateItem] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [detailItem, setDetailItem] = useState(null);     // xem chi tiết
-  const [deleteItem, setDeleteItem] = useState(null);     // confirm xoá
+  const [detailItem, setDetailItem] = useState(null);
+  const [deleteItem, setDeleteItem] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-
-  // paging
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
@@ -88,28 +194,19 @@ export default function MenuManagement() {
 
   const toggleStatus = async (it, nextChecked) => {
     const id = it.id;
-    const prevStatus = it.status; // "available" | "unavailable" | "sold_out"
+    const prevStatus = it.status;
     const nextStatus = nextChecked ? "available" : "unavailable";
 
-    // optimistic
     setUiItems((cur) =>
       cur.map((x) => (x.id === id ? { ...x, status: nextStatus } : x))
     );
     setStatusMap((m) => ({ ...m, [id]: true }));
 
     try {
-      // ✅ Option A: nếu bạn có endpoint updateMenuItem
-      // await adminMenuApi.updateMenuItem(id, { status: nextStatus });
-
-      // ✅ Option B: nếu bạn có endpoint riêng
-      // await adminMenuApi.updateStatus(id, nextStatus);
-
-      // ✅ Option C: nếu BE đang dùng PUT/PATCH chung:
       await adminMenuApi.updateMenuItem(id, { status: nextStatus });
 
       toast.success(`Đã đổi status: ${nextStatus}`);
     } catch (err) {
-      // rollback
       setUiItems((cur) =>
         cur.map((x) => (x.id === id ? { ...x, status: prevStatus } : x))
       );
@@ -147,7 +244,6 @@ export default function MenuManagement() {
   const items = data?.items ?? [];
   const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 1 };
 
-  // ✅ local UI items để optimistic
   const [uiItems, setUiItems] = useState([]);
   useEffect(() => {
     setUiItems(items);
@@ -159,8 +255,7 @@ export default function MenuManagement() {
     if (!exists) setCategoryId("ALL");
   }, [categories, categoryId]);
 
-  // ✅ loading theo từng item
-  const [togglingMap, setTogglingMap] = useState({}); // { [id]: true/false }
+  const [togglingMap, setTogglingMap] = useState({});
   const [statusMap, setStatusMap] = useState({});
 
   const totalPages = pagination.totalPages || 1;
@@ -169,7 +264,6 @@ export default function MenuManagement() {
     refetch();
   };
 
-  // Khi đổi filter => reset về page 1
   const resetPage = () => setPage(1);
 
   return (
@@ -190,9 +284,6 @@ export default function MenuManagement() {
               menu
             </span>
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Search • Filter • Sort • Pagination
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -203,14 +294,6 @@ export default function MenuManagement() {
             </span>{" "}
             món
           </div>
-
-          <button
-            onClick={() => setOpenCreateCategory(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-              bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition"
-          >
-            + Category
-          </button>
 
           <button
             onClick={() => setOpenCreateItem(true)}
@@ -371,15 +454,16 @@ export default function MenuManagement() {
           <div className="text-xs text-gray-400">Click 1 dòng để xem chi tiết</div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full min-w-245">
             <thead className="bg-neutral-950/60 border-b border-white/10">
               <tr className="text-left text-xs text-gray-400">
-                <th className="py-3 pr-3 pl-4 w-[45%]">Món / Category</th>
+                <th className="py-3 pr-3 pl-4 w-[40%]">Món / Category</th>
                 <th className="py-3 px-3 w-[15%]">Status</th>
-                <th className="py-3 px-3 w-[15%]">Chef</th>
-                <th className="py-3 px-3 w-[15%]">Actions</th>
-                <th className="py-3 pl-3 pr-4 text-right w-[25%]">Giá</th>
+                <th className="py-3 px-3 w-[12%]">Chef</th>
+                <th className="py-3 px-3 w-[13%]">Ngày tạo</th>
+                <th className="py-3 px-3 w-[10%]">Actions</th>
+                <th className="py-3 pl-3 pr-4 text-right w-[10%]">Giá</th>
               </tr>
             </thead>
 
@@ -399,14 +483,14 @@ export default function MenuManagement() {
 
                     <td
                       className="py-3 px-3 align-top"
-                      onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal khi toggle
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center gap-3">
 
                         <div className="flex items-center gap-2">
                           <ToggleSwitch
                             checked={it.status === "available"}
-                            disabled={!!statusMap[it.id] || it.status === "sold_out"} // sold_out thì khoá
+                            disabled={!!statusMap[it.id] || it.status === "sold_out"}
                             onChange={(nextChecked) => toggleStatus(it, nextChecked)}
                             label="Status"
                           />
@@ -415,12 +499,10 @@ export default function MenuManagement() {
                       </div>
                     </td>
 
-
-                    {/* ✅ cột Chef = toggle mượt */}
                     <td className="py-3 px-3 align-top">
                       <div
                         className="inline-flex items-center gap-2"
-                        onClick={(e) => e.stopPropagation()} // không mở modal
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <ToggleSwitch
                           checked={!!it.isChefRecommended}
@@ -439,9 +521,7 @@ export default function MenuManagement() {
 
                             try {
                               await toggleChef(id, next);
-                              // success: giữ state như hiện tại
                             } catch (err) {
-                              // rollback nếu fail
                               setUiItems((cur) =>
                                 cur.map((x) =>
                                   x.id === id ? { ...x, isChefRecommended: prev } : x
@@ -467,9 +547,15 @@ export default function MenuManagement() {
                       </div>
                     </td>
 
+                    <td className="py-3 px-3 align-top">
+                      <div className="text-sm text-gray-200">
+                        {formatDate(it.createdAt || it.created_at)}
+                      </div>
+                    </td>
+
                     <td
                       className="py-3 px-3 align-top"
-                      onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <div className="inline-flex items-center gap-2 justify-end"
                         onClick={(e) => e.stopPropagation()}>
@@ -477,7 +563,7 @@ export default function MenuManagement() {
                           type="button"
                           className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
                           onClick={() => {
-                            setEditItem(it);   // mở modal edit
+                            setEditItem(it);
                             setEditOpen(true);
                           }}
                         >
@@ -523,7 +609,36 @@ export default function MenuManagement() {
           </table>
         </div>
 
-        {/* ✅ Pagination */}
+        <div className="sm:hidden divide-y divide-white/10">
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, i) => <MenuItemCardSkeleton key={i} />)
+            : uiItems.map((it) => (
+              <MenuItemCard
+                key={it.id}
+                it={it}
+                onOpenDetail={() => setDetailItem(it)}
+                onEdit={() => { setEditItem(it); setEditOpen(true); }}
+                onDelete={() => { setDeleteItem(it); setConfirmOpen(true); }}
+                statusLoading={!!statusMap[it.id]}
+                chefLoading={!!togglingMap[it.id]}
+                onToggleStatus={(next) => toggleStatus(it, next)}
+                onToggleChef={async (next) => {
+                  const id = it.id;
+                  const prev = !!it.isChefRecommended;
+
+                  setUiItems((cur) => cur.map((x) => x.id === id ? { ...x, isChefRecommended: next } : x));
+                  setTogglingMap((m) => ({ ...m, [id]: true }));
+
+                  try { await toggleChef(id, next); }
+                  catch { setUiItems((cur) => cur.map((x) => x.id === id ? { ...x, isChefRecommended: prev } : x)); }
+                  finally {
+                    setTogglingMap((m) => { const c = { ...m }; delete c[id]; return c; });
+                  }
+                }}
+              />
+            ))}
+        </div>
+
         <PaginationBar
           page={pagination.page}
           totalPages={totalPages}
@@ -545,24 +660,11 @@ export default function MenuManagement() {
 
       <ModifierManagerPanel onReload={refetch} />
 
-      {/* Modal */}
       <AdminMenuItemDetailModal
         open={!!detailItem}
         item={detailItem}
         onClose={() => setDetailItem(null)}
       />
-
-
-      <CreateCategoryModal
-        open={openCreateCategory}
-        onClose={() => setOpenCreateCategory(false)}
-        onSuccess={async () => {
-          setOpenCreateCategory(false);
-          await refetchCategories(); // ✅ reload categories (filter + create item)
-          refetch();                 // ✅ reload menu items nếu bạn muốn
-        }}
-      />
-
 
       <CreateMenuItemModal
         open={openCreateItem}
@@ -604,7 +706,7 @@ export default function MenuManagement() {
             setUiItems((cur) => cur.filter((x) => x.id !== deleteItem.id));
             toast.success("Đã xoá món");
             setConfirmOpen(false);
-            setDeleteItem(null);     // ✅ reset đúng
+            setDeleteItem(null);
           } catch (e) {
             toast.error(e?.response?.data?.message || "Xoá thất bại");
           } finally {

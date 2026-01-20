@@ -9,7 +9,7 @@ function mapOrderRow(r) {
   return {
     id: r.id,
     code: r.code,
-    status: r.status, // received|preparing|ready|completed|cancelled
+    status: r.status, // received|preparing|ready|completed|rejected
     paymentStatus: r.payment_status, // unpaid|paid
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -62,16 +62,30 @@ exports.getOrderDetail = async (id) => {
 
   const order = {
     ...mapOrderRow(o),
-    items: (items || []).map((it) => ({
+    items: items.map((it) => ({
       id: it.id,
       menuItemId: it.menu_item_id,
       name: it.item_name,
+      status: it.status,
       unitPrice: Number(it.price),
       quantity: it.quantity,
       totalPrice: Number(it.subtotal),
       note: it.note,
+      modifiers: it.modifiers || [],
     })),
   };
+
+  // giữ nguyên sort
+  order.items.sort((a, b) => {
+    const statusOrder = {
+      received: 1,
+      preparing: 2,
+      ready: 3,
+      completed: 4,
+      rejected: 5,
+    };
+    return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+  });
 
   return { order };
 };

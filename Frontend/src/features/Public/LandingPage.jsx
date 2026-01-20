@@ -16,65 +16,40 @@ import SignatureDishes from "../../Components/SignatureDishes";
 import HeroTitle from "../../Components/HeroTitle";
 import { WelcomeCurtain } from "../../Components/WelcomeCurtain";
 import BlogSection from "../../Components/BlogSection";
+import { useEffect } from "react";
+import { useState } from "react";
+import { menuApi } from "../../services/menuApi";
 // --- COMPONENT CON: HIỆU ỨNG MÀN CHÀO MỪNG ---
 
 // --- COMPONENT CHÍNH ---
 const LandingPage = () => {
   // 1. Dữ liệu Món ăn Signature
-  const signatureDishes = [
-    {
-      id: 1,
-      name: "Ribeye Steak",
-      category: "Món Chính",
-      price: 32.99,
-      description: "Thăn lưng bò 12oz nướng hoàn hảo",
-      image:
-        "https://images.unsplash.com/photo-1600891964092-4316c288032e?w=400",
-    },
-    {
-      id: 2,
-      name: "Grilled Salmon",
-      category: "Món Đặc Biệt",
-      price: 24.99,
-      description: "Cá hồi Atlantic nướng sốt bơ chanh",
-      image:
-        "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400",
-    },
-    {
-      id: 3,
-      name: "Lobster Tail",
-      category: "Món Cao Cấp",
-      price: 39.99,
-      description: "Đuôi tôm hùm Maine hấp bơ tỏi",
-      image:
-        "https://images.unsplash.com/photo-1625943553852-781c6dd46faa?w=400",
-    },
-    {
-      id: 4,
-      name: "Truffle Pasta",
-      category: "Món Đặc Biệt",
-      price: 21.99,
-      description: "Mì Ý nấm truffle phô mai Parmesan",
-      image:
-        "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400",
-    },
-    {
-      id: 5,
-      name: "BBQ Ribs Combo",
-      category: "Combo",
-      price: 28.99,
-      description: "Sườn nướng BBQ + khoai + salad",
-      image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400",
-    },
-    {
-      id: 6,
-      name: "Seafood Platter",
-      category: "Combo",
-      price: 45.99,
-      description: "Tổng hợp hải sản tươi sống cho 2 người",
-      image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400",
-    },
-  ];
+  const [signatureDishes, setSignatureDishes] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchTopDishes = async () => {
+      try {
+       
+        const res = await menuApi.getTopChefBestSeller(5);
+
+        const items = res?.data|| [];
+
+        if (mounted) setSignatureDishes(items);
+      } catch (err) {
+        console.error("fetchTopDishes error:", err);
+        if (mounted) setSignatureDishes([]);
+      } 
+    };
+
+    fetchTopDishes();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  
 
   // 2. Dữ liệu Tính năng
   const features = [
@@ -236,24 +211,7 @@ const LandingPage = () => {
             ))}
           </div>
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-neutral-900 rounded-xl border border-white/5">
-              <div className="text-4xl font-black text-orange-500 mb-2">
-                120+
-              </div>
-              <div className="text-gray-400">Chỗ ngồi</div>
-            </div>
-            <div className="text-center p-6 bg-neutral-900 rounded-xl border border-white/5">
-              <div className="text-4xl font-black text-orange-500 mb-2">3</div>
-              <div className="text-gray-400">Phòng VIP</div>
-            </div>
-            <div className="text-center p-6 bg-neutral-900 rounded-xl border border-white/5">
-              <div className="text-4xl font-black text-orange-500 mb-2">
-                50+
-              </div>
-              <div className="text-gray-400">Sự kiện/tháng</div>
-            </div>
-          </div>
+          
         </div>
       </section>
     </div>

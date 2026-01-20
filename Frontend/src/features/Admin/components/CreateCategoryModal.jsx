@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, Layers } from "lucide-react";
 import { adminMenuApi } from "../../../services/adminMenuApi";
 import { toast } from "react-toastify";
@@ -11,6 +11,17 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
 
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev || "";
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -32,7 +43,7 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
   const handleSubmit = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Vui lòng nhập tên category.");
+      toast.error("Vui lòng nhập tên category.");
       return;
     }
 
@@ -87,12 +98,6 @@ export default function CreateCategoryModal({ open, onClose, onSuccess }) {
 
           {/* body */}
           <div className="p-5 space-y-4">
-            {error ? (
-              <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-                {error}
-              </div>
-            ) : null}
-
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Tên category *</label>
               <input

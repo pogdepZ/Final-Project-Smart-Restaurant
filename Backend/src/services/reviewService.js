@@ -5,12 +5,23 @@ exports.getItemReviews = async (menuItemId, page, limit) => {
 };
 
 exports.createReview = async (userId, payload) => {
-  const { menuItemId, rating, comment } = payload;
+  const { menu_item_id, rating, comment } = payload;
 
+  const menuItemId = menu_item_id;
   // 1. Kiểm tra Business Logic: User đã mua món này chưa?
-  // Repo cần query bảng Orders/OrderItems
+  // Repo cần query bảng Orders/OrderItem
+
+
+
   const hasPurchased = await repo.checkUserPurchasedItem(userId, menuItemId);
-  
+
+
+  if (!userId) {
+    const err = new Error('Bạn cần đăng nhập để đánh giá món ăn');
+    err.status = 401;
+    throw err;
+  }
+
   if (!hasPurchased) {
     const err = new Error('Bạn cần đặt món này thành công trước khi đánh giá');
     err.status = 403; // Forbidden
@@ -24,6 +35,7 @@ exports.createReview = async (userId, payload) => {
     err.status = 409; // Conflict
     throw err;
   }
+
 
   // 3. Tạo đánh giá mới
   const newReview = await repo.insertReview({

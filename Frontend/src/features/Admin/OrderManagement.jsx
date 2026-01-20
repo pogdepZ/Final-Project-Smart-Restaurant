@@ -15,7 +15,6 @@ import OrderDetailModal from "./components/AdminOrderDetailModal";
 import { useAdminOrderDetail } from "../../hooks/useAdminOrderDetail";
 import PaginationBar from "../../Components/PaginationBar";
 
-// ----- helpers -----
 const STATUS_META = {
   received: {
     label: "Chờ xử lý",
@@ -38,6 +37,13 @@ const STATUS_META = {
     className: "bg-red-500/10 text-red-300 border-red-500/20",
   },
 };
+
+const normalizeQuery = (s) =>
+  String(s || "")
+    .trim()
+    .replace(/^#/, "")
+    .toLowerCase();
+
 
 function formatDateTime(dt) {
   if (!dt) return "—";
@@ -64,49 +70,51 @@ function StatusPill({ status }) {
     </span>
   );
 }
-
 function SkeletonRow() {
   return (
     <tr className="border-b border-white/5">
       <td className="py-3 pr-3 pl-4">
-        <div className="h-4 w-44 bg-white/5 rounded animate-pulse" />
-        <div className="mt-2 h-3 w-24 bg-white/5 rounded animate-pulse" />
+        <div className="h-4 w-36 bg-white/5 rounded animate-pulse" />
+        <div className="mt-2 h-3 w-20 bg-white/5 rounded animate-pulse" />
       </td>
-      <td className="py-3 px-3">
+
+      <td className="hidden sm:table-cell py-3 px-3">
         <div className="h-4 w-28 bg-white/5 rounded animate-pulse" />
+        <div className="mt-2 h-3 w-36 bg-white/5 rounded animate-pulse" />
       </td>
+
       <td className="py-3 px-3">
         <div className="h-6 w-24 bg-white/5 rounded-full animate-pulse" />
       </td>
-      <td className="py-3 px-3">
+
+      <td className="hidden sm:table-cell py-3 px-3">
         <div className="h-4 w-14 bg-white/5 rounded animate-pulse" />
         <div className="mt-2 h-3 w-28 bg-white/5 rounded animate-pulse" />
       </td>
+
       <td className="py-3 pl-3 pr-4 text-right">
         <div className="ml-auto h-4 w-24 bg-white/5 rounded animate-pulse" />
-        <div className="mt-2 ml-auto h-3 w-20 bg-white/5 rounded animate-pulse" />
+        <div className="hidden sm:block mt-2 ml-auto h-3 w-20 bg-white/5 rounded animate-pulse" />
       </td>
     </tr>
   );
 }
 
+
 export default function OrderManagement() {
-  // filters
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("ALL");
-  const [fromDate, setFromDate] = useState(""); // yyyy-mm-dd
-  const [toDate, setToDate] = useState(""); // yyyy-mm-dd
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
-  // paging
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
   const resetPage = () => setPage(1);
 
-  // ✅ params gửi lên server
   const params = useMemo(
     () => ({
-      q,
+      q: normalizeQuery(q),
       status,
       from: fromDate || "",
       to: toDate || "",
@@ -153,9 +161,6 @@ export default function OrderManagement() {
               đơn hàng
             </span>
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Tìm theo mã • Lọc theo ngày • Lọc theo trạng thái • Pagination
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -189,7 +194,7 @@ export default function OrderManagement() {
             <div className="mt-3 grid grid-cols-1 md:grid-cols-15 gap-3">
               {/* Search */}
               <div className="md:col-span-7">
-                <label className="text-xs text-gray-400 mb-1 block">Tìm theo mã</label>
+                <label className="text-xs text-gray-400 mb-1 block">Tìm kiếm đơn hàng</label>
                 <div className="relative">
                   <Search
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -201,7 +206,7 @@ export default function OrderManagement() {
                       setQ(e.target.value);
                       resetPage();
                     }}
-                    placeholder="VD: ORD-20260112-0008"
+                    placeholder="Mã đơn hàng - Tên bàn"
                     className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
                   />
                 </div>
@@ -313,14 +318,20 @@ export default function OrderManagement() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-205">
+          <table className="w-full min-w-0 sm:min-w-225">
             <thead className="bg-neutral-950/60 border-b border-white/10">
               <tr className="text-left text-xs text-gray-400">
-                <th className="py-3 pr-3 pl-4 w-55">Mã / Bàn</th>
-                <th className="py-3 px-3 w-55">Thời gian</th>
-                <th className="py-3 px-3 w-40">Trạng thái</th>
-                <th className="py-3 px-3 w-30">Items</th>
-                <th className="py-3 pl-3 pr-4 text-right w-35">Tổng tiền</th>
+                <th className="py-3 pr-3 pl-4 w-[55%] sm:w-40">Mã / Bàn</th>
+
+                <th className="hidden sm:table-cell py-3 px-3 w-55">Thời gian</th>
+
+                <th className="py-3 px-3 w-[20%] sm:w-42.5">Trạng thái</th>
+
+                <th className="hidden sm:table-cell py-3 px-3 w-35">Items</th>
+
+                <th className="py-3 pl-3 pr-4 text-right w-[25%] sm:w-45">
+                  Tổng tiền
+                </th>
               </tr>
             </thead>
 
@@ -335,13 +346,16 @@ export default function OrderManagement() {
                     title="Click để xem chi tiết"
                   >
                     <td className="py-3 pr-3 pl-4 align-top">
-                      <div className="text-white font-bold">{o.code}</div>
+                      <div className="text-white font-bold break-all sm:break-normal">
+                        #{o?.id?.slice(0, 8) ?? "—"}
+                      </div>
+
                       <div className="text-xs text-gray-400 mt-1">
                         {o.tableName ?? "—"}
                       </div>
                     </td>
 
-                    <td className="py-3 px-3 align-top">
+                    <td className="hidden sm:table-cell py-3 px-3 align-top">
                       <div className="text-sm text-gray-200">
                         {formatDateTime(o.createdAt)}
                       </div>
@@ -356,7 +370,7 @@ export default function OrderManagement() {
                       <StatusPill status={o.status} />
                     </td>
 
-                    <td className="py-3 px-3 align-top">
+                    <td className="hidden sm:table-cell py-3 px-3 align-top">
                       <div className="text-sm text-gray-200 font-semibold">
                         {o.totalItems ?? "—"}
                       </div>
@@ -367,11 +381,10 @@ export default function OrderManagement() {
 
                     <td className="py-3 pl-3 pr-4 align-top text-right">
                       <div className="text-white font-bold">
-                        {typeof o.totalAmount === "number"
-                          ? formatVND(o.totalAmount)
-                          : "—"}
+                        {typeof o.totalAmount === "number" ? formatVND(o.totalAmount) : "—"}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+
+                      <div className="hidden sm:block text-xs text-gray-500 mt-1">
                         {o.paymentMethod ? `Pay: ${o.paymentMethod}` : "—"}
                       </div>
                     </td>
@@ -392,7 +405,7 @@ export default function OrderManagement() {
           </table>
         </div>
 
-        {/* ✅ Pagination */}
+
         <PaginationBar
           page={pagination.page}
           totalPages={totalPages}
@@ -407,7 +420,6 @@ export default function OrderManagement() {
         />
       </div>
 
-      {/* ✅ Modal */}
       <OrderDetailModal
         open={!!selectedOrderId}
         order={orderDetail}

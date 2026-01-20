@@ -44,7 +44,7 @@ function buildRange(period) {
     end.setDate(end.getDate() + 1);
     end.setHours(0, 0, 0, 0);
   } else if (period === "week") {
-    const d = (start.getDay() + 6) % 7; // 0=Mon
+    const d = (start.getDay() + 6) % 7;
     start.setDate(start.getDate() - d);
     start.setHours(0, 0, 0, 0);
     end.setDate(start.getDate() + 7);
@@ -56,7 +56,6 @@ function buildRange(period) {
     end.setDate(1);
     end.setHours(0, 0, 0, 0);
   }
-
   const month = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
   return { from: start.toISOString(), to: end.toISOString(), month };
 }
@@ -64,6 +63,17 @@ function buildRange(period) {
 
 export default function AdminDashboard() {
   const { data, isLoading, error } = useAdminDashboard();
+
+  useEffect(() => {
+    if (!error) return;
+
+    const msg =
+      error?.response?.data?.message || error
+      error?.message ||
+      "Tải trang chủ thất bại"
+
+    toast.error(msg);
+  }, [error]);
 
   const today = new Date().toLocaleDateString("vi-VN");
 
@@ -89,23 +99,20 @@ export default function AdminDashboard() {
     return null;
   };
 
-  // ✅ period riêng
   const [revenuePeriod, setRevenuePeriod] = useState("month");
   const [ordersDailyPeriod, setOrdersDailyPeriod] = useState("month");
   const [peakHoursPeriod, setPeakHoursPeriod] = useState("week");
   const [popularItemsPeriod, setPopularItemsPeriod] = useState("week");
 
-  // ✅ revenue state riêng (để tự update)
   const [revenueValue, setRevenueValue] = useState(0);
   const [revenueLoading, setRevenueLoading] = useState(false);
 
-  // charts state
   const [ordersDaily, setOrdersDaily] = useState([]);
-  const [ordersDailyLoading, setOrdersDailyLoading] = useState(false); // line: orders/day in month
+  const [ordersDailyLoading, setOrdersDailyLoading] = useState(false);
   const [peakHours, setPeakHours] = useState([]);
-  const [peakLoading, setPeakLoading] = useState(false); // bar: orders/hour
+  const [peakLoading, setPeakLoading] = useState(false);
   const [popularItems, setPopularItems] = useState([]);
-  const [popularLoading, setPopularLoading] = useState(false); // pie: qty by item
+  const [popularLoading, setPopularLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +122,6 @@ export default function AdminDashboard() {
         setRevenueLoading(true);
         const r = buildRange(revenuePeriod);
 
-        // nếu backend bạn muốn from/to thì truyền from/to
         const res = await dashboardApi.getRevenue({
           period: revenuePeriod,
           from: r.from,
@@ -126,7 +132,7 @@ export default function AdminDashboard() {
         setRevenueValue(Number(res?.total || 0));
       } catch (e) {
         if (cancelled) return;
-        toast.error(e?.response?.data?.message || "Không tải được doanh thu");
+        toast.error(e || "Không tải được doanh thu");
         setRevenueValue(0);
       } finally {
         if (!cancelled) setRevenueLoading(false);
@@ -147,12 +153,12 @@ export default function AdminDashboard() {
         const res = await dashboardApi.getOrdersDaily({
           from: r.from,
           to: r.to,
-          // hoặc month: r.month nếu backend bạn đang dùng month
         });
 
         if (cancelled) return;
         setOrdersDaily(res?.series || []);
       } catch (e) {
+        toast.error(e || "Không tải được đơn hàng hằng ngày");
         if (cancelled) return;
         setOrdersDaily([]);
       } finally {
@@ -176,6 +182,7 @@ export default function AdminDashboard() {
         if (cancelled) return;
         setPeakHours(res?.series || []);
       } catch (e) {
+        toast.error(e || "Không tải được khung giờ đông khách");
         if (cancelled) return;
         setPeakHours([]);
       } finally {
@@ -203,6 +210,7 @@ export default function AdminDashboard() {
         if (cancelled) return;
         setPopularItems(res?.items || []);
       } catch (e) {
+        toast.error(e || "Không tải được món ăn phổ biến");
         if (cancelled) return;
         setPopularItems([]);
       } finally {
@@ -214,7 +222,7 @@ export default function AdminDashboard() {
   }, [popularItemsPeriod]);
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
+    <div className="container mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-6 md:py-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
@@ -231,9 +239,6 @@ export default function AdminDashboard() {
               Lumière Bistro
             </span>
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Thống kê nhanh + biểu đồ phân tích.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -295,8 +300,9 @@ export default function AdminDashboard() {
           subtitle="Tính theo số lần gọi trong tháng"
           badge="Most Ordered"
           columns={[
-            { label: "Món ăn", span: 8 },
-            { label: "Số lượt", span: 4 },
+            { label: "", span: 2 },
+            { label: "Món ăn", span: 7 },
+            { label: "Số lượt", span: 3 },
           ]}
           rows={
             isLoading
@@ -316,8 +322,9 @@ export default function AdminDashboard() {
           subtitle="Dựa trên rating trung bình và số lượt review"
           badge="Top Rated"
           columns={[
-            { label: "Món ăn", span: 8 },
-            { label: "Rating", span: 4 },
+            { label: "", span: 2 },
+            { label: "Món ăn", span: 7 },
+            { label: "Rating", span: 3 },
           ]}
           rows={
             isLoading
@@ -333,8 +340,8 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* ✅ Analytics Charts */}
-      <div className="mt-6 rounded-2xl bg-neutral-900/60 border border-white/10 p-4">
+      {/* Analytics Charts */}
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-3 sm:p-4 lg:col-span-3 mt-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-white font-black text-xl">
@@ -359,7 +366,7 @@ export default function AdminDashboard() {
             </div>
 
 
-            <div className="mt-6 h-72">
+            <div className="mt-4 sm:mt-6 h-56 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={ordersDaily}>
                   <defs>
@@ -377,6 +384,7 @@ export default function AdminDashboard() {
                   />
 
                   <YAxis
+                    width={26}
                     tick={{ fill: "#9ca3af", fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
@@ -390,7 +398,6 @@ export default function AdminDashboard() {
                     }}
                   />
 
-                  {/* vùng bóng dưới line */}
                   <Line
                     type="monotone"
                     dataKey="orders"
@@ -411,8 +418,8 @@ export default function AdminDashboard() {
           </div>
 
           {/* Pie */}
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-4 lg:col-span-2">
-            <div className="flex items-center justify-between gap-3">
+          <div className="rounded-2xl bg-white/5 border border-white/10 p-3 lg:col-span-2">
+            <div className="flex justify-between gap-3">
               <div>
                 <div className="text-white font-bold">Mặt hàng phổ biến</div>
                 <div className="text-xs text-gray-400 mt-1">
@@ -434,7 +441,7 @@ export default function AdminDashboard() {
               </select>
             </div>
 
-            <div className="mt-3 h-90">
+            <div className="mt-3 h-90 ">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -443,10 +450,11 @@ export default function AdminDashboard() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={110}
+                    outerRadius={90}
                     innerRadius={50}
                     paddingAngle={2}
-                    label
+                    labelLine={false}
+                    label={({ percent }) => `${Math.round(percent * 100)}%`}
                   >
                     {popularItems.map((item, index) => (
                       <Cell
@@ -466,9 +474,9 @@ export default function AdminDashboard() {
                   />
 
                   <Legend
-                    layout="vertical"
-                    align="right"
-                    verticalAlign="middle"
+                    layout="horizontal"
+                    align="center"
+                    verticalAlign="bottom"
                     wrapperStyle={{
                       fontSize: 12,
                       color: "#e5e7eb",
@@ -480,7 +488,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Bar */}
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-4 lg:col-span-5">
+          <div className="rounded-2xl bg-white/5 border border-white/10 p-3 sm:p-4 lg:col-span-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-white font-bold">Giờ cao điểm</div>
@@ -504,13 +512,12 @@ export default function AdminDashboard() {
             </div>
 
 
-            <div className="mt-3 h-72">
+            <div className="mt-3 h-56 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={peakHours}
-                  barSize={22}
+                  barSize={16}
                 >
-                  {/* Gradient */}
                   <defs>
                     <linearGradient id="barGlow" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#fb923c" stopOpacity={0.9} />
@@ -518,14 +525,12 @@ export default function AdminDashboard() {
                     </linearGradient>
                   </defs>
 
-                  {/* Grid */}
                   <CartesianGrid
                     stroke="rgba(255,255,255,0.06)"
                     strokeDasharray="3 3"
                     vertical={false}
                   />
 
-                  {/* X */}
                   <XAxis
                     dataKey="hour"
                     tickFormatter={(h) => `${h}h`}
@@ -535,22 +540,20 @@ export default function AdminDashboard() {
                     tickLine={false}
                   />
 
-                  {/* Y */}
                   <YAxis
+                    width={26}
                     stroke="rgba(255,255,255,0.4)"
                     tick={{ fill: "#9ca3af", fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
                   />
 
-                  {/* Tooltip */}
                   <Tooltip
                     content={<DarkTooltip />}
                     cursor={{
                       fill: "rgba(249, 115, 22, 0.2)"
                     }} />
 
-                  {/* Bars */}
                   <Bar
                     dataKey="orders"
                     fill="url(#barGlow)"
@@ -565,21 +568,6 @@ export default function AdminDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer tip */}
-      <div className="mt-6 p-5 rounded-2xl bg-neutral-900/60 border border-white/10">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-            <Star className="text-orange-500" size={18} />
-          </div>
-          <div>
-            <div className="text-white font-bold">Gợi ý</div>
-            <p className="text-gray-400 text-sm mt-1">
-              Nếu backend chưa có endpoint charts, hãy tạo: <b>/summary</b>, <b>/orders-daily</b>, <b>/peak-hours</b>, <b>/popular-items</b>.
-            </p>
           </div>
         </div>
       </div>

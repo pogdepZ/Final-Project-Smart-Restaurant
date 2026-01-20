@@ -17,8 +17,13 @@ exports.countTables = async () => {
 };
 
 exports.countUsers = async () => {
-  const { rows } = await db.query(`SELECT COUNT(*) AS count FROM users`);
-  return rows[0].count;
+  const { rows } = await db.query(`
+    SELECT COUNT(*) AS count
+    FROM users
+    WHERE role = 'customer'
+  `);
+
+  return Number(rows[0].count);
 };
 
 exports.revenueThisMonth = async () => {
@@ -44,14 +49,15 @@ exports.topOrderedDishes = async (limit = 5) => {
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
     LEFT JOIN menu_items mi ON mi.id = oi.menu_item_id
-    WHERE o.status NOT IN ('pending', 'cancelled')
+    WHERE o.status NOT IN ('pending', 'rejected')
+      AND oi.status != 'rejected'
       AND date_trunc('month', o.created_at) = date_trunc('month', NOW())
       AND mi.id IS NOT NULL
     GROUP BY mi.id, mi.name, mi.category_id
     ORDER BY orders DESC
     LIMIT $1
     `,
-    [limit]
+    [limit],
   );
 
   return rows;
@@ -61,26 +67,32 @@ exports.topRatedDishes = async (limit = 5) => {
   const { rows } = await db.query(
     `
     SELECT
-      id,
-      name,
-      category_id,
-      is_chef_recommended,
-      created_at
-    FROM menu_items
-    WHERE is_deleted = false
-    ORDER BY is_chef_recommended DESC, created_at DESC
+      mi.id,
+      mi.name,
+      mi.category_id,
+      mi.is_chef_recommended,
+      mi.created_at,
+      COALESCE(AVG(r.rating), 0) AS avg_rating,
+      COUNT(r.id) AS total_reviews
+    FROM menu_items mi
+    LEFT JOIN menu_item_reviews r 
+      ON r.menu_item_id = mi.id
+    WHERE mi.is_deleted = false
+    GROUP BY mi.id
+    ORDER BY avg_rating DESC, total_reviews DESC, mi.created_at DESC
     LIMIT $1
     `,
-    [limit]
+    [limit],
   );
 
   // trả format UI đang cần
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
-    category: String(r.category_id), // tạm, nếu muốn tên category thì join menu_categories
-    rating: r.is_chef_recommended ? 4.8 : 4.5,
-    reviews: r.is_chef_recommended ? 120 : 60,
+    category: String(r.category_id),
+    rating: Number(r.avg_rating).toFixed(1), // ví dụ: 4.6
+    reviews: Number(r.total_reviews),
+    isChefRecommended: r.is_chef_recommended,
   }));
 };
 
@@ -92,6 +104,8 @@ const ORDER_OK = [
   "READY",
   "preparing",
   "PREPARING",
+  "received",
+  "RECEIVED",
 ];
 
 exports.revenueAndOrders = async ({ from, to }) => {
@@ -104,7 +118,7 @@ exports.revenueAndOrders = async ({ from, to }) => {
     where created_at >= $1 and created_at < $2
       and lower(status) = any($3)
     `,
-    [from, to, ORDER_OK.map((s) => s.toLowerCase())]
+    [from, to, ORDER_OK.map((s) => s.toLowerCase())],
   );
   return rows[0];
 };
@@ -122,7 +136,7 @@ exports.ordersDaily = async ({ from, to }) => {
     group by 1
     order by 1 asc
     `,
-    [from, to, ORDER_OK.map((s) => s.toLowerCase())]
+    [from, to, ORDER_OK.map((s) => s.toLowerCase())],
   );
 
   return rows.map((r) => ({
@@ -144,7 +158,7 @@ exports.peakHours = async ({ from, to }) => {
     group by 1
     order by 1 asc
     `,
-    [from, to, ORDER_OK.map((s) => s.toLowerCase())]
+    [from, to, ORDER_OK.map((s) => s.toLowerCase())],
   );
 
   // fill 0..23
@@ -165,11 +179,12 @@ exports.popularItems = async ({ from, to, limit }) => {
     join orders o on o.id = oi.order_id
     where o.created_at >= $1 and o.created_at < $2
       and lower(o.status) = any($3)
+      and oi.status != 'rejected'
     group by 1
     order by 2 desc
     limit $4
     `,
-    [from, to, ORDER_OK.map((s) => s.toLowerCase()), limit]
+    [from, to, ORDER_OK.map((s) => s.toLowerCase()), limit],
   );
 
   return rows.map((r) => ({ name: r.name, quantity: Number(r.quantity) || 0 }));

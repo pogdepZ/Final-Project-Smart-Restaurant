@@ -41,6 +41,8 @@ exports.googleLogin = async ({ credential }) => {
   // 1) tìm user theo email
   let user = await authRepo.findUserPublicByEmail(email);
 
+  console.log('Google login user found:', user);
+
   // 2) chưa có thì tạo user mới (role customer)
   if (!user) {
     // bạn có thể tạo thêm cột is_verified = true vì email Google verified
@@ -76,7 +78,7 @@ exports.googleLogin = async ({ credential }) => {
   return {
     accessToken,
     refreshToken,
-    user: { id: user.id, name: user.name, role: user.role, email: user.email },
+    user: { id: user.id, name: user.name, role: user.role, email: user.email, avatar_url: user.avatar_url},
   };
 };
 
@@ -116,7 +118,8 @@ exports.register = async ({ name, email, password, role }) => {
     expiresAt,
   });
 
-  const baseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.CLIENT_URL || "http://localhost:3000";
+  console.log('Base URL for email verification:', baseUrl);
   const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
 
   await sendVerifyEmail({
@@ -186,6 +189,7 @@ exports.login = async ({ email, password }) => {
       name: user.name,
       role: user.role,
       email: user.email,
+      avatar_url: user.avatar_url,
     },
   };
 };
@@ -217,7 +221,7 @@ exports.refreshToken = async (refreshToken) => {
     const newAccessToken = jwt.sign(
       { id: user.id, role: user.role, name: user.name },
       config.auth.accessTokenSecret,
-      { expiresIn: "5m" }
+      { expiresIn: "30m" }
     );
 
     const newRefreshToken = jwt.sign(
@@ -242,6 +246,7 @@ exports.refreshToken = async (refreshToken) => {
         name: user.name,
         role: user.role,
         email: user.email,
+        avatar_url: user.avatar_url,
       },
     };
   } catch (e) {
@@ -331,7 +336,7 @@ exports.forgotPassword = async ({ email }) => {
   if (!user) return;
 
   // revoke token cũ (optional nhưng tốt)
-  await passwordResetRepo.revokeAllByUserId(user.id);
+  await passwordResetRepo.revokeAllByUserId(user.id); 
 
   // raw token gửi cho user qua email
   const rawToken = crypto.randomBytes(32).toString("hex");
@@ -344,7 +349,7 @@ exports.forgotPassword = async ({ email }) => {
     expiresAt,
   });
 
-  const baseUrl = process.env.APP_BASE_URL || "http://localhost:5173";
+  const baseUrl = process.env.CLIENT_URL || "http://localhost:5173";
   const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
   await sendResetPasswordEmail({

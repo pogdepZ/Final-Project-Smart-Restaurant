@@ -50,8 +50,7 @@ const SignIn = () => {
         navigate("/");
       }
     } catch (error) {
-      console.log("Login failed:", error);
-      const message =
+      const message = error ||
         error?.message ||
         error?.response?.data?.message ||
         "Đăng nhập thất bại. Vui lòng thử lại!";
@@ -64,7 +63,7 @@ const SignIn = () => {
     if (!window.google || !googleBtnRef.current) return;
 
     window.google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID, // hoặc process.env.REACT_APP...
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID, 
       callback: async (response) => {
         // response.credential = Google ID token
         const res = await axiosClient.post("/auth/google", {

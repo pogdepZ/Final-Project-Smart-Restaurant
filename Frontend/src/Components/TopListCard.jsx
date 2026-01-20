@@ -17,7 +17,7 @@ export default function TopListCard({
             {subtitle ? <div className="text-gray-400 text-sm mt-1">{subtitle}</div> : null}
           </div>
           {badge ? (
-            <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs font-bold">
+            <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs text-center font-bold">
               {badge}
             </div>
           ) : null}
@@ -33,6 +33,7 @@ export default function TopListCard({
               className={[
                 c.span ? `col-span-${c.span}` : "col-span-6",
                 rightAlignLast && idx === columns.length - 1 ? "text-right" : "",
+                rightAlignLast && idx === columns.length - 3 ? "text-right" : "",
               ].join(" ")}
             >
               {c.label}
@@ -55,9 +56,8 @@ export default function TopListCard({
               </div>
 
               {/* Main */}
-              <div className="col-span-7 min-w-0">
+              <div className="col-span-7 min-w-0 pl-3">
                 <div className="text-white font-bold truncate">{r.title}</div>
-                <div className="text-gray-500 text-xs truncate">{r.subtitle}</div>
               </div>
 
               {/* Value */}

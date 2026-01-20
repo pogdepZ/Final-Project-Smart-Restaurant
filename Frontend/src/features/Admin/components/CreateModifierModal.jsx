@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { adminModifierApi } from "../../../services/adminModifierApi";
+import ScrollArea from "../../../Components/ScrollArea";
 
 function toNumberSafe(v, fallback = 0) {
   const n = Number(v);
@@ -11,7 +12,7 @@ function toNumberSafe(v, fallback = 0) {
 function OptionRow({ value, onChange, onRemove, disabled }) {
   return (
     <div className="grid grid-cols-12 gap-2 items-start">
-      <div className="col-span-6">
+      <div className="col-span-5">
         <label className="text-xs text-gray-400 mb-1 block">Tên option</label>
         <input
           value={value.name}
@@ -51,7 +52,7 @@ function OptionRow({ value, onChange, onRemove, disabled }) {
         </select>
       </div>
 
-      <div className="col-span-1 flex justify-end pt-6">
+      <div className="col-span-2 flex justify-end pt-6">
         <button
           type="button"
           onClick={onRemove}
@@ -94,6 +95,17 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
     setStatus("active");
     setOptions([{ name: "", price_adjustment: "0", status: "active" }]);
     setSaving(false);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev || "";
+    };
   }, [open]);
 
   const computed = useMemo(() => {
@@ -197,144 +209,146 @@ export default function CreateModifierModal({ open, onClose, onSuccess }) {
           </button>
         </div>
 
-        <div className="p-4 space-y-4">
-          {/* GROUP INFO */}
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
-            <div className="text-white font-bold">Thông tin group</div>
+        <ScrollArea>
+          <div className="max-h-[80vh] overflow-x-auto p-4 space-y-4">
+            {/* GROUP INFO */}
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+              <div className="text-white font-bold">Thông tin group</div>
 
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
-              <div className="md:col-span-6">
-                <label className="text-xs text-gray-400 mb-1 block">Tên group</label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
-                    focus:outline-none focus:border-orange-500/40 transition"
-                  placeholder="VD: Size / Topping / Spicy level..."
-                  disabled={saving}
-                />
-              </div>
-
-              <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Selection type</label>
-                <select
-                  value={selectionType}
-                  onChange={(e) => setSelectionType(e.target.value)}
-                  className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white border border-white/10
-                    focus:outline-none focus:border-orange-500/40 transition
-                    [&>option]:bg-neutral-950 [&>option]:text-white"
-                  disabled={saving}
-                >
-                  <option value="single">single</option>
-                  <option value="multiple">multiple</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white border border-white/10
-                    focus:outline-none focus:border-orange-500/40 transition
-                    [&>option]:bg-neutral-950 [&>option]:text-white"
-                  disabled={saving}
-                >
-                  <option value="active">active</option>
-                  <option value="inactive">inactive</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Min selections</label>
-                <input
-                  value={minSelections}
-                  onChange={(e) => setMinSelections(e.target.value)}
-                  inputMode="numeric"
-                  className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
-                    focus:outline-none focus:border-orange-500/40 transition"
-                  disabled={saving}
-                />
-              </div>
-
-              <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Max selections</label>
-                <input
-                  value={maxSelections}
-                  onChange={(e) => setMaxSelections(e.target.value)}
-                  inputMode="numeric"
-                  className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
-                    focus:outline-none focus:border-orange-500/40 transition"
-                  disabled={saving}
-                />
-                <div className="text-[11px] text-gray-500 mt-1">
-                  {selectionType === "single" ? "Single: max nên là 1" : "Multiple: tuỳ bạn set"}
-                </div>
-              </div>
-
-              <div className="md:col-span-3">
-                <label className="text-xs text-gray-400 mb-1 block">Display order</label>
-                <input
-                  value={displayOrder}
-                  onChange={(e) => setDisplayOrder(e.target.value)}
-                  inputMode="numeric"
-                  className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
-                    focus:outline-none focus:border-orange-500/40 transition"
-                  disabled={saving}
-                />
-              </div>
-
-              <div className="md:col-span-3 flex items-end">
-                <label className="inline-flex items-center gap-2 text-gray-200 text-sm">
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div className="md:col-span-6">
+                  <label className="text-xs text-gray-400 mb-1 block">Tên group *</label>
                   <input
-                    type="checkbox"
-                    checked={isRequired}
-                    onChange={(e) => setIsRequired(e.target.checked)}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
+                    focus:outline-none focus:border-orange-500/40 transition"
+                    placeholder="VD: Size / Topping / Spicy level..."
                     disabled={saving}
                   />
-                  Required
-                </label>
-              </div>
+                </div>
 
-              <div className="md:col-span-12 text-xs text-gray-400">
-                Preview: Min {computed.min} / Max {computed.max} • {selectionType}
+                <div className="md:col-span-3">
+                  <label className="text-xs text-gray-400 mb-1 block">Selection type</label>
+                  <select
+                    value={selectionType}
+                    onChange={(e) => setSelectionType(e.target.value)}
+                    className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white border border-white/10
+                    focus:outline-none focus:border-orange-500/40 transition
+                    [&>option]:bg-neutral-950 [&>option]:text-white"
+                    disabled={saving}
+                  >
+                    <option value="single">single</option>
+                    <option value="multiple">multiple</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="text-xs text-gray-400 mb-1 block">Status</label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="w-full rounded-xl px-3 py-2.5 text-sm bg-neutral-950 text-white border border-white/10
+                    focus:outline-none focus:border-orange-500/40 transition
+                    [&>option]:bg-neutral-950 [&>option]:text-white"
+                    disabled={saving}
+                  >
+                    <option value="active">active</option>
+                    <option value="inactive">inactive</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="text-xs text-gray-400 mb-1 block">Min selections</label>
+                  <input
+                    value={minSelections}
+                    onChange={(e) => setMinSelections(e.target.value)}
+                    inputMode="numeric"
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
+                    focus:outline-none focus:border-orange-500/40 transition"
+                    disabled={saving}
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="text-xs text-gray-400 mb-1 block">Max selections</label>
+                  <input
+                    value={maxSelections}
+                    onChange={(e) => setMaxSelections(e.target.value)}
+                    inputMode="numeric"
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
+                    focus:outline-none focus:border-orange-500/40 transition"
+                    disabled={saving}
+                  />
+                  <div className="text-[11px] text-gray-500 mt-1">
+                    {selectionType === "single" ? "Single: max nên là 1" : "Multiple: tuỳ bạn set"}
+                  </div>
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="text-xs text-gray-400 mb-1 block">Display order</label>
+                  <input
+                    value={displayOrder}
+                    onChange={(e) => setDisplayOrder(e.target.value)}
+                    inputMode="numeric"
+                    className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white
+                    focus:outline-none focus:border-orange-500/40 transition"
+                    disabled={saving}
+                  />
+                </div>
+
+                <div className="md:col-span-3 flex items-end">
+                  <label className="inline-flex items-center gap-2 text-gray-200 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={isRequired}
+                      onChange={(e) => setIsRequired(e.target.checked)}
+                      disabled={saving}
+                    />
+                    Required
+                  </label>
+                </div>
+
+                <div className="md:col-span-12 text-xs text-gray-400">
+                  Preview: Min {computed.min} / Max {computed.max} • {selectionType}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* OPTIONS */}
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-white font-bold">Options</div>
-              <button
-                type="button"
-                onClick={addOptionRow}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl
+            {/* OPTIONS */}
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-white font-bold">Options *</div>
+                <button
+                  type="button"
+                  onClick={addOptionRow}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl
                   bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition"
-                disabled={saving}
-              >
-                <Plus size={16} />
-                Add row
-              </button>
-            </div>
-
-            <div className="mt-3 space-y-3">
-              {options.map((opt, idx) => (
-                <OptionRow
-                  key={idx}
-                  value={opt}
                   disabled={saving}
-                  onChange={(next) => updateOptionRow(idx, next)}
-                  onRemove={() => removeOptionRow(idx)}
-                />
-              ))}
-            </div>
+                >
+                  <Plus size={16} />
+                  Add row
+                </button>
+              </div>
 
-            <div className="mt-3 text-xs text-gray-500">
-              Tip: Dòng option nào để trống tên sẽ bị bỏ qua khi submit.
+              <div className="mt-3 space-y-3">
+                {options.map((opt, idx) => (
+                  <OptionRow
+                    key={idx}
+                    value={opt}
+                    disabled={saving}
+                    onChange={(next) => updateOptionRow(idx, next)}
+                    onRemove={() => removeOptionRow(idx)}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-3 text-xs text-gray-500">
+                Tip: Dòng option nào để trống tên sẽ bị bỏ qua khi submit.
+              </div>
             </div>
           </div>
-        </div>
+        </ScrollArea>
 
         <div className="px-4 py-3 border-t border-white/10 flex items-center justify-end gap-2">
           <button

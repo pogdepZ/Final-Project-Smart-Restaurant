@@ -1,5 +1,5 @@
 // src/pages/Admin/AccountManagement/components/CreateStaffAccountModal.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { X, Shield, UserPlus } from "lucide-react";
 import { toast } from "react-toastify";
 import { adminAccountApi } from "../../../services/adminAccountApi";
@@ -24,6 +24,17 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
   const canSubmit = useMemo(() => {
     return name.trim() && email.trim() && password.trim() && role;
   }, [name, email, password, role]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev || "";
+    };
+  }, [open]);
 
   const reset = () => {
     setName("");
@@ -78,7 +89,7 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
 
         <div className="p-4 space-y-3">
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Họ tên</label>
+            <label className="text-xs text-gray-400 mb-1 block">Họ tên *</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -88,7 +99,7 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">Email</label>
+            <label className="text-xs text-gray-400 mb-1 block">Email *</label>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -99,7 +110,7 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Role</label>
+              <label className="text-xs text-gray-400 mb-1 block">Role *</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -121,7 +132,7 @@ export default function CreateStaffAccountModal({ open, onClose, onSuccess }) {
             </div>
 
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Mật khẩu</label>
+              <label className="text-xs text-gray-400 mb-1 block">Mật khẩu *</label>
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

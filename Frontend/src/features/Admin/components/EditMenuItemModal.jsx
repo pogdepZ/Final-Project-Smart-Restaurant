@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useRef, useState } from "react";
-import { X, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
+
+import { X, Upload, Trash2 } from "lucide-react";
 import { adminMenuApi } from "../../../services/adminMenuApi";
 import MultiSelectCombobox from "../../../Components/MultiSelectCombobox";
 import ScrollArea from "../../../Components/ScrollArea";
@@ -19,7 +20,6 @@ export default function EditMenuItemModal({
     prepTimeMinutes: 0,
     status: "available",
     description: "",
-    imageUrl: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -29,30 +29,31 @@ export default function EditMenuItemModal({
   const [selectedGroupIds, setSelectedGroupIds] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
-  // ✅ upload states
+  // Photos
   const fileRef = useRef(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [photos, setPhotos] = useState([]); // [{id,url,isPrimary,createdAt}]
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
 
   const modifierGroupOptions = useMemo(() => {
     return (modifierGroups || []).map((g) => ({
       value: g.id,
       label: g.name,
-      subLabel: `${g.selectionType} • ${g.isRequired ? "required" : "optional"
-        } • min ${g.minSelections} / max ${g.maxSelections}`,
+      subLabel: `${g.selectionType} • ${g.isRequired ? "required" : "optional"} • min ${g.minSelections} / max ${g.maxSelections}`,
     }));
   }, [modifierGroups]);
 
+  // lock body scroll when modal open
   useEffect(() => {
     if (!open) return;
-
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden"; // khoá scroll
-
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = original || "auto"; // trả lại như cũ
+      document.body.style.overflow = prev || "";
     };
   }, [open]);
 
+  // Load item detail + photos + modifier groups
   useEffect(() => {
     if (!open || !item?.id) return;
 
@@ -63,15 +64,18 @@ export default function EditMenuItemModal({
         setLoading(true);
         setError("");
         setLoadingGroups(true);
+        setLoadingPhotos(true);
 
-        const [groupsRes, detailRes] = await Promise.all([
+        const [groupsRes, detailRes, photosRes] = await Promise.all([
           adminMenuApi.getModifierGroups({ status: "active" }),
           adminMenuApi.getMenuItemDetail(item.id),
+          adminMenuApi.getMenuItemPhotos(item.id),
         ]);
 
         if (cancelled) return;
 
         setModifierGroups(groupsRes?.groups || groupsRes?.data?.groups || []);
+        setPhotos(photosRes?.photos || []);
 
         const full = detailRes?.item;
 
@@ -82,19 +86,20 @@ export default function EditMenuItemModal({
           prepTimeMinutes: full?.prepTimeMinutes ?? 0,
           status: full?.status ?? "available",
           description: full?.description ?? "",
-          imageUrl: full?.imageUrl ?? "",
         });
 
         setSelectedGroupIds(
           Array.isArray(full?.modifierGroupIds) ? full.modifierGroupIds : []
         );
       } catch (e) {
-        if (!cancelled)
+        if (!cancelled) {
           setError(e?.response?.data?.message || "Không tải được chi tiết món");
+        }
       } finally {
         if (!cancelled) {
           setLoading(false);
           setLoadingGroups(false);
+          setLoadingPhotos(false);
           setUploadingImage(false);
         }
       }
@@ -107,59 +112,62 @@ export default function EditMenuItemModal({
 
   if (!open) return null;
 
-  const disabledAll = loading || uploadingImage;
+  const disabledAll = loading || uploadingImage || loadingPhotos;
 
   const onPickFile = () => fileRef.current?.click();
 
   const onFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // chọn lại cùng file vẫn trigger
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
 
-    // validate client-side (optional)
+    // validate types + size (each)
     const okTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!okTypes.includes(file.type)) {
-      toast.error("Chỉ hỗ trợ JPG / PNG / WEBP");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ảnh tối đa 5MB");
-      return;
+    for (const f of files) {
+      if (!okTypes.includes(f.type)) {
+        toast.error("Chỉ hỗ trợ JPG / PNG / WEBP");
+        return;
+      }
+      if (f.size > 5 * 1024 * 1024) {
+        toast.error("Mỗi ảnh tối đa 5MB");
+        return;
+      }
     }
 
     try {
       setUploadingImage(true);
       setError("");
 
-      const res = await adminMenuApi.uploadMenuImage(file);
-
-      // axiosClient có thể return data luôn
-      const data = res?.data ? res.data : res;
-
-      // tuỳ BE trả field nào:
-      const url =
-        data?.imageUrl ||
-        data?.url ||
-        data?.secure_url ||
-        data?.result?.secure_url ||
-        data?.path; // multer-storage-cloudinary hay dùng .path
-
-      if (!url) {
-        toast.error("Upload xong nhưng không nhận được URL ảnh");
-        return;
-      }
-
-      setForm((s) => ({ ...s, imageUrl: url }));
-      toast.success("Đã upload ảnh mới");
+      const res = await adminMenuApi.uploadMenuItemPhotos(item.id, files);
+      setPhotos(res?.photos || []);
+      toast.success("Đăng tải ảnh thành công");
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Upload ảnh thất bại");
+      toast.error(err?.response?.data?.message || "Đăng tải ảnh thất bại");
     } finally {
       setUploadingImage(false);
     }
   };
 
-  const removeImage = () => {
-    setForm((s) => ({ ...s, imageUrl: "" }));
+  const setPrimary = async (photoId) => {
+    try {
+      const res = await adminMenuApi.setPrimaryMenuItemPhoto(item.id, photoId);
+      setPhotos(res?.photos || []);
+      toast.success("Đã đổi ảnh hiển thị");
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Không thể đổi ảnh hiển thị");
+    }
+  };
+
+  const deletePhoto = async (photoId) => {
+    if (!window.confirm("Xoá ảnh này?")) return;
+
+    try {
+      const res = await adminMenuApi.deleteMenuItemPhoto(item.id, photoId);
+      setPhotos(res?.photos || []);
+      toast.success("Đã xoá ảnh");
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Không thể xoá ảnh");
+    }
   };
 
   const submit = async () => {
@@ -174,7 +182,7 @@ export default function EditMenuItemModal({
         prepTimeMinutes: Number(form.prepTimeMinutes || 0),
         status: form.status,
         description: form.description,
-        imageUrl: form.imageUrl, // ✅ URL từ upload
+        // ❌ không gửi imageUrl nữa vì ảnh nằm ở menu_item_photos
       };
 
       await adminMenuApi.updateMenuItem(item.id, payload);
@@ -205,6 +213,7 @@ export default function EditMenuItemModal({
 
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-neutral-950 overflow-hidden">
+          {/* header */}
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
             <div className="text-white font-black">Edit menu item</div>
             <button
@@ -216,8 +225,15 @@ export default function EditMenuItemModal({
             </button>
           </div>
 
+          {/* body */}
           <ScrollArea>
-            <div className="max-h-[75vh] p-5 space-y-3">
+            <div className="max-h-[80vh] overflow-auto p-5 space-y-3">
+              {error ? (
+                <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
+                  {error}
+                </div>
+              ) : null}
+
               <div>
                 <label className="text-xs text-gray-400">Tên món</label>
                 <input
@@ -228,20 +244,21 @@ export default function EditMenuItemModal({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-400">Category</label>
                   <select
-                    className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
-                  [&>option]:bg-neutral-900 [&>option]:text-white"
+                    className="mt-1 bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
+                      [&>option]:bg-neutral-900 [&>option]:text-white"
                     value={form.categoryId ?? ""}
-                    onChange={(e) => setForm((s) => ({ ...s, categoryId: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, categoryId: e.target.value }))
+                    }
                     disabled={disabledAll}
                   >
                     <option value="">
                       {item?.categoryName ? `${item.categoryName}` : "-- chọn --"}
                     </option>
-
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -253,8 +270,8 @@ export default function EditMenuItemModal({
                 <div>
                   <label className="text-xs text-gray-400">Status</label>
                   <select
-                    className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
-                  [&>option]:bg-neutral-900 [&>option]:text-white"
+                    className="mt-1 bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white
+                      [&>option]:bg-neutral-900 [&>option]:text-white"
                     value={form.status}
                     onChange={(e) => setForm((s) => ({ ...s, status: e.target.value }))}
                     disabled={disabledAll}
@@ -283,79 +300,94 @@ export default function EditMenuItemModal({
                     type="number"
                     className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                     value={form.prepTimeMinutes}
-                    onChange={(e) => setForm((s) => ({ ...s, prepTimeMinutes: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((s) => ({ ...s, prepTimeMinutes: e.target.value }))
+                    }
                     disabled={disabledAll}
                   />
                 </div>
               </div>
 
-              {/* ✅ Ảnh: upload + preview */}
+              {/* Photos */}
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                <div className="flex items-center justify-between">
+                  <div>
                     <div className="text-white font-bold">Ảnh món</div>
                     <div className="text-xs text-gray-400 mt-0.5">
-                      Dùng upload để đổi ảnh (JPG/PNG/WEBP, tối đa 5MB)
+                      Upload nhiều ảnh • chọn 1 ảnh làm ảnh hiển thị
                     </div>
                   </div>
 
                   <input
                     ref={fileRef}
                     type="file"
+                    multiple
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
                     onChange={onFileChange}
                   />
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={onPickFile}
-                      disabled={disabledAll}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl
-                      bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition disabled:opacity-60"
-                    >
-                      <Upload size={16} />
-                      {uploadingImage ? "Đang upload..." : "Upload"}
-                    </button>
+                  <button
+                    type="button"
+                    onClick={onPickFile}
+                    disabled={disabledAll}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl
+                      bg-orange-500/20 border border-orange-500/30 text-orange-200 disabled:opacity-60"
+                  >
+                    <Upload size={16} />
+                    {uploadingImage ? "Đang upload..." : "Upload"}
+                  </button>
+                </div>
 
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      disabled={disabledAll || !form.imageUrl}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl
-                      bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition disabled:opacity-60"
-                      title="Remove image"
-                    >
-                      <Trash2 size={16} />
-                      Remove
-                    </button>
+                {loadingPhotos ? (
+                  <div className="mt-4 text-sm text-gray-400">Đang tải ảnh...</div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-3 mt-4">
+                    {photos.map((p) => (
+                      <div
+                        key={p.id}
+                        className={`relative group rounded-xl overflow-hidden border
+                        ${p.isPrimary ? "border-orange-500" : "border-white/10"}`}
+                      >
+                        <img src={p.url} alt="" className="w-full h-24 object-cover" />
+
+                        {p.isPrimary && (
+                          <div className="absolute top-1 left-1 text-[10px] bg-orange-500 text-black px-2 py-0.5 rounded">
+                            PRIMARY
+                          </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition">
+                          {!p.isPrimary && (
+                            <button
+                              type="button"
+                              onClick={() => setPrimary(p.id)}
+                              className="px-2 py-1 text-xs text-black bg-white rounded"
+                              disabled={disabledAll}
+                            >
+                              Làm ảnh chính
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => deletePhoto(p.id)}
+                            className="p-1 bg-red-500 rounded"
+                            disabled={disabledAll}
+                            title="Xoá ảnh"
+                          >
+                            <Trash2 size={14} className="text-white" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {!photos.length && (
+                      <div className="col-span-4 text-sm text-gray-400">
+                        Chưa có ảnh. Bấm Upload để thêm ảnh.
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                <div className="mt-3">
-                  {form.imageUrl ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-24 h-24 rounded-2xl border border-white/10 bg-neutral-950 overflow-hidden shrink-0">
-                        <img
-                          src={form.imageUrl}
-                          alt="menu"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Ảnh sẽ được lưu khi bạn bấm <span className="text-gray-200 font-semibold">Lưu</span>.
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-gray-400 text-sm">
-                      <div className="w-10 h-10 rounded-2xl bg-neutral-950/60 border border-white/10 flex items-center justify-center">
-                        <ImageIcon size={18} className="text-gray-400" />
-                      </div>
-                      Chưa có ảnh. Bấm <span className="text-gray-200 font-semibold">Upload</span> để thêm.
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
 
               {/* Modifiers */}
@@ -367,7 +399,9 @@ export default function EditMenuItemModal({
                       Chọn các nhóm tuỳ chọn (Size, Topping, Spicy…)
                     </div>
                   </div>
-                  {loadingGroups ? <div className="text-xs text-gray-500">Đang tải...</div> : null}
+                  {loadingGroups ? (
+                    <div className="text-xs text-gray-500">Đang tải...</div>
+                  ) : null}
                 </div>
 
                 <div className="mt-3">
@@ -387,20 +421,21 @@ export default function EditMenuItemModal({
                   className="mt-1 w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2 text-white"
                   rows={3}
                   value={form.description}
-                  onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, description: e.target.value }))
+                  }
                   disabled={disabledAll}
                 />
               </div>
-
-              {/* ✅ bỏ input Image URL */}
             </div>
           </ScrollArea>
 
+          {/* footer */}
           <div className="px-5 py-4 border-t border-white/10 flex justify-end gap-2">
             <button
               type="button"
               onClick={() => !disabledAll && onClose?.()}
-              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200"
+              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 disabled:opacity-60"
               disabled={disabledAll}
             >
               Huỷ
@@ -408,7 +443,7 @@ export default function EditMenuItemModal({
             <button
               type="button"
               onClick={submit}
-              className="px-4 py-2 rounded-xl bg-orange-500/15 border border-orange-500/25 text-orange-200"
+              className="px-4 py-2 rounded-xl bg-orange-500/15 border border-orange-500/25 text-orange-200 disabled:opacity-60"
               disabled={disabledAll}
             >
               {loading ? "Đang lưu..." : "Lưu"}

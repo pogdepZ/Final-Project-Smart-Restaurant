@@ -1,10 +1,14 @@
 import React from "react";
 import { X } from "lucide-react";
+import { formatMoneyVND } from "../../../utils/orders";
 
 const badge = (uiStatus) => {
-  if (uiStatus === "Ready") return "bg-emerald-500/15 text-emerald-300 border-emerald-500/25";
-  if (uiStatus === "Cooking") return "bg-orange-500/15 text-orange-300 border-orange-500/25";
-  if (uiStatus === "Rejected") return "bg-red-500/15 text-red-300 border-red-500/25";
+  if (uiStatus === "Ready")
+    return "bg-emerald-500/15 text-emerald-300 border-emerald-500/25";
+  if (uiStatus === "Cooking")
+    return "bg-orange-500/15 text-orange-300 border-orange-500/25";
+  if (uiStatus === "Rejected")
+    return "bg-red-500/15 text-red-300 border-red-500/25";
   return "bg-white/5 text-white/70 border-white/10"; // Queued
 };
 
@@ -13,17 +17,16 @@ export default function OrderDetailModal({ open, onClose, order, loading }) {
 
   return (
     <div className="fixed inset-0 z-50">
-      <div
-        className="absolute inset-0 bg-black/70"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
       <div className="absolute inset-x-0 top-10 mx-auto max-w-2xl px-4">
         <div className="rounded-2xl border border-white/10 bg-neutral-950 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
             <div>
               <p className="text-white font-black">Chi tiết đơn</p>
               {order?.table_number ? (
-                <p className="text-xs text-white/50">Bàn: {order.table_number}</p>
+                <p className="text-xs text-white/50">
+                  Bàn: {order.table_number}
+                </p>
               ) : null}
             </div>
 
@@ -52,7 +55,7 @@ export default function OrderDetailModal({ open, onClose, order, loading }) {
                     </p>
                   </div>
                   <p className="font-black">
-                    {Number(order.total_amount || 0).toLocaleString("vi-VN")} ₫
+                    {formatMoneyVND(Number(order.total_amount || 0))}
                   </p>
                 </div>
 
@@ -67,7 +70,9 @@ export default function OrderDetailModal({ open, onClose, order, loading }) {
                           {it.quantity}x {it.item_name}
                         </p>
                         {it.note ? (
-                          <p className="text-xs text-white/50 mt-0.5">Note: {it.note}</p>
+                          <p className="text-xs text-white/50 mt-0.5">
+                            Note: {it.note}
+                          </p>
                         ) : null}
                       </div>
 
@@ -90,7 +95,8 @@ export default function OrderDetailModal({ open, onClose, order, loading }) {
 
                 {order.note ? (
                   <div className="mt-4 text-sm text-white/70">
-                    <span className="text-white/50">Ghi chú đơn:</span> {order.note}
+                    <span className="text-white/50">Ghi chú đơn:</span>{" "}
+                    {order.note}
                   </div>
                 ) : null}
               </>

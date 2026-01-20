@@ -16,7 +16,9 @@ exports.upsertToken = async ({ userId, tokenHash, expiresAt }) => {
 exports.findValidByHash = async (tokenHash) => {
   const rs = await db.query(
     `SELECT * FROM email_verification_tokens
-     WHERE token_hash = $1 AND expires_at > now()
+     WHERE token_hash = $1
+       AND expires_at > now()
+     ORDER BY created_at DESC
      LIMIT 1`,
     [tokenHash]
   );

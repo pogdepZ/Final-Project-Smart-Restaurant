@@ -12,7 +12,7 @@ router.post(
   "/staff",
   protect,
   adminOnly,
-  adminAccountController.createStaffAccount
+  adminAccountController.createStaffAccount,
 );
 
 // /admin/accounts/:id/verified
@@ -20,15 +20,14 @@ router.patch(
   "/:id/verified",
   protect,
   adminOnly,
-  adminAccountController.setVerified
+  adminAccountController.setVerified,
 );
 
 // /admin/accounts/:id
-router.delete(
-  "/:id",
-  protect,
-  adminOnly,
-  adminAccountController.deleteAccount
-);
+router.delete("/:id", protect, adminOnly, adminAccountController.deleteAccount);
+
+router.patch("/:id/actived", protect, adminOnly, adminAccountController.setActived);
+
+router.patch("/:id", protect, adminOnly, adminAccountController.updateAccount);
 
 module.exports = router;

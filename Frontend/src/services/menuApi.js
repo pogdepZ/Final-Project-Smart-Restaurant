@@ -45,6 +45,12 @@ export const menuApi = {
 
   // POST /api/menu/reviews  (cần login)
   async createReview(payload) {
+    console.log(payload);
     return axiosClient.post("/menu/reviews", payload);
   },
+
+  async getTopChefBestSeller(limit = 5) {
+    return axiosClient.get(`/menu/top-chef?limit=${limit}`)
+  },
+
 };

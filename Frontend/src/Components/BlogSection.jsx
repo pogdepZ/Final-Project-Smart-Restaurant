@@ -103,7 +103,7 @@ const BlogSection = () => {
           >
             {blogPosts.map((post) => (
               <SwiperSlide key={post.id} className="h-auto">
-                <article className="group h-full flex flex-col bg-neutral-950 rounded-2xl overflow-hidden border border-white/5 hover:border-orange-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10">
+                <article className="group h-120 flex flex-col bg-neutral-950 rounded-2xl overflow-hidden border border-white/5 hover:border-orange-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10">
                   
                   {/* ẢNH THUMBNAIL */}
                   <div className="relative h-60 overflow-hidden shrink-0">
@@ -121,7 +121,7 @@ const BlogSection = () => {
                   </div>
 
                   {/* NỘI DUNG */}
-                  <div className="p-6 flex flex-col flex-grow">
+                  <div className="p-6 flex flex-col grow">
                     {/* Metadata */}
                     <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                       <div className="flex items-center gap-1">
@@ -142,18 +142,18 @@ const BlogSection = () => {
                     </h3>
 
                     {/* Excerpt */}
-                    <p className="text-gray-400 text-sm mb-6 line-clamp-3 flex-grow">
+                    <p className="text-gray-400 text-sm mb-6 line-clamp-3 grow">
                       {post.excerpt}
                     </p>
 
                     {/* Button */}
-                    <Link 
-                      to={`/blog/${post.id}`}
+                    <button
+        
                       className="inline-flex items-center gap-2 text-orange-500 font-bold text-sm uppercase tracking-wide group/link mt-auto"
                     >
                       Xem chi tiết
                       <ArrowRight size={16} className="transition-transform duration-300 group-hover/link:translate-x-1" />
-                    </Link>
+                    </button>
                   </div>
                 </article>
               </SwiperSlide>
@@ -163,13 +163,12 @@ const BlogSection = () => {
 
         {/* BUTTON XEM TẤT CẢ */}
         <div className="text-center">
-          <Link 
-            to="/blog"
+          <button
             className="inline-flex items-center gap-2 px-8 py-3 rounded-xl border border-white/10 text-white font-bold hover:bg-white/10 transition-all hover:scale-105"
           >
             Xem tất cả bài viết
             <ArrowRight size={20} />
-          </Link>
+          </button>
         </div>
 
       </div>

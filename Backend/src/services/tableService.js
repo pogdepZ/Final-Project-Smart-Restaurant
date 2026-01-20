@@ -17,7 +17,7 @@ class TableService {
     };
 
     const token = jwt.sign(payload, process.env.QR_SECRET, { expiresIn: "2y" });
-    const clientUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/menu?qrToken=${token}`;
+    const clientUrl = `${process.env.CLIENT_URL || process.env.APP_BASE_URL }/menu?qrToken=${token}`;
     console.log(clientUrl)
     const qrImage = await QRCode.toDataURL(clientUrl);
 
@@ -114,6 +114,15 @@ class TableService {
           active_orders: activeCount,
         };
       }
+    }
+
+    const havsGuests = await TableRepository.checkHasGuests(id);
+    if (status === "inactive" && havsGuests) {
+      return {
+        warning: true,
+        message: "Bàn đang có khách, không thể đặt thành không hoạt động.",
+        has_guests: true,
+      };
     }
 
     // --- FIX LỖI TẠI ĐÂY ---

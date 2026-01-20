@@ -92,3 +92,59 @@ exports.getMyOrderDetail = async (req, res) => {
     return res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+
+exports.getOrdersByTable = async (req, res) => {
+  try {
+    const qrToken = req.headers['qrToken'] || req.get('qrToken');    
+    if (!qrToken) {
+      return res.status(400).json({ message: "Thiếu table token" });
+    }
+    const orders = await orderService.getOrdersByTableToken(qrToken);    
+    return res.json(orders);
+  } catch (e) {
+
+    console.error("getOrdersByTable error:", e);
+
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.getOrderTracking = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const tableToken = req.query.tableToken;
+    if (!tableToken) {
+      return res.status(400).json({ message: "Thiếu table token" });
+    }
+    const order = await orderService.getOrderTrackingByTableToken(orderId, tableToken);
+    if (!order) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+    return res.json(order);
+  } catch (e) {
+    console.error("getOrderTracking error:", e);
+    return res.status(500).json({ message: "Lỗi server" });
+  } 
+};
+
+exports.getUnpaidOrderByUserId = async (req, res) => {
+  try {
+    console.log("getUnpaidOrderByUserId called with:", req.query);
+    const { tableId, sessionId } = req.query;
+    if ( !tableId || !sessionId) {
+      return res.status(201).json({ success:false, message: "Thiếu thông tin cần thiết" });
+    } 
+    const order = await orderService.getUnpaidOrderByUserId(tableId, sessionId);
+
+    console.log("Unpaid order found:", order);
+
+    if (!order) {
+      return res.status(201).json({ success:false, message: "Bạn không có đơn hàng nào cần được thanh toán!" });
+    }
+    return res.status(200).json({ success:true, order });
+  } catch (e) {
+    console.error("getUnpaidOrderByUserId error:", e);
+    return res.status(500).json({ success:false, message: "Lỗi server" });
+  }
+};

@@ -1,0 +1,170 @@
+const billingRepo = require("../repositories/billingRepository");
+const tableRepository = require("../repositories/tableRepository");
+const tableSessionRepository = require("../repositories/tableSessionRepository");
+const billRequestRepo = require("../repositories/billRequestRepository");
+const socketService = require("./socketService");
+const orderRepository = require("../repositories/orderRepository");
+const db = require("../config/db");
+const tableSessionService = require("./tableSessionService");
+
+class BillingService {
+  // A. Xem trước hóa đơn (Preview)
+  async previewTableBill(tableId, discountType = "none", discountValue = 0) {
+    // 1. Lấy tất cả đơn chưa trả của bàn
+    const orders = await billingRepo.getUnpaidOrdersByTable(tableId);
+
+    if (orders.length === 0)
+      throw new Error("Bàn này không có đơn nào chưa thanh toán");
+
+    // 1.5. Lấy thông tin session để có giờ vào/ra
+    const session = await tableSessionRepository.findActiveByTableId(tableId);
+
+    // 2. Gộp Items & Tính toán lại giá tiền chi tiết (Cần sửa đoạn này)
+    let aggregatedItems = [];
+    let subtotal = 0; // Tổng tiền hàng (chưa thuế/giảm giá)
+
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
+        // --- BƯỚC TÍNH TOÁN LẠI GIÁ ---
+
+        // A. Tính tổng tiền modifiers (Topping)
+        const modifiersTotal = (item.modifiers || []).reduce((sum, mod) => {
+          return sum + Number(mod.price || 0);
+        }, 0);
+
+        // B. Tính giá đơn vị thực tế (Giá gốc + Giá Topping)
+        const realUnitPrice = Number(item.price) + modifiersTotal;
+
+        // C. Tính thành tiền của dòng này (Giá thực tế * Số lượng)
+        const lineTotal = realUnitPrice * item.qty;
+
+        // D. Cộng vào tổng hóa đơn (Subtotal tổng)
+        // Lưu ý: Tốt nhất nên cộng dồn từ item để chính xác nhất, thay vì tin tưởng order.total_amount
+        subtotal += lineTotal;
+
+        // E. Push vào danh sách hiển thị
+        aggregatedItems.push({
+          ...item,
+          price_base: Number(item.price), // Giá gốc (để tham khảo nếu cần)
+          modifiers_price: modifiersTotal, // Tổng tiền topping
+
+          // Hai trường quan trọng frontend cần:
+          price: realUnitPrice, // Đơn giá đầy đủ (Gốc + Topping)
+          subtotal: lineTotal, // Thành tiền (Đơn giá đầy đủ * SL)
+
+          order_time: order.created_at,
+        });
+      });
+    });
+
+    // 3. Tính toán Thuế & Giảm giá (Logic giữ nguyên)
+    let discountAmount = 0;
+    if (discountType === "percent") {
+      discountAmount = subtotal * (discountValue / 100);
+    } else if (discountType === "fixed") {
+      discountAmount = discountValue;
+    }
+
+    // Đảm bảo không giảm giá quá số tiền hiện có
+    if (discountAmount > subtotal) discountAmount = subtotal;
+
+    const taxableAmount = Math.max(0, subtotal - discountAmount);
+    const taxRate = 0.1;
+    const taxAmount = taxableAmount * taxRate;
+    const finalAmount = taxableAmount + taxAmount;
+
+    return {
+      table_id: tableId,
+      orders_count: orders.length,
+      order_ids: orders.map((o) => o.order_id),
+      items: aggregatedItems,
+      subtotal: subtotal, // Tổng tiền hàng chính xác sau khi cộng gộp item
+      discount_amount: discountAmount,
+      tax_amount: taxAmount,
+      final_amount: finalAmount,
+      session_started_at: session?.started_at || null,
+      session_ended_at: session?.ended_at || null,
+    };
+  }
+
+  // B. Thanh toán (Checkout)
+  async processTablePayment(tableId, userId, paymentData) {
+    const { payment_method, discount_type, discount_value } = paymentData;
+
+    // 1. Tính toán lại
+    const billInfo = await this.previewTableBill(
+      tableId,
+      discount_type,
+      discount_value,
+    );
+
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 2. Tạo Bill record
+      const newBill = await billingRepo.createBill({
+        table_id: tableId,
+        subtotal: billInfo.subtotal,
+        tax_amount: billInfo.tax_amount,
+        discount_type: paymentData.discount_type,
+        discount_value: paymentData.discount_value,
+        total_amount: billInfo.final_amount,
+        payment_method: payment_method,
+        user_id: userId,
+      });
+
+      // 3. Update Orders (Link vào Bill)
+      await billingRepo.markOrdersAsPaid(billInfo.order_ids, newBill.id);
+
+      const session = await tableSessionRepository.findActiveByTableId(tableId);
+
+      console.log("Session to be cleared:", session);
+
+      // 4. Sau khi thanh toán xong, xóa session bàn để cho khách khác sử dụng
+      await tableRepository.clearSession(tableId);
+
+      // 5. Cập nhật giá trị ended_at cho session vừa xóa
+      await tableSessionService.endSession(tableId, session?.id || null);
+      await tableSessionRepository.endAllActiveByTableId(tableId);
+
+      // 6. Hủy tất cả bill requests của bàn này
+      await billRequestRepo.cancelAllPendingByTableId(tableId);
+
+      await client.query("COMMIT");
+
+      // 5. Lấy thông tin đầy đủ của bàn để gửi socket
+      const tableInfo = await tableRepository.findById(tableId);
+
+      // 6. Bắn Socket báo bàn đã thanh toán (Clear màn hình Waiter/Kitchen)
+      socketService.notifyTableUpdate({
+        type: "payment_completed",
+        table: {
+          id: tableId,
+          table_number: tableInfo?.table_number || null,
+          status: "active",
+          current_session_id: null, // Session đã bị xóa
+          is_paid: true,
+        },
+      });
+
+      // 7. Gửi thông báo thanh toán thành công cho admin
+      socketService.notifyPaymentCompleted({
+        table_id: tableId,
+        table_number: tableInfo?.table_number,
+        bill: newBill,
+        orders_count: billInfo.orders_count,
+        total_amount: billInfo.final_amount,
+      });
+
+      return newBill;
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+}
+
+module.exports = new BillingService();

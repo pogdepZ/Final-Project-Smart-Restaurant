@@ -5,9 +5,13 @@ const setUpSocket = (server, app) => {
     // 1. Khởi tạo IO
     const io = new Server(server, {
         cors: {
-            origin: "*", 
-            methods: ["GET", "POST"]
-        }
+            origin: [
+                "https://final-project-smart-restaurant.vercel.app",
+                "http://localhost:5173",
+            ],
+            methods: ["GET", "POST"],
+            credentials: true,
+        },
     });
 
     // 2. Inject IO vào Request (để Controller dùng nếu cần gấp)
@@ -18,7 +22,7 @@ const setUpSocket = (server, app) => {
 
     // 3. Kích hoạt logic lắng nghe từ Service (QUAN TRỌNG)
     socketService.init(io);
-    
+
     return io;
 }
 

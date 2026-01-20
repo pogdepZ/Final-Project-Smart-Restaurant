@@ -15,7 +15,9 @@ function normalizeScope(scope) {
 }
 
 function mapSortToOrderBy(sort) {
-  const s = String(sort || "NEWEST").trim().toUpperCase();
+  const s = String(sort || "NEWEST")
+    .trim()
+    .toUpperCase();
   if (s === "OLDEST") return "u.created_at ASC";
   if (s === "NAME_ASC") return "u.name ASC";
   if (s === "NAME_DESC") return "u.name DESC";
@@ -159,7 +161,10 @@ exports.setVerified = async (id, is_verified) => {
 
   const next = !!is_verified;
 
-  const updated = await adminAccountRepo.updateVerified({ id, is_verified: next });
+  const updated = await adminAccountRepo.updateVerified({
+    id,
+    is_verified: next,
+  });
   if (!updated) {
     const err = new Error("Không tìm thấy user");
     err.statusCode = 404;
@@ -199,4 +204,94 @@ exports.deleteAccount = async (id, currentUser) => {
 
   const deleted = await adminAccountRepo.deleteById(id);
   return deleted;
+};
+
+exports.setActived = async ({ id, is_actived }) => {
+  if (!id) {
+    const err = new Error("Missing user id");
+    err.status = 400;
+    throw err;
+  }
+
+  if (typeof is_actived !== "boolean") {
+    const err = new Error("is_actived must be boolean");
+    err.status = 400;
+    throw err;
+  }
+
+  const basic = await adminAccountRepo.findByIdBasic(id);
+  if (!basic) {
+    const err = new Error("User not found");
+    err.status = 404;
+    throw err;
+  }
+
+  const updated = await adminAccountRepo.updateActived({ id, is_actived });
+  if (!updated) {
+    const err = new Error("Cannot update is_actived");
+    err.status = 400;
+    throw err;
+  }
+
+  return updated;
+};
+
+const ALLOWED_ROLES = new Set(["admin", "waiter", "kitchen", "customer"]);
+
+function badRequest(publicMessage) {
+  const e = new Error(publicMessage);
+  e.status = 400;
+  e.publicMessage = publicMessage;
+  return e;
+}
+
+function forbidden(publicMessage) {
+  const e = new Error(publicMessage);
+  e.status = 403;
+  e.publicMessage = publicMessage;
+  return e;
+}
+
+function notFound(publicMessage) {
+  const e = new Error(publicMessage);
+  e.status = 404;
+  e.publicMessage = publicMessage;
+  return e;
+}
+
+exports.updateAccount = async (id, { name, role }) => {
+  if (!id) throw badRequest("Thiếu id tài khoản");
+
+  const current = await adminAccountRepo.findById(id);
+  if (!current) throw notFound("Tài khoản không tồn tại");
+
+  // ❌ Không cho sửa customer
+  if (String(current.role || "").toLowerCase() === "customer") {
+    throw forbidden("Tài khoản customer không thể chỉnh sửa");
+  }
+
+  // Validate payload (cho phép patch partial)
+  const patch = {};
+
+  if (name !== undefined) {
+    const trimmed = String(name || "").trim();
+    if (!trimmed) throw badRequest("Tên không hợp lệ");
+    if (trimmed.length > 80) throw badRequest("Tên quá dài (tối đa 80 ký tự)");
+    patch.name = trimmed;
+  }
+
+  if (role !== undefined) {
+    const nextRole = String(role || "").toLowerCase();
+    if (!ALLOWED_ROLES.has(nextRole)) {
+      throw badRequest("Role không hợp lệ");
+    }
+    patch.role = nextRole;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    throw badRequest("Không có dữ liệu để cập nhật");
+  }
+
+  const updated = await adminAccountRepo.updateAccount(id, patch);
+  return updated;
 };
