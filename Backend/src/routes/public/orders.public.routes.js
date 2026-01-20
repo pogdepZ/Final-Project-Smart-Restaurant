@@ -13,8 +13,7 @@ router.get("/by-table", orderController.getOrdersByTable);
 router.get("/unpaid-by-user", orderController.getUnpaidOrderByUserId);
 
 router.patch("/:id", orderController.updateOrderStatus);
-// router.patch('/:id', waiterOnly, orderController.updateOrderStatus);
-router.patch("/items/:itemId", orderController.updateOrderItemStatus);
+router.patch("/items/:itemId", protect, orderController.updateOrderItemStatus);
 router.get("/my", protect, orderController.getMyOrders);
 router.get("/:id", protect, orderController.getMyOrderDetail);
 
