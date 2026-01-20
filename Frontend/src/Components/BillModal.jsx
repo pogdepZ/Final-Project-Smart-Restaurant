@@ -584,6 +584,8 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
       finalDiscountValue = appliedCoupon.coupon.discount_value;
     }
 
+
+    
     setLoading(true);
     try {
       await billApi.checkoutBill(tableId, {
