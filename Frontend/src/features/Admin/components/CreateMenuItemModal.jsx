@@ -29,12 +29,13 @@ export default function CreateMenuItemModal({
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState(0);
   const [status, setStatus] = useState("available");
-  const [imageUrl, setImageUrl] = useState("");
   const [isChefRecommended, setChefRecommended] = useState(false);
+
+  // ✅ ảnh: chỉ chọn file + preview local (không upload trước)
   const [imageFile, setImageFile] = useState(null);
-  const [isUploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
+
   const [isLoading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const modifierGroupOptions = useMemo(() => {
     return (modifierGroups || []).map((g) => ({
@@ -44,6 +45,7 @@ export default function CreateMenuItemModal({
     }));
   }, [modifierGroups]);
 
+  // lock scroll
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -53,6 +55,7 @@ export default function CreateMenuItemModal({
     };
   }, [open]);
 
+  // load modifier groups
   useEffect(() => {
     if (!open) return;
 
@@ -69,33 +72,12 @@ export default function CreateMenuItemModal({
     })();
   }, [open]);
 
-  if (!open) return null;
-
-  const handleUploadImage = async () => {
-    if (!imageFile) return toast.error("Vui lòng chọn file ảnh.");
-
-    try {
-      setUploading(true);
-      setError("");
-
-      const res = await adminMenuApi.uploadMenuImage(imageFile);
-
-      // tùy BE trả về: { url } hoặc { secure_url }...
-      const url =
-        res?.url || res?.secure_url || res?.data?.url || res?.data?.secure_url;
-
-      if (!url)
-        throw new Error("Upload thành công nhưng không nhận được URL ảnh.");
-
-      setImageUrl(url);
-    } catch (e) {
-      toast.error(
-        e?.response?.data?.message || e?.message || "Upload ảnh thất bại.",
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
+  // preview URL cleanup
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const reset = () => {
     setCategoryId(firstCat);
@@ -104,11 +86,13 @@ export default function CreateMenuItemModal({
     setPrice("");
     setPrepTimeMinutes(0);
     setStatus("available");
-    setImageUrl("");
     setChefRecommended(false);
     setSelectedGroupIds([]);
     setModifierGroups([]);
-    setError("");
+
+    setImageFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
   };
 
   const handleClose = () => {
@@ -117,6 +101,8 @@ export default function CreateMenuItemModal({
       onClose?.();
     }
   };
+
+  if (!open) return null;
 
   const handleSubmit = async () => {
     const trimmed = name.trim();
@@ -128,35 +114,60 @@ export default function CreateMenuItemModal({
     if (!Number.isFinite(numPrice) || numPrice <= 0)
       return toast.error("Giá phải là số > 0.");
     if (!status) return toast.error("Vui lòng chọn trạng thái.");
-    if (isUploading) return toast.error("Ảnh đang upload, vui lòng chờ.");
-    if (!imageUrl) return toast.error("Vui lòng upload ảnh món ăn trước khi tạo.");
+    if (!imageFile) return toast.error("Vui lòng chọn ảnh món ăn.");
 
     try {
       setLoading(true);
-      setError("");
 
+      // 1) ✅ tạo menu item trước để có ID
       const created = await adminMenuApi.createMenuItem({
         categoryId,
         name: trimmed,
-        description,
+        description: description?.trim() || null,
         price: numPrice,
         prepTimeMinutes: Number(prepTimeMinutes) || 0,
         status,
-        imageUrl,
         isChefRecommended,
+        // ⚠️ KHÔNG gửi imageUrl ở đây nữa (vì ảnh quản lý bằng menu_item_photos)
       });
 
-      const newId = created?.id || created?.data?.id;
-      if (!newId)
-        throw new Error("Tạo món thành công nhưng không nhận được ID.");
+      // tuỳ BE trả: { item: {...} } / { id } / { data: { item } }...
+      const newId =
+        created?.item?.id ||
+        created?.data?.item?.id ||
+        created?.id ||
+        created?.data?.id;
 
+      if (!newId) throw new Error("Tạo món thành công nhưng không nhận được ID.");
+
+      // 2) ✅ upload ảnh vào menu_item_photos
+      // BE nên dùng multer.array("images")
+      const upRes = await adminMenuApi.uploadMenuItemPhotos(newId, [imageFile]);
+
+      // optional: nếu BE trả lại photos/url để preview
+      const firstPhotoUrl =
+        upRes?.photos?.[0]?.url ||
+        upRes?.data?.photos?.[0]?.url ||
+        upRes?.data?.url ||
+        upRes?.url;
+
+      // 3) set modifier groups (nếu có)
       if (selectedGroupIds?.length) {
         await adminMenuApi.setMenuItemModifierGroups(newId, selectedGroupIds);
       }
 
-      onSuccess?.();
       toast.success("Thêm món thành công");
+
+      // nếu muốn update UI ngay không cần refetch: có thể trả về item + photos
+      onSuccess?.();
+
       reset();
+      onClose?.();
+
+      // optional log preview
+      if (firstPhotoUrl) {
+        // console.log("Uploaded photo url:", firstPhotoUrl);
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || e?.message || "Tạo món thất bại.");
     } finally {
@@ -201,7 +212,6 @@ export default function CreateMenuItemModal({
           </div>
 
           <ScrollArea>
-            {/* body */}
             <div className="p-5 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -327,7 +337,6 @@ export default function CreateMenuItemModal({
                   />
                 </div>
 
-                {/* Optional: preview danh sách đã chọn */}
                 {selectedGroupIds.length ? (
                   <div className="mt-3 text-xs text-gray-500">
                     Đã chọn:{" "}
@@ -341,9 +350,10 @@ export default function CreateMenuItemModal({
                 ) : null}
               </div>
 
+              {/* ✅ Ảnh: chọn file + preview */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">
-                  Ảnh món ăn
+                  Ảnh món ăn *
                 </label>
 
                 <input
@@ -351,45 +361,30 @@ export default function CreateMenuItemModal({
                   accept="image/*"
                   onChange={(e) => {
                     const f = e.target.files?.[0] || null;
+
+                    // cleanup preview cũ
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+
                     setImageFile(f);
-                    if (!f) return;
-                    // optional: reset imageUrl nếu chọn ảnh mới
-                    // setImageUrl("");
+
+                    if (f) {
+                      setPreviewUrl(URL.createObjectURL(f));
+                    } else {
+                      setPreviewUrl("");
+                    }
                   }}
                   className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/40 transition"
                 />
 
-                <div className="flex items-center gap-2 mt-2">
-                  <button
-                    type="button"
-                    onClick={handleUploadImage}
-                    disabled={!imageFile || isUploading || isLoading}
-                    className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition disabled:opacity-60"
-                  >
-                    {isUploading ? "Đang upload..." : "Upload ảnh"}
-                  </button>
-
-                  {imageUrl ? (
-                    <a
-                      href={imageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-orange-300 hover:text-orange-200 underline"
-                    >
-                      Xem ảnh
-                    </a>
-                  ) : (
-                    <span className="text-xs text-gray-500">Chưa có URL</span>
-                  )}
-                </div>
-
-                {imageUrl ? (
+                {previewUrl ? (
                   <img
-                    src={imageUrl}
+                    src={previewUrl}
                     alt="preview"
                     className="mt-3 w-full h-40 object-cover rounded-2xl border border-white/10"
                   />
-                ) : null}
+                ) : (
+                  <div className="mt-2 text-xs text-gray-500">Chưa chọn ảnh</div>
+                )}
               </div>
 
               <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
@@ -404,8 +399,8 @@ export default function CreateMenuItemModal({
                   type="button"
                   onClick={() => setChefRecommended((v) => !v)}
                   className={`px-4 py-2 rounded-xl border transition ${isChefRecommended
-                    ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
-                    : "bg-neutral-950/40 border-white/10 text-gray-200 hover:bg-white/10"
+                      ? "bg-orange-500/15 border-orange-500/30 text-orange-200"
+                      : "bg-neutral-950/40 border-white/10 text-gray-200 hover:bg-white/10"
                     }`}
                 >
                   {isChefRecommended ? "ON" : "OFF"}
@@ -414,7 +409,6 @@ export default function CreateMenuItemModal({
             </div>
           </ScrollArea>
 
-          {/* footer */}
           <div className="px-5 py-4 border-t border-white/10 flex items-center justify-end gap-2">
             <button
               onClick={handleClose}
@@ -429,7 +423,7 @@ export default function CreateMenuItemModal({
               onClick={handleSubmit}
               className="px-4 py-2 rounded-xl bg-orange-500/20 border border-orange-500/30 text-orange-200 hover:bg-orange-500/30 transition disabled:opacity-60"
               type="button"
-              disabled={isLoading || isUploading}
+              disabled={isLoading}
             >
               {isLoading ? "Đang tạo..." : "Tạo món"}
             </button>
