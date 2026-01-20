@@ -228,11 +228,6 @@ export default function EditMenuItemModal({
           {/* body */}
           <ScrollArea>
             <div className="max-h-[80vh] overflow-auto p-5 space-y-3">
-              {error ? (
-                <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-200 text-sm">
-                  {error}
-                </div>
-              ) : null}
 
               <div>
                 <label className="text-xs text-gray-400">Tên món</label>

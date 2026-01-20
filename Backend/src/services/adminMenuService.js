@@ -1,4 +1,8 @@
 const repo = require("../repositories/adminMenuRepository");
+const {
+  validateCreateMenuItem,
+  validateUpdateMenuItem,
+} = require("../validations/menuValidation");
 
 function toInt(n, fallback) {
   const x = parseInt(n, 10);
@@ -97,48 +101,35 @@ exports.getMenuItemDetail = async (id) => {
 };
 
 exports.createMenuItem = async (body) => {
-  const {
-    categoryId,
-    name,
-    description,
-    price,
-    prepTimeMinutes,
-    status,
-    imageUrl,
-    isChefRecommended,
-  } = body || {};
-
-  if (!categoryId || !name || price == null || !status) {
-    const err = new Error("Missing required fields");
-    err.status = 400;
-    throw err;
-  }
+  const data = validateCreateMenuItem(body);
 
   const created = await repo.createItem({
-    categoryId,
-    name,
-    description,
-    price,
-    prepTimeMinutes,
-    status,
-    imageUrl,
-    isChefRecommended,
+    categoryId: data.categoryId,
+    name: data.name,
+    description: data.description,
+    price: data.price,
+    prepTimeMinutes: data.prepTimeMinutes,
+    status: data.status,
+    imageUrl: data.imageUrl || null,
+    isChefRecommended: data.isChefRecommended,
   });
 
   return { id: created.id };
 };
 
 exports.updateMenuItem = async (id, body) => {
+  const data = validateUpdateMenuItem(body);
+
   const updated = await repo.updateItem(id, {
-    categoryId: body?.categoryId,
-    name: body?.name,
-    description: body?.description,
-    price: body?.price,
-    prepTimeMinutes: body?.prepTimeMinutes,
-    status: body?.status,
-    imageUrl: body?.imageUrl,
-    isChefRecommended: body?.isChefRecommended,
-    isDeleted: body?.isDeleted,
+    categoryId: data.categoryId,
+    name: data.name,
+    description: data.description,
+    price: data.price,
+    prepTimeMinutes: data.prepTimeMinutes,
+    status: data.status,
+    imageUrl: data.imageUrl,
+    isChefRecommended: data.isChefRecommended,
+    isDeleted: data.isDeleted,
   });
 
   return updated; // null nếu not found
