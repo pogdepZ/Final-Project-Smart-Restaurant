@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, ShoppingBag, Flame, Sparkles } from "lucide-react";
 
 export default function MenuHeader({
@@ -26,6 +27,8 @@ export default function MenuHeader({
   isFuzzySearchActive = false,
   totalItemsCount = 0,
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/98 backdrop-blur-2xl shadow-2xl py-2 md:py-4 transition-all duration-300">
       <div className="px-3 md:px-4 container mx-auto max-w-5xl">
@@ -38,7 +41,7 @@ export default function MenuHeader({
             />
             <input
               type="text"
-              placeholder="Bạn muốn ăn gì?..."
+              placeholder={t("menu.searchPlaceholder")}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
@@ -69,7 +72,7 @@ export default function MenuHeader({
                 : "bg-orange-500 text-white hover:opacity-95"
             }`}
           >
-            Search
+            {t("menu.searchButton")}
           </button>
         </div>
 
@@ -78,7 +81,7 @@ export default function MenuHeader({
           {/* Sort Dropdown */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400 hidden xs:inline">
-              Sort:
+              {t("menu.sort")}:
             </span>{" "}
             {/* Ẩn chữ 'Sort:' nếu màn hình quá bé */}
             <div className="relative">
@@ -87,8 +90,8 @@ export default function MenuHeader({
                 onChange={(e) => setSort(e.target.value)}
                 className="appearance-none bg-neutral-900 border border-neutral-800 text-gray-200 text-xs rounded-lg px-3 py-1.5 md:py-2 outline-none focus:border-orange-500/50 cursor-pointer"
               >
-                <option value="newest">Mới nhất</option>
-                <option value="popularity">Phổ biến</option>
+                <option value="newest">{t("menu.sortNewest")}</option>
+                <option value="popularity">{t("menu.sortPopularity")}</option>
               </select>
             </div>
           </div>
@@ -112,7 +115,7 @@ export default function MenuHeader({
             />
             <span className="hidden xs:inline">Chef’s picks</span>{" "}
             {/* Ẩn chữ trên màn hình cực nhỏ */}
-            <span className="inline xs:hidden">Chef's</span>{" "}
+            <span className="inline xs:hidden">{t("menu.chef")}</span>{" "}
             {/* Hiện chữ ngắn gọn */}
           </button>
         </div>

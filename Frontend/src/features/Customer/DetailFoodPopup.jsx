@@ -17,6 +17,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { menuApi } from "../../services/menuApi";
 import { formatMoneyVND } from "../../utils/orders";
 
@@ -76,6 +77,7 @@ export default function FoodDetailPopup({
   mode = "add",
   initial = null,
 }) {
+  const { t } = useTranslation();
   const aliveRef = useRef(true);
 
   // lock body scroll
@@ -484,7 +486,8 @@ export default function FoodDetailPopup({
       const type = g.selection_type;
 
       if (type === "single") {
-        if (isReq && !singlePick[g.id]) return `Vui lòng chọn ${g.name}.`;
+        if (isReq && !singlePick[g.id])
+          return t("foodDetail.pleaseSelect", { name: g.name });
       } else if (type === "multiple") {
         const picked = multiPick[g.id];
         const count = picked
@@ -496,14 +499,16 @@ export default function FoodDetailPopup({
         const min = Number(g.min_selections ?? 0);
         const max = Number(g.max_selections ?? 0);
 
-        if (isReq && min <= 0 && count === 0) return `Vui lòng chọn ${g.name}.`;
-        if (min > 0 && count < min) return `Chọn ít nhất ${min} cho ${g.name}.`;
+        if (isReq && min <= 0 && count === 0)
+          return t("foodDetail.pleaseSelect", { name: g.name });
+        if (min > 0 && count < min)
+          return t("foodDetail.selectAtLeast", { min, name: g.name });
         if (max > 0 && count > max)
-          return `Chọn tối đa ${max} lựa chọn cho ${g.name}.`;
+          return t("foodDetail.selectAtMost", { max, name: g.name });
       }
     }
     return "";
-  }, [groups, singlePick, multiPick]);
+  }, [groups, singlePick, multiPick, t]);
 
   const toggleMulti = (groupId, optionId, maxSelections = 0) => {
     setMultiPick((prev) => {
@@ -513,7 +518,9 @@ export default function FoodDetailPopup({
       if (curSet.has(optionId)) curSet.delete(optionId);
       else {
         if (maxSelections > 0 && curSet.size >= maxSelections) {
-          toast.info(`Chỉ được chọn tối đa ${maxSelections} lựa chọn.`);
+          toast.info(
+            t("foodDetail.maxSelectionsReached", { max: maxSelections }),
+          );
           return prev;
         }
         curSet.add(optionId);
@@ -526,10 +533,9 @@ export default function FoodDetailPopup({
 
   const handleSubmitReview = async () => {
     if (!foodId) return;
-    if (!userRating) return toast.error("Vui lòng chọn số sao trước nhé!");
-    if (!comment.trim()) return toast.error("Bạn chưa nhập nhận xét.");
-    if (!canReview)
-      return toast.error("Món này hiện không khả dụng để đánh giá.");
+    if (!userRating) return toast.error(t("foodDetail.selectRating"));
+    if (!comment.trim()) return toast.error(t("foodDetail.enterComment"));
+    if (!canReview) return toast.error(t("foodDetail.itemUnavailable"));
 
     try {
       await menuApi.createReview({
@@ -537,7 +543,7 @@ export default function FoodDetailPopup({
         rating: userRating,
         comment: comment.trim(),
       });
-      toast.success("Cảm ơn bạn đã đánh giá!");
+      toast.success(t("foodDetail.reviewSuccess"));
       setUserRating(0);
       setComment("");
 
@@ -554,17 +560,17 @@ export default function FoodDetailPopup({
           : (data?.length || 0) === REVIEWS_PAGE_SIZE,
       );
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Gửi đánh giá thất bại");
+      toast.error(e?.response?.data?.message || t("foodDetail.reviewFailed"));
     }
   };
 
   const handleConfirm = () => {
-    if (!canOrder) return toast.warning("Món này hiện không khả dụng để đặt.");
+    if (!canOrder) return toast.warning(t("foodDetail.itemCannotOrder"));
 
     const err = validateSelections();
     if (err) return toast.error(err);
 
-    if (!onConfirm) return toast.info("Bạn chưa truyền onConfirm vào popup.");
+    if (!onConfirm) return toast.info(t("foodDetail.noConfirmHandler"));
 
     onConfirm({
       id: foodId,
@@ -636,7 +642,7 @@ export default function FoodDetailPopup({
                     size={14}
                     className="fill-orange-500 text-orange-500"
                   />{" "}
-                  Chef’s pick
+                  {t("foodDetail.chefPick")}
                 </span>
               )}
             </div>
@@ -649,7 +655,7 @@ export default function FoodDetailPopup({
             {/* description */}
             <section>
               <h4 className="text-xs uppercase tracking-[0.2em] text-orange-500 font-bold mb-2">
-                Mô tả món ăn
+                {t("foodDetail.description")}
               </h4>
               <p className="text-gray-400 text-sm leading-relaxed">
                 {detail?.description ?? food?.description}
@@ -659,15 +665,17 @@ export default function FoodDetailPopup({
             {/* ===== modifiers UI ===== */}
             <section className="space-y-3">
               <h4 className="text-xs uppercase tracking-[0.2em] text-orange-500 font-bold">
-                Tuỳ chọn
+                {t("foodDetail.modifiers")}
               </h4>
 
               {loadingDetail ? (
                 <div className="text-xs text-gray-500">
-                  Đang tải tuỳ chọn...
+                  {t("foodDetail.loadingModifiers")}
                 </div>
               ) : detailError ? (
-                <div className="text-xs text-red-300">Lỗi: {detailError}</div>
+                <div className="text-xs text-red-300">
+                  {t("foodDetail.error")}: {detailError}
+                </div>
               ) : groups.length ? (
                 <div className="space-y-4">
                   {groups.map((g) => {
@@ -687,10 +695,10 @@ export default function FoodDetailPopup({
                             </div>
                             <div className="text-[11px] text-gray-500 mt-1">
                               {g.selection_type === "single"
-                                ? "Chọn 1"
+                                ? t("foodDetail.selectOne")
                                 : max > 0
-                                  ? `Chọn tối đa ${max}`
-                                  : "Chọn nhiều"}
+                                  ? t("foodDetail.selectMax", { max })
+                                  : t("foodDetail.selectMultiple")}
                             </div>
                           </div>
                         </div>
@@ -755,7 +763,7 @@ export default function FoodDetailPopup({
                 </div>
               ) : (
                 <div className="text-xs text-gray-500">
-                  Món này không có tuỳ chọn.
+                  {t("foodDetail.noModifiers")}
                 </div>
               )}
             </section>
@@ -763,13 +771,13 @@ export default function FoodDetailPopup({
             {/* note + qty + confirm */}
             <section className="space-y-3">
               <h4 className="text-xs uppercase tracking-[0.2em] text-orange-500 font-bold">
-                Ghi chú & Số lượng
+                {t("foodDetail.notes")}
               </h4>
 
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Ví dụ: ít cay, không hành..."
+                placeholder={t("foodDetail.notesPlaceholder")}
                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-orange-500/50 min-h-20 resize-none"
               />
 
@@ -794,7 +802,7 @@ export default function FoodDetailPopup({
 
                 <div className="text-right">
                   <div className="text-xs text-gray-400">
-                    Đơn giá (gồm option)
+                    {t("foodDetail.unitPrice")}
                   </div>
                   <div className="text-xl font-black text-orange-500">
                     {formatMoneyVND(unitPrice)}
@@ -808,19 +816,23 @@ export default function FoodDetailPopup({
                 disabled={!canOrder}
                 className="w-full mt-2 px-5 py-4 rounded-2xl font-black text-white bg-linear-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:opacity-50"
               >
-                {mode === "edit" ? "Cập nhật" : "Thêm vào giỏ"} •{" "}
-                {formatMoneyVND(totalPrice)}
+                {mode === "edit"
+                  ? t("foodDetail.update")
+                  : t("foodDetail.addToCart")}{" "}
+                • {formatMoneyVND(totalPrice)}
               </button>
             </section>
 
             {/* related */}
             <section className="space-y-3">
               <h4 className="text-xs uppercase tracking-[0.2em] text-orange-500 font-bold">
-                Gợi ý món liên quan
+                {t("foodDetail.relatedItems")}
               </h4>
 
               {loadingRelated ? (
-                <div className="text-xs text-gray-500">Đang tải gợi ý...</div>
+                <div className="text-xs text-gray-500">
+                  {t("foodDetail.loadingRelated")}
+                </div>
               ) : related.length ? (
                 <div className="grid grid-cols-2 gap-3">
                   {related.slice(0, 4).map((it) => (
@@ -854,24 +866,26 @@ export default function FoodDetailPopup({
                   ))}
                 </div>
               ) : (
-                <div className="text-xs text-gray-500">Chưa có gợi ý.</div>
+                <div className="text-xs text-gray-500">
+                  {t("foodDetail.noRelated")}
+                </div>
               )}
             </section>
 
             {/* reviews */}
             <section className="space-y-4">
               <h4 className="text-xs uppercase tracking-[0.2em] text-orange-500 font-bold flex items-center gap-2">
-                <MessageSquare size={14} /> Khách hàng nói gì
+                <MessageSquare size={14} /> {t("foodDetail.customerReviews")}
               </h4>
 
               <div className="space-y-4 max-h-48 overflow-y-auto pr-2 no-scrollbar">
                 {loadingReviews && reviews.length === 0 ? (
                   <div className="text-xs text-gray-500">
-                    Đang tải đánh giá...
+                    {t("foodDetail.loadingReviews")}
                   </div>
                 ) : reviewsError && reviews.length === 0 ? (
                   <div className="text-xs text-red-300">
-                    Lỗi: {reviewsError}
+                    {t("foodDetail.error")}: {reviewsError}
                   </div>
                 ) : reviews.length ? (
                   reviews.map((rev) => (
@@ -881,7 +895,7 @@ export default function FoodDetailPopup({
                     >
                       <div className="flex justify-between items-start mb-1">
                         <span className="text-sm font-bold text-white">
-                          {rev.user_name || "Ẩn danh"}
+                          {rev.user_name || t("foodDetail.anonymous")}
                         </span>
                         <span className="text-[10px] text-gray-500 italic">
                           {rev.created_at || ""}
@@ -892,13 +906,17 @@ export default function FoodDetailPopup({
                     </div>
                   ))
                 ) : (
-                  <div className="text-xs text-gray-500">Chưa có đánh giá.</div>
+                  <div className="text-xs text-gray-500">
+                    {t("foodDetail.noReviews")}
+                  </div>
                 )}
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="text-[11px] text-gray-500">
-                  {reviews.length ? `Đã tải ${reviews.length} đánh giá` : ""}
+                  {reviews.length
+                    ? t("foodDetail.loadedReviews", { count: reviews.length })
+                    : ""}
                 </div>
 
                 {reviewsHasMore ? (
@@ -912,11 +930,13 @@ export default function FoodDetailPopup({
                         : "text-orange-400 hover:underline"
                     }`}
                   >
-                    {loadingReviews ? "Đang tải..." : "Xem thêm"}
+                    {loadingReviews
+                      ? t("foodDetail.loading")
+                      : t("foodDetail.loadMore")}
                   </button>
                 ) : (
                   <span className="text-[11px] text-gray-600">
-                    Hết đánh giá
+                    {t("foodDetail.noMoreReviews")}
                   </span>
                 )}
               </div>
@@ -925,7 +945,7 @@ export default function FoodDetailPopup({
             {/* review form */}
             <section className="pt-4 border-t border-white/10">
               <h4 className="text-xs uppercase tracking-[0.2em] text-white font-bold mb-3">
-                Đánh giá của bạn
+                {t("foodDetail.yourReview")}
               </h4>
 
               <div className="flex gap-2 mb-3">
@@ -953,8 +973,8 @@ export default function FoodDetailPopup({
                   onChange={(e) => setComment(e.target.value)}
                   placeholder={
                     canReview
-                      ? "Chia sẻ cảm nhận của bạn..."
-                      : "Món hiện không khả dụng để đánh giá."
+                      ? t("foodDetail.reviewPlaceholder")
+                      : t("foodDetail.reviewDisabled")
                   }
                   disabled={!canReview}
                   className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-orange-500/50 min-h-20 resize-none disabled:opacity-50"

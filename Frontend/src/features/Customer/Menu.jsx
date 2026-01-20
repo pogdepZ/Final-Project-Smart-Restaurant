@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import FoodDetailPopup from "./DetailFoodPopup";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -28,6 +29,7 @@ import useFuzzySearch from "../../hooks/useFuzzySearch";
 const PAGE_SIZE = 12;
 
 export default function Menu() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const cartCount = useSelector(selectTotalItems);
   const cartId = useSelector(selectCartId);
@@ -374,7 +376,7 @@ export default function Menu() {
       });
     }, 700);
 
-    toast.success(`Đã thêm ${item.name} vào giỏ hàng!`, {
+    toast.success(t("menu.addedToCart", { name: item.name }), {
       position: "bottom-right",
       autoClose: 1200,
     });
@@ -409,15 +411,18 @@ export default function Menu() {
     return items;
   }, [isFuzzySearchActive, searchInput, fuzzyFilteredItems, items]);
 
-  const handleSelectRelated = useCallback(async (id) => {
-    try {
-      const res = await menuApi.getMenuItemById(id);
-      const item = res?.data ?? res;
-      setSelectedFood(item);
-    } catch (e) {
-      toast.error(e?.message || "Không tải được món liên quan");
-    }
-  }, []);
+  const handleSelectRelated = useCallback(
+    async (id) => {
+      try {
+        const res = await menuApi.getMenuItemById(id);
+        const item = res?.data ?? res;
+        setSelectedFood(item);
+      } catch (e) {
+        toast.error(e?.message || t("errors.loadRelatedFailed"));
+      }
+    },
+    [t],
+  );
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-24 font-sans selection:bg-orange-500 selection:text-white">
@@ -470,10 +475,10 @@ export default function Menu() {
         ) : items.length > 0 && isFuzzySearchActive ? (
           <div className="text-center py-12">
             <p className="text-neutral-400 text-lg">
-              Không tìm thấy món ăn phù hợp với "{searchInput}"
+              {t("menu.noResults")} "{searchInput}"
             </p>
             <p className="text-neutral-500 text-sm mt-2">
-              Thử tìm kiếm với từ khóa khác
+              {t("menu.tryOtherKeywords")}
             </p>
           </div>
         ) : (
@@ -489,7 +494,7 @@ export default function Menu() {
           onConfirm={(payload) => {
             dispatch(addToCartLocal(payload));
             setSelectedFood(null);
-            toast.success(`Đã thêm ${payload.name} vào giỏ!`);
+            toast.success(t("menu.addedToCart", { name: payload.name }));
           }}
         />
       )}

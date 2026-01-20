@@ -8,6 +8,9 @@ import store from "./store/store";
 import { injectStore } from "./store/axiosClient.js";
 import { SocketProvider } from "./context/SocketContext";
 
+// Initialize i18n
+import "./i18n";
+
 injectStore(store);
 createRoot(document.getElementById("root")).render(
   <Provider store={store}>
@@ -16,5 +19,5 @@ createRoot(document.getElementById("root")).render(
         <App />
       </BrowserRouter>
     </SocketProvider>
-  </Provider>
+  </Provider>,
 );

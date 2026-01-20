@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Lock, Unlock, CheckCircle, AlertCircle, Utensils } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { tableApi } from "../../services/tableApi";
 import { toast } from "react-toastify";
 
 const ScanQR = () => {
+  const { t } = useTranslation();
   const { tableCode } = useParams();
   const user = localStorage.getItem("user")
     ? JSON.parse(localStorage.getItem("user"))
@@ -32,7 +34,9 @@ const ScanQR = () => {
           if (existingTableSession.sessions.tableId === tableCode) {
             // Nếu có rồi thì chuyển thẳng vào menu
             toast.success(
-              `Bạn đã có phiên làm việc với bàn ${existingTableSession.sessions.tableNumber}. Đang chuyển đến thực đơn...`,
+              t("table.scan.existingSession", {
+                table: existingTableSession.sessions.tableNumber,
+              }),
             );
             handleLoginSuccess(existingTableSession.sessions);
             return;
@@ -40,7 +44,9 @@ const ScanQR = () => {
             // Nếu có nhưng khác bàn thì báo lỗi
             setStatus("error");
             setErrorMessage(
-              `Bạn đã có phiên làm việc với bàn ${existingTableSession.sessions.tableNumber}. Vui lòng kết thúc phiên làm việc hoặc thông báo cho nhân viên trước khi sử dụng bàn khác.`,
+              t("table.scan.differentTable", {
+                table: existingTableSession.sessions.tableNumber,
+              }),
             );
             return;
           }
@@ -71,10 +77,7 @@ const ScanQR = () => {
         } else {
           // Session không hợp lệ
           setStatus("error");
-          setErrorMessage(
-            response.message ||
-              "Bàn này không khả dụng hoặc session không hợp lệ.",
-          );
+          setErrorMessage(response.message || t("table.scan.tableUnavailable"));
         }
       } catch (error) {
         console.error("Error checking table session:", error);
@@ -82,11 +85,11 @@ const ScanQR = () => {
 
         // Xử lý các loại lỗi khác nhau
         if (error.response?.status === 400) {
-          setErrorMessage("Bàn đang được sử dụng bởi khách khác.");
+          setErrorMessage(t("table.scan.tableInUse"));
         } else if (error.response?.status === 404) {
-          setErrorMessage("Mã bàn không tồn tại.");
+          setErrorMessage(t("table.scan.tableNotExist"));
         } else {
-          setErrorMessage("Không thể kết nối đến server. Vui lòng thử lại.");
+          setErrorMessage(t("table.scan.connectionError"));
         }
       }
     };
@@ -130,16 +133,14 @@ const ScanQR = () => {
       if (response.success) {
         handleLoginSuccess(response.data.tableSession);
       } else {
-        setErrorMessage(
-          response.message || "Mã xác nhận không đúng. Vui lòng thử lại.",
-        );
+        setErrorMessage(response.message || t("table.scan.wrongCode"));
       }
     } catch (error) {
       console.error("Error verifying booking code:", error);
       if (error.response?.status === 401) {
-        setErrorMessage("Mã xác nhận không đúng.");
+        setErrorMessage(t("table.scan.wrongCode"));
       } else {
-        setErrorMessage("Không thể xác thực. Vui lòng thử lại.");
+        setErrorMessage(t("table.scan.verifyFailed"));
       }
     }
   };
@@ -164,9 +165,11 @@ const ScanQR = () => {
               </div>
             </div>
             <h2 className="text-xl font-bold mb-2">
-              Đang xác thực bàn {tableCode}...
+              {t("table.scan.verifying", { table: tableCode })}
             </h2>
-            <p className="text-gray-400 text-sm">Vui lòng đợi trong giây lát</p>
+            <p className="text-gray-400 text-sm">
+              {t("table.scan.pleaseWait")}
+            </p>
           </div>
         )}
 
@@ -177,10 +180,12 @@ const ScanQR = () => {
               <Lock size={32} />
             </div>
 
-            <h2 className="text-2xl font-bold mb-2">Bàn Đã Được Đặt</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              {t("table.scan.tableReserved")}
+            </h2>
             <p className="text-gray-400 text-sm mb-6">
-              Bàn <strong>{tableCode}</strong> đang được giữ chỗ. <br />
-              Nhập mã đặt chỗ hoặc SĐT để mở khóa.
+              {t("table.scan.reservedDesc", { table: tableCode })} <br />
+              {t("table.scan.enterCode")}
             </p>
 
             <form onSubmit={handleUnlock} className="space-y-4">
@@ -188,7 +193,7 @@ const ScanQR = () => {
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="Nhập mã (VD: 1234)"
+                  placeholder={t("table.scan.codePlaceholder")}
                   className="w-full bg-neutral-950 border border-white/20 rounded-xl px-4 py-3.5 text-center text-lg font-bold tracking-widest focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder:font-normal placeholder:tracking-normal"
                   value={bookingCode}
                   onChange={(e) => setBookingCode(e.target.value)}
@@ -208,12 +213,12 @@ const ScanQR = () => {
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-orange-500/20"
               >
                 <Unlock size={20} />
-                Mở Khóa Bàn
+                {t("table.scan.unlock")}
               </button>
             </form>
 
             <button className="mt-6 text-gray-500 text-xs hover:text-orange-500 underline">
-              Không có mã? Gọi nhân viên hỗ trợ
+              {t("table.scan.noCode")}
             </button>
           </div>
         )}
@@ -223,12 +228,12 @@ const ScanQR = () => {
             <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mb-6 text-orange-500">
               <CheckCircle size={40} />
             </div>
-            <h2 className="text-2xl font-bold mb-2">Xin Chào!</h2>
+            <h2 className="text-2xl font-bold mb-2">{t("table.scan.hello")}</h2>
             <p className="text-gray-400">
-              Bạn đã check-in vào bàn <strong>{tableCode}</strong>
+              {t("table.scan.checkedIn", { table: tableCode })}
             </p>
             <p className="text-orange-500 text-sm mt-4 font-medium animate-pulse">
-              Đang chuyển đến thực đơn...
+              {t("table.scan.redirecting")}
             </p>
           </div>
         )}
@@ -239,14 +244,14 @@ const ScanQR = () => {
               <AlertCircle size={40} />
             </div>
             <h2 className="text-xl font-bold mb-2 text-gray-300">
-              Lỗi Quét Mã
+              {t("table.scan.error")}
             </h2>
             <p className="text-gray-500 mb-6">{errorMessage}</p>
             <button
               onClick={() => navigate("/")}
               className="px-6 py-2 border border-white/20 rounded-lg hover:bg-white/10 transition-colors"
             >
-              Về Trang Chủ
+              {t("table.scan.goHome")}
             </button>
           </div>
         )}

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, KeyRound, Camera, Save } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 
 import { userApi } from "../../services/userApi";
 import { orderApi } from "../../services/orderApi";
@@ -14,6 +15,7 @@ import Avatar from "./components/Avatar";
 import { formatMoneyVND } from "../../utils/orders";
 
 const UserProfile = () => {
+  const { t } = useTranslation();
   const { user, accessToken } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
@@ -49,9 +51,9 @@ const UserProfile = () => {
     if (!f) return;
 
     const okType = ["image/png", "image/jpeg", "image/webp"].includes(f.type);
-    if (!okType) return toast.error("Chỉ nhận PNG/JPG/WEBP");
+    if (!okType) return toast.error(t("profile.fileTypeError"));
     if (f.size > 5 * 1024 * 1024)
-      return toast.error("File quá lớn (tối đa 5MB)");
+      return toast.error(t("profile.fileSizeError"));
 
     setFile(f);
     const url = URL.createObjectURL(f);
@@ -60,7 +62,7 @@ const UserProfile = () => {
 
   const saveNameInline = async () => {
     const n = name.trim();
-    if (!n) return toast.error("Tên không được trống");
+    if (!n) return toast.error(t("profile.nameRequired"));
 
     setSaving(true);
     try {
@@ -82,16 +84,16 @@ const UserProfile = () => {
         }),
       );
 
-      toast.success("Đã cập nhật tên");
+      toast.success(t("profile.nameUpdated"));
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Cập nhật thất bại");
+      toast.error(e?.response?.data?.message || t("profile.updateFailed"));
     } finally {
       setSaving(false);
     }
   };
 
   const uploadAvatarInline = async () => {
-    if (!file) return toast.error("Chọn ảnh trước đã");
+    if (!file) return toast.error(t("profile.selectPhotoFirst"));
 
     setUploading(true);
     try {
@@ -110,11 +112,11 @@ const UserProfile = () => {
         }),
       );
 
-      toast.success("Đã cập nhật avatar");
+      toast.success(t("profile.avatarUpdated"));
       setFile(null);
       setPreviewUrl("");
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Upload thất bại");
+      toast.error(e?.response?.data?.message || t("profile.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -133,7 +135,7 @@ const UserProfile = () => {
       } catch (e) {
         if (!mounted) return;
         setOrdersError(
-          e?.response?.data?.message || "Không tải được lịch sử đơn",
+          e?.response?.data?.message || t("profile.loadOrdersFailed"),
         );
       } finally {
         if (mounted) setLoadingOrders(false);
@@ -145,16 +147,14 @@ const UserProfile = () => {
   if (!accessToken || !user) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-        <h1 className="text-2xl font-bold">Bạn chưa đăng nhập</h1>
-        <p className="text-gray-500">
-          Vui lòng đăng nhập để xem thông tin cá nhân
-        </p>
+        <h1 className="text-2xl font-bold">{t("profile.notLoggedIn")}</h1>
+        <p className="text-gray-500">{t("profile.pleaseLogin")}</p>
 
         <Link
           to="/signin"
           className="px-6 py-2 rounded-lg bg-orange-500 text-white font-bold hover:opacity-90"
         >
-          Đăng nhập
+          {t("profile.login")}
         </Link>
       </div>
     );
@@ -190,10 +190,10 @@ const UserProfile = () => {
         }),
       );
 
-      toast.success("Cập nhật hồ sơ thành công!");
+      toast.success(t("profile.profileUpdated"));
       setOpenEdit(false);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Cập nhật thất bại");
+      toast.error(e?.response?.data?.message || t("profile.updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -203,10 +203,12 @@ const UserProfile = () => {
     setChanging(true);
     try {
       await userApi.changePassword({ currentPassword, newPassword });
-      toast.success("Đổi mật khẩu thành công!");
+      toast.success(t("profile.passwordChanged"));
       setOpenPass(false);
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Đổi mật khẩu thất bại");
+      toast.error(
+        e?.response?.data?.message || t("profile.passwordChangeFailed"),
+      );
     } finally {
       setChanging(false);
     }
@@ -224,9 +226,9 @@ const UserProfile = () => {
           </div>
 
           <h1 className="text-2xl md:text-3xl font-black mt-3">
-            Thông tin{" "}
+            {t("profile.title").split(" ")[0]}{" "}
             <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
-              tài khoản
+              {t("profile.title").split(" ").slice(1).join(" ")}
             </span>
           </h1>
         </div>
@@ -238,7 +240,7 @@ const UserProfile = () => {
             className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 flex items-center gap-2"
           >
             <KeyRound size={16} />
-            Đổi mật khẩu
+            {t("profile.changePassword")}
           </button>
 
           <button
@@ -247,7 +249,7 @@ const UserProfile = () => {
             className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 flex items-center gap-2"
           >
             <Pencil size={16} />
-            Chỉnh sửa
+            {t("profile.edit")}
           </button>
         </div>
       </div>
@@ -255,7 +257,7 @@ const UserProfile = () => {
       {/* Main card giống Admin */}
       <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-          <div className="text-white font-bold">Thông tin tài khoản</div>
+          <div className="text-white font-bold">{t("profile.accountInfo")}</div>
           <div className="text-xs text-gray-400">{user?.email || ""}</div>
         </div>
 
@@ -270,19 +272,20 @@ const UserProfile = () => {
                   {user?.name}
                 </div>
                 <div className="text-gray-400 text-sm">
-                  {user?.role || "user"} {user?.is_verified ? "• Verified" : ""}
+                  {user?.role || "user"}{" "}
+                  {user?.is_verified ? `• ${t("profile.verified")}` : ""}
                 </div>
               </div>
 
               <div className="w-full mt-2">
                 <label className="text-xs text-gray-400 mb-1 block">
-                  Chọn ảnh mới
+                  {t("profile.selectNewPhoto")}
                 </label>
 
                 <div className="flex items-center gap-2">
                   <label className="flex-1 cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition">
                     <Camera size={16} />
-                    Chọn ảnh
+                    {t("profile.selectPhoto")}
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
@@ -303,12 +306,12 @@ const UserProfile = () => {
                           : "bg-orange-500/20 border-orange-500/30 text-orange-200 hover:bg-orange-500/30"
                       }`}
                   >
-                    {uploading ? "Đang up..." : "Upload"}
+                    {uploading ? t("profile.uploading") : t("profile.upload")}
                   </button>
                 </div>
 
                 <div className="text-xs text-gray-500 mt-2">
-                  PNG/JPG/WEBP • tối đa 5MB
+                  {t("profile.photoFormat")}
                 </div>
               </div>
             </div>
@@ -316,25 +319,29 @@ const UserProfile = () => {
 
           {/* Right: Edit name inline (bỏ Reset theo ý bạn) */}
           <div className="lg:col-span-8 rounded-2xl bg-neutral-900/60 border border-white/10 p-4">
-            <div className="text-white font-bold">Chỉnh sửa</div>
+            <div className="text-white font-bold">
+              {t("profile.editSection")}
+            </div>
             <div className="text-xs text-gray-400 mt-1">
-              Bạn có thể đổi tên hiển thị.
+              {t("profile.editHint")}
             </div>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Name</label>
+                <label className="text-xs text-gray-400 mb-1 block">
+                  {t("profile.name")}
+                </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-neutral-950/60 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
-                  placeholder="Nhập tên..."
+                  placeholder={t("profile.namePlaceholder")}
                 />
               </div>
 
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">
-                  Email (readonly)
+                  {t("profile.emailReadonly")}
                 </label>
                 <input
                   value={user?.email || ""}
@@ -371,7 +378,7 @@ const UserProfile = () => {
                   }`}
               >
                 <Save size={16} />
-                {saving ? "Đang lưu..." : "Lưu tên"}
+                {saving ? t("profile.saving") : t("profile.saveName")}
               </button>
             </div>
           </div>
@@ -379,21 +386,21 @@ const UserProfile = () => {
       </div>
       <div className="mt-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-black">Lịch sử đơn hàng</h2>
+          <h2 className="text-lg font-black">{t("profile.orderHistory")}</h2>
           <Link
             to="/history"
             className="text-xs text-orange-400 font-bold hover:underline"
           >
-            Xem tất cả
+            {t("profile.viewAll")}
           </Link>
         </div>
 
         {loadingOrders ? (
-          <div className="text-white/50 text-sm">Đang tải...</div>
+          <div className="text-white/50 text-sm">{t("profile.loading")}</div>
         ) : ordersError ? (
           <div className="text-red-300 text-sm">{ordersError}</div>
         ) : orders.length === 0 ? (
-          <div className="text-white/50 text-sm">Bạn chưa có đơn nào.</div>
+          <div className="text-white/50 text-sm">{t("profile.noOrders")}</div>
         ) : (
           <div className="space-y-4">
             {orders.map((o) => (
@@ -406,7 +413,7 @@ const UserProfile = () => {
                   {/* Left */}
                   <div className="min-w-0">
                     <p className="text-white font-black text-lg sm:text-xl">
-                      Bàn: {o.table_number || "—"}
+                      {t("profile.table")}: {o.table_number || "—"}
                     </p>
                     <p className="text-xs sm:text-sm text-white/50 mt-1">
                       {new Date(o.created_at).toLocaleString("vi-VN")}

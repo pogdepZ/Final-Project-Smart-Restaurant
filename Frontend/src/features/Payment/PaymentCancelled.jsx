@@ -1,12 +1,14 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { XCircle, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function PaymentCancelled() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Tự động redirect về trang chủ sau 8 giây
+    // Auto redirect to home after 8 seconds
     const timer = setTimeout(() => {
       navigate("/");
     }, 8000);
@@ -24,18 +26,13 @@ export default function PaymentCancelled() {
         </div>
 
         <h1 className="text-3xl font-black text-white mb-2">
-          Thanh toán đã hủy
+          {t("payment.cancelled")}
         </h1>
 
-        <p className="text-gray-400 mb-6">
-          Bạn đã hủy thanh toán. Vui lòng thử lại hoặc chọn phương thức thanh
-          toán khác.
-        </p>
+        <p className="text-gray-400 mb-6">{t("payment.cancelledMessage")}</p>
 
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
-          <p className="text-yellow-500 text-sm">
-            💡 Nếu gặp vấn đề, vui lòng liên hệ nhân viên để được hỗ trợ.
-          </p>
+          <p className="text-yellow-500 text-sm">💡 {t("payment.helpHint")}</p>
         </div>
 
         <button
@@ -43,14 +40,14 @@ export default function PaymentCancelled() {
           className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 mb-3"
         >
           <ArrowLeft size={20} />
-          Thử lại thanh toán
+          {t("payment.retryPayment")}
         </button>
 
         <button
           onClick={() => navigate("/")}
           className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-all"
         >
-          Quay về trang chủ
+          {t("payment.backToHome")}
         </button>
       </div>
     </div>

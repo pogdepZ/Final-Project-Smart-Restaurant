@@ -19,10 +19,12 @@ import BlogSection from "../../Components/BlogSection";
 import { useEffect } from "react";
 import { useState } from "react";
 import { menuApi } from "../../services/menuApi";
+import { useTranslation } from "react-i18next";
 // --- COMPONENT CON: HIỆU ỨNG MÀN CHÀO MỪNG ---
 
 // --- COMPONENT CHÍNH ---
 const LandingPage = () => {
+  const { t } = useTranslation();
   // 1. Dữ liệu Món ăn Signature
   const [signatureDishes, setSignatureDishes] = useState([]);
 
@@ -31,16 +33,15 @@ const LandingPage = () => {
 
     const fetchTopDishes = async () => {
       try {
-       
         const res = await menuApi.getTopChefBestSeller(5);
 
-        const items = res?.data|| [];
+        const items = res?.data || [];
 
         if (mounted) setSignatureDishes(items);
       } catch (err) {
         console.error("fetchTopDishes error:", err);
         if (mounted) setSignatureDishes([]);
-      } 
+      }
     };
 
     fetchTopDishes();
@@ -49,29 +50,28 @@ const LandingPage = () => {
       mounted = false;
     };
   }, []);
-  
 
   // 2. Dữ liệu Tính năng
   const features = [
     {
       icon: <Leaf className="w-8 h-8" />,
-      title: "Nguyên liệu tươi mỗi ngày",
-      description: "Cam kết 100% nguyên liệu nhập khẩu và tươi sống",
+      title: t("landing.features.freshIngredients.title"),
+      description: t("landing.features.freshIngredients.description"),
     },
     {
       icon: <ChefHat className="w-8 h-8" />,
-      title: "Đầu bếp 20 năm kinh nghiệm",
-      description: "Đội ngũ bếp chuyên nghiệp từ khách sạn 5 sao",
+      title: t("landing.features.experiencedChef.title"),
+      description: t("landing.features.experiencedChef.description"),
     },
     {
       icon: <Heart className="w-8 h-8" />,
-      title: "Không gian ấm cúng",
-      description: "Thiết kế sang trọng, phù hợp gia đình & sự kiện",
+      title: t("landing.features.cozySpace.title"),
+      description: t("landing.features.cozySpace.description"),
     },
     {
       icon: <Clock className="w-8 h-8" />,
-      title: "Phục vụ nhanh chóng",
-      description: "Gọi món qua QR - món lên trong 15 phút",
+      title: t("landing.features.fastService.title"),
+      description: t("landing.features.fastService.description"),
     },
   ];
 
@@ -79,23 +79,23 @@ const LandingPage = () => {
   const galleryImages = [
     {
       url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600",
-      title: "Không gian trong nhà",
-      description: "Sức chứa 120 khách",
+      title: t("landing.gallery.indoor.title"),
+      description: t("landing.gallery.indoor.description"),
     },
     {
       url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600",
-      title: "Khu vực bàn ăn",
-      description: "Thiết kế hiện đại",
+      title: t("landing.gallery.dining.title"),
+      description: t("landing.gallery.dining.description"),
     },
     {
       url: "https://images.unsplash.com/photo-1578474846511-04ba529f0b88?w=600",
-      title: "Góc check-in",
-      description: "Instagram-worthy",
+      title: t("landing.gallery.checkin.title"),
+      description: t("landing.gallery.checkin.description"),
     },
     {
       url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600",
-      title: "Phòng VIP",
-      description: "Sự kiện riêng tư",
+      title: t("landing.gallery.vip.title"),
+      description: t("landing.gallery.vip.description"),
     },
   ];
 
@@ -121,8 +121,7 @@ const LandingPage = () => {
           <HeroTitle />
 
           <p className="text-gray-300 text-lg md:text-xl max-w-2xl mb-10 font-light">
-            Đặt bàn dễ dàng, gọi món nhanh chóng qua mã QR. Trải nghiệm phong
-            cách phục vụ hiện đại ngay hôm nay.
+            {t("landing.hero.subtitle")}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -130,7 +129,7 @@ const LandingPage = () => {
               to="/menu"
               className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(249,115,22,0.4)]"
             >
-              Xem Thực Đơn
+              {t("landing.hero.viewMenu")}
               <ArrowRight size={20} />
             </Link>
 
@@ -138,7 +137,7 @@ const LandingPage = () => {
               to="/signup"
               className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all "
             >
-              Đăng ký thành viên
+              {t("landing.hero.registerMember")}
             </Link>
           </div>
 
@@ -148,8 +147,10 @@ const LandingPage = () => {
               <QrCode size={24} className="text-black" />
             </div>
             <div className="text-left">
-              <p className="text-gray-200 font-bold">Đã có mặt tại quán?</p>
-              <p>Vui lòng quét mã QR trên bàn để gọi món.</p>
+              <p className="text-gray-200 font-bold">
+                {t("landing.hero.atRestaurant")}
+              </p>
+              <p>{t("landing.hero.scanQRHint")}</p>
             </div>
           </div>
         </div>
@@ -167,17 +168,17 @@ const LandingPage = () => {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 mb-4">
               <Users className="w-4 h-4 text-orange-500" />
               <span className="text-orange-500 font-bold text-sm uppercase tracking-wider">
-                Our Space
+                {t("landing.space.badge")}
               </span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
-              Không Gian{" "}
+              {t("landing.space.title")}{" "}
               <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
-                Nhà Hàng
+                {t("landing.space.titleHighlight")}
               </span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Thiết kế sang trọng, ấm cúng - Nơi lý tưởng cho mọi dịp đặc biệt
+              {t("landing.space.description")}
             </p>
           </div>
 
@@ -205,13 +206,11 @@ const LandingPage = () => {
                 </div>
 
                 <div className="absolute top-4 right-4 px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  Xem thêm
+                  {t("landing.viewMore")}
                 </div>
               </div>
             ))}
           </div>
-
-          
         </div>
       </section>
     </div>

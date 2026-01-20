@@ -4,37 +4,43 @@ import { Lock, ShieldCheck, ArrowRight } from "lucide-react";
 import Input from "../../../Components/Input";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { resetSchema } from "./schema/schemaReset";
+import { getResetSchema } from "./schema/schemaReset";
 import { authApi } from "../../../services/authApi";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [sp] = useSearchParams();
   const token = sp.get("token");
 
-  const tokenOk = useMemo(() => typeof token === "string" && token.length > 10, [token]);
+  const tokenOk = useMemo(
+    () => typeof token === "string" && token.length > 10,
+    [token],
+  );
+  const schema = useMemo(() => getResetSchema(t), [t]);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm({
-    resolver: yupResolver(resetSchema),
+    resolver: yupResolver(schema),
     defaultValues: { password: "", confirmPassword: "" },
   });
 
   const onSubmit = async ({ password }) => {
     if (!tokenOk) {
-      toast.error("Link không hợp lệ hoặc thiếu token.");
+      toast.error(t("auth.invalidLink"));
       return;
     }
     try {
       await authApi.resetPassword({ token, newPassword: password });
-      toast.success("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.");
+      toast.success(t("auth.resetSuccess"));
       navigate("/signin");
     } catch (e) {
-      toast.error(e?.response?.data?.message || "Không đặt lại được mật khẩu.");
+      toast.error(e?.response?.data?.message || t("auth.resetFailed"));
     }
   };
 
@@ -42,12 +48,15 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white/3 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
-          <h1 className="text-2xl font-black">Link không hợp lệ</h1>
+          <h1 className="text-2xl font-black">{t("auth.invalidLink")}</h1>
           <p className="text-sm text-white/60 mt-2">
-            Link reset có thể đã hết hạn hoặc sai. Vui lòng yêu cầu gửi lại.
+            {t("auth.invalidLinkDesc")}
           </p>
-          <Link to="/forgot" className="inline-block mt-6 text-orange-400 font-bold">
-            Gửi lại link reset
+          <Link
+            to="/forgot"
+            className="inline-block mt-6 text-orange-400 font-bold"
+          >
+            {t("auth.resendResetLink")}
           </Link>
         </div>
       </div>
@@ -57,14 +66,14 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white/3 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
-        <h1 className="text-2xl font-black">Đặt lại mật khẩu</h1>
+        <h1 className="text-2xl font-black">{t("auth.resetPassword")}</h1>
         <p className="text-sm text-white/60 mt-2">
-          Nhập mật khẩu mới cho tài khoản của bạn.
+          {t("auth.resetPasswordDesc")}
         </p>
 
         <form className="space-y-5 mt-6" onSubmit={handleSubmit(onSubmit)}>
           <Input
-            label="Mật khẩu mới"
+            label={t("auth.newPassword")}
             type="password"
             placeholder="••••••••"
             icon={Lock}
@@ -72,7 +81,7 @@ export default function ResetPassword() {
             {...register("password")}
           />
           <Input
-            label="Nhập lại mật khẩu"
+            label={t("auth.confirmPassword")}
             type="password"
             placeholder="••••••••"
             icon={ShieldCheck}
@@ -88,12 +97,16 @@ export default function ResetPassword() {
               isSubmitting ? "opacity-70 cursor-not-allowed" : "",
             ].join(" ")}
           >
-            {isSubmitting ? "Đang cập nhật..." : "Đổi mật khẩu"} <ArrowRight size={18} />
+            {isSubmitting ? t("common.processing") : t("auth.changePassword")}{" "}
+            <ArrowRight size={18} />
           </button>
 
           <div className="text-center text-sm text-white/60">
-            <Link to="/signin" className="text-orange-400 font-bold hover:text-orange-300">
-              Quay lại đăng nhập
+            <Link
+              to="/signin"
+              className="text-orange-400 font-bold hover:text-orange-300"
+            >
+              {t("auth.backToLogin")}
             </Link>
           </div>
         </form>

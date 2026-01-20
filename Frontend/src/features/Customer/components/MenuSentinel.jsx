@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export default function MenuSentinel({
   sentinelRef,
@@ -7,6 +8,7 @@ export default function MenuSentinel({
   error,
   onRetryLoadMore,
 }) {
+  const { t } = useTranslation();
   return (
     <div
       ref={sentinelRef}
@@ -15,19 +17,21 @@ export default function MenuSentinel({
       {loadingMore ? (
         <div className="flex items-center gap-3 text-sm text-gray-400">
           <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/15 border-t-orange-500" />
-          Đang tải thêm...
+          {t("menu.loadingMore")}
         </div>
       ) : !hasMore ? (
-        <span className="text-gray-600 text-sm">— Bạn đã xem hết menu —</span>
+        <span className="text-gray-600 text-sm">— {t("menu.endOfMenu")} —</span>
       ) : error ? (
         <button
           onClick={onRetryLoadMore}
           className="text-orange-400 text-sm hover:underline"
         >
-          Lỗi tải thêm, bấm để thử lại
+          {t("menu.loadMoreError")}
         </button>
       ) : (
-        <span className="text-gray-500 text-sm">Kéo xuống để tải thêm…</span>
+        <span className="text-gray-500 text-sm">
+          {t("menu.scrollToLoadMore")}
+        </span>
       )}
     </div>
   );

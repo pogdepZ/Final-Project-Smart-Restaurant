@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectCartItems,
@@ -34,6 +35,7 @@ const calcModifierExtra = (modifiers = []) =>
   );
 
 const Cart = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { tableCode } = useParams();
@@ -48,7 +50,7 @@ const Cart = () => {
     e.stopPropagation();
     const lineKey = item.lineKey || buildLineKey(item.id, item.modifiers);
     dispatch(removeFromCartLocal({ lineKey }));
-    toast.info(`Đã xóa ${item.name} khỏi giỏ hàng`);
+    toast.info(t("cart.removeItem"));
   };
 
   const handleIncrement = (e, item) => {
@@ -64,16 +66,16 @@ const Cart = () => {
   };
 
   const handleClearCart = () => {
-    if (window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) {
+    if (window.confirm(t("cart.clearCartConfirm"))) {
       dispatch(clearCartLocal());
-      toast.success("Đã xóa toàn bộ giỏ hàng");
+      toast.success(t("cart.clearCart"));
     }
   };
 
   const handleCheckout = async () => {
     const qrToken = localStorage.getItem("qrToken");
     if (!qrToken) {
-      toast.warning("Bạn cần quét QR của bàn trước khi đặt món!");
+      toast.warning(t("cart.scanQRFirst"));
       navigate(`/menu/`);
       return;
     }
@@ -86,14 +88,14 @@ const Cart = () => {
       sessionToken,
     );
 
-    if (isValidSession && isValidSession.data .valid === false) {
+    if (isValidSession && isValidSession.data.valid === false) {
       localStorage.removeItem("qrToken");
       localStorage.removeItem("sessionToken");
       localStorage.removeItem("tableSessionId");
       localStorage.removeItem("tableCode");
       localStorage.removeItem("tableNumber");
       localStorage.removeItem("tableSession");
-      toast.warning("Phiên bàn đã hết hạn, vui lòng quét lại QR để đặt món!");
+      toast.warning(t("cart.sessionExpired"));
       navigate(tableCode ? `/menu/${tableCode}` : "/scan");
       return;
     }
@@ -101,7 +103,7 @@ const Cart = () => {
     console.log("Session validation:", isValidSession);
 
     if (!sessionToken) {
-      toast.warning("Phiên bàn đã hết hạn, vui lòng quét lại QR để đặt món!");
+      toast.warning(t("cart.sessionExpired"));
       navigate(tableCode ? `/menu/${tableCode}` : "/scan");
       return;
     }
@@ -123,10 +125,10 @@ const Cart = () => {
           userId,
         }),
       ).unwrap();
-      toast.success("Đã gửi đơn lên hệ thống!");
+      toast.success(t("cart.orderSuccess"));
       navigate("/menu");
     } catch (e) {
-      toast.error(e?.message || "Đặt món thất bại");
+      toast.error(e?.message || t("cart.orderFailed"));
     }
   };
 
@@ -157,18 +159,15 @@ const Cart = () => {
             <ShoppingCart size={64} className="text-gray-600" />
           </div>
           <h2 className="text-3xl font-black mb-3 text-gray-300">
-            Giỏ hàng trống
+            {t("cart.empty")}
           </h2>
-          <p className="text-gray-500 mb-8">
-            Bạn chưa thêm món nào vào giỏ hàng. Hãy khám phá thực đơn của chúng
-            tôi!
-          </p>
+          <p className="text-gray-500 mb-8">{t("cart.emptyDescription")}</p>
           <Link
             to={tableCode ? `/menu/${tableCode}` : "/menu"}
             className="inline-flex items-center gap-2 px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-full transition-all shadow-lg shadow-orange-500/20 hover:scale-105"
           >
             <ShoppingBag size={20} />
-            Xem thực đơn
+            {t("cart.goToMenu")}
           </Link>
         </div>
       </div>
@@ -186,9 +185,11 @@ const Cart = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-black text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
-                GIỎ HÀNG
+                {t("cart.title").toUpperCase()}
               </h1>
-              <p className="text-sm text-gray-400 mt-1">{totalItems} món</p>
+              <p className="text-sm text-gray-400 mt-1">
+                {t("cart.items", { count: totalItems })}
+              </p>
             </div>
 
             <button
@@ -209,7 +210,7 @@ const Cart = () => {
               key={item.lineKey}
               onClick={() => setEditingItem(item)} // ✅ click mở popup sửa
               className="cursor-pointer group bg-neutral-900 hover:bg-neutral-800 rounded-2xl p-4 transition-all duration-300 border border-white/5 hover:border-orange-500/20"
-              title="Nhấn để sửa tuỳ chọn"
+              title={t("cart.clickToEdit")}
             >
               <div className="flex gap-4">
                 <div className="w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-neutral-800">
@@ -310,23 +311,23 @@ const Cart = () => {
         {/* Summary */}
         <div className="mt-8 bg-neutral-900 rounded-2xl p-6 border border-white/5">
           <h3 className="text-lg font-bold mb-4 text-gray-300">
-            Chi tiết đơn hàng
+            {t("cart.orderDetails")}
           </h3>
 
           <div className="flex justify-between text-gray-400">
-            <span>Tổng món ({totalItems})</span>
+            <span>{t("cart.itemsTotal", { count: totalItems })}</span>
             <span className="font-semibold">{formatMoneyVND(subtotal)}</span>
           </div>
 
           <div className="flex justify-between text-gray-400 mt-2">
-            <span>Phí dịch vụ (10%)</span>
+            <span>{t("cart.serviceFee")}</span>
             <span className="font-semibold">{formatMoneyVND(serviceFee)}</span>
           </div>
 
           <div className="h-px bg-white/10 my-3" />
 
           <div className="flex justify-between text-xl font-black">
-            <span className="text-white">Tổng cộng</span>
+            <span className="text-white">{t("cart.total")}</span>
             <span className="text-orange-500">
               {formatMoneyVND(grandTotal)}
             </span>
@@ -336,7 +337,7 @@ const Cart = () => {
             onClick={handleCheckout}
             className="w-full mt-6 flex items-center justify-center gap-3 px-6 py-4 bg-linear-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-black rounded-xl transition-all shadow-lg shadow-orange-500/30 hover:scale-105 active:scale-95"
           >
-            <span>Đặt món ngay</span>
+            <span>{t("cart.placeOrder")}</span>
             <ArrowRight size={20} />
           </button>
 
@@ -344,7 +345,7 @@ const Cart = () => {
             to={tableCode ? `/menu/${tableCode}` : "/menu"}
             className="block text-center mt-4 text-sm text-gray-400 hover:text-orange-500 transition-colors"
           >
-            ← Tiếp tục xem thực đơn
+            {t("cart.continueShopping")}
           </Link>
         </div>
       </div>
@@ -374,7 +375,7 @@ const Cart = () => {
               }),
             );
             setEditingItem(null);
-            toast.success("Đã cập nhật tuỳ chọn món!");
+            toast.success(t("cart.optionsUpdated"));
           }}
         />
       )}

@@ -1,5 +1,6 @@
 import React from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { formatMoneyVND } from "../../../utils/orders";
 
 const badge = (uiStatus) => {
@@ -13,6 +14,7 @@ const badge = (uiStatus) => {
 };
 
 export default function OrderDetailModal({ open, onClose, order, loading }) {
+  const { t, i18n } = useTranslation();
   if (!open) return null;
 
   return (
@@ -22,10 +24,10 @@ export default function OrderDetailModal({ open, onClose, order, loading }) {
         <div className="rounded-2xl border border-white/10 bg-neutral-950 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
             <div>
-              <p className="text-white font-black">Chi tiết đơn</p>
+              <p className="text-white font-black">{t("order.detail.title")}</p>
               {order?.table_number ? (
                 <p className="text-xs text-white/50">
-                  Bàn: {order.table_number}
+                  {t("order.detail.table")}: {order.table_number}
                 </p>
               ) : null}
             </div>
@@ -40,15 +42,17 @@ export default function OrderDetailModal({ open, onClose, order, loading }) {
 
           <div className="p-5">
             {loading ? (
-              <p className="text-white/50">Đang tải...</p>
+              <p className="text-white/50">{t("common.loading")}</p>
             ) : !order ? (
-              <p className="text-white/50">Không có dữ liệu.</p>
+              <p className="text-white/50">{t("order.detail.noData")}</p>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-xs text-white/50">
-                      {new Date(order.created_at).toLocaleString("vi-VN")}
+                      {new Date(order.created_at).toLocaleString(
+                        i18n.language === "vi" ? "vi-VN" : "en-US",
+                      )}
                     </p>
                     <p className="text-xs uppercase font-black text-orange-400">
                       {order.status} • {order.payment_status}
@@ -71,7 +75,7 @@ export default function OrderDetailModal({ open, onClose, order, loading }) {
                         </p>
                         {it.note ? (
                           <p className="text-xs text-white/50 mt-0.5">
-                            Note: {it.note}
+                            {t("order.detail.note")}: {it.note}
                           </p>
                         ) : null}
                       </div>
@@ -95,7 +99,9 @@ export default function OrderDetailModal({ open, onClose, order, loading }) {
 
                 {order.note ? (
                   <div className="mt-4 text-sm text-white/70">
-                    <span className="text-white/50">Ghi chú đơn:</span>{" "}
+                    <span className="text-white/50">
+                      {t("order.detail.orderNote")}:
+                    </span>{" "}
                     {order.note}
                   </div>
                 ) : null}

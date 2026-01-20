@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Mail,
@@ -14,14 +14,18 @@ import Input from "../../../Components/Input";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { signUpSchema } from "./schema/schemaSignUp";
+import { getSignUpSchema } from "./schema/schemaSignUp";
 import { registerThunk, setCredentials } from "../../../store/slices/authSlice";
 import { useDispatch } from "react-redux";
 import { authApi } from "../../../services/authApi";
 import axiosClient from "../../../store/axiosClient";
+import { useTranslation } from "react-i18next";
 
 const SignUp = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const schema = useMemo(() => getSignUpSchema(t), [t]);
 
   const {
     register,
@@ -31,7 +35,7 @@ const SignUp = () => {
     clearErrors,
     formState: { errors, isSubmitting },
   } = useForm({
-    resolver: yupResolver(signUpSchema),
+    resolver: yupResolver(schema),
     defaultValues: {
       fullName: "",
       email: "",
@@ -61,11 +65,11 @@ const SignUp = () => {
         if (res?.exists) {
           setError("email", {
             type: "manual",
-            message: "Email này đã được sử dụng.",
+            message: t("auth.emailExists"),
           });
         } else {
           // chỉ clear nếu lỗi hiện tại là do exists
-          if (errors.email?.message === "Email này đã được sử dụng.") {
+          if (errors.email?.message === t("auth.emailExists")) {
             clearErrors("email");
           }
         }
@@ -99,7 +103,7 @@ const SignUp = () => {
           });
 
           dispatch(
-            setCredentials({ accessToken: res.accessToken, user: res.user })
+            setCredentials({ accessToken: res.accessToken, user: res.user }),
           );
 
           const role = res?.user?.role;
@@ -144,8 +148,9 @@ const SignUp = () => {
 
         <div className="max-w-md space-y-8">
           <h2 className="text-4xl font-black text-white leading-tight">
-            Trở thành <span className="text-orange-500">Hội Viên</span> <br />
-            Nhận ngay ưu đãi đặc quyền.
+            {t("auth.becomeMember")} <span className="text-orange-500"></span>{" "}
+            <br />
+            {t("auth.getMemberBenefits")}
           </h2>
 
           <div className="space-y-5 text-white/80">
@@ -155,11 +160,9 @@ const SignUp = () => {
               </div>
               <div>
                 <p className="font-bold text-white italic">
-                  Giảm 10% cho lần đặt bàn đầu tiên
+                  {t("auth.firstOrderDiscount")}
                 </p>
-                <p className="text-xs text-white/50">
-                  Áp dụng cho toàn bộ menu tại nhà hàng.
-                </p>
+                <p className="text-xs text-white/50">{t("auth.applyToMenu")}</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -167,9 +170,11 @@ const SignUp = () => {
                 <Utensils size={20} />
               </div>
               <div>
-                <p className="font-bold text-white italic">Tích điểm đổi quà</p>
+                <p className="font-bold text-white italic">
+                  {t("auth.earnPoints")}
+                </p>
                 <p className="text-xs text-white/50">
-                  Mỗi bữa ăn đều mang lại giá trị tích lũy lâu dài.
+                  {t("auth.pointsBenefit")}
                 </p>
               </div>
             </div>
@@ -191,22 +196,19 @@ const SignUp = () => {
 
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-black text-white leading-tight uppercase tracking-tighter">
-              Tạo Tài{" "}
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
-                Khoản
-              </span>
+              {t("auth.createAccount")}
             </h2>
             <p className="text-gray-500 text-xs mt-2 uppercase tracking-widest font-light">
-              Bắt đầu hành trình ẩm thực của bạn
+              {t("auth.startJourney")}
             </p>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             {/* Full Name */}
             <Input
-              label="Full Name"
+              label={t("auth.fullName")}
               type="text"
-              placeholder="Nguyễn Văn A"
+              placeholder="John Doe"
               icon={User}
               error={errors.fullName?.message}
               {...register("fullName")}
@@ -214,7 +216,7 @@ const SignUp = () => {
 
             {/* Email */}
             <Input
-              label="Email Address"
+              label={t("auth.email")}
               type="email"
               placeholder="example@lumiere.com"
               icon={Mail}
@@ -227,7 +229,7 @@ const SignUp = () => {
             {/* Password + Confirm */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Password"
+                label={t("auth.password")}
                 type="password"
                 placeholder="••••••••"
                 icon={Lock}
@@ -235,7 +237,7 @@ const SignUp = () => {
                 {...register("password")}
               />
               <Input
-                label="Confirm"
+                label={t("auth.confirmPassword")}
                 type="password"
                 placeholder="••••••••"
                 icon={ShieldCheck}
@@ -256,11 +258,11 @@ const SignUp = () => {
                 htmlFor="terms"
                 className="text-[11px] text-gray-400 leading-snug"
               >
-                Tôi đồng ý với{" "}
+                {t("auth.agreeTerms")}{" "}
                 <span className="text-white underline cursor-pointer">
-                  Điều khoản & Chính sách
+                  {t("auth.termsAndPolicy")}
                 </span>{" "}
-                của nhà hàng.
+                {t("auth.ofRestaurant")}
               </label>
             </div>
             {errors.terms?.message ? (
@@ -279,7 +281,7 @@ const SignUp = () => {
                 isSubmitting ? "opacity-70 cursor-not-allowed" : "",
               ].join(" ")}
             >
-              {isSubmitting ? "Đang tạo..." : "Đăng Ký Thành Viên"}{" "}
+              {isSubmitting ? t("auth.creating") : t("auth.registerMember")}{" "}
               <ArrowRight size={18} />
             </button>
 
@@ -290,7 +292,7 @@ const SignUp = () => {
               </div>
               <div className="relative flex justify-center text-[10px] uppercase text-gray-500 tracking-[0.2em]">
                 <span className="bg-[#080808] px-2 lg:bg-transparent">
-                  Hoặc nhanh hơn với
+                  {t("auth.orFasterWith")}
                 </span>
               </div>
             </div>
@@ -307,12 +309,12 @@ const SignUp = () => {
           </form>
 
           <p className="text-center text-gray-500 text-xs mt-8 uppercase tracking-wider">
-            Đã có tài khoản?
+            {t("auth.haveAccount")}
             <Link
               to="/signin"
               className="text-white ml-2 font-black hover:text-orange-400 transition-colors border-b border-orange-500/30"
             >
-              Đăng nhập
+              {t("auth.signIn")}
             </Link>
           </p>
         </div>

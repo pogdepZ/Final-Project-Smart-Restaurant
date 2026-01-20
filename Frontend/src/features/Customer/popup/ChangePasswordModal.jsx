@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { X, Eye, EyeOff, Lock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ChangePasswordModal({
   open,
@@ -7,6 +8,7 @@ export default function ChangePasswordModal({
   onSubmit, // async ({ currentPassword, newPassword }) => void
   isSubmitting = false,
 }) {
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNew, setConfirmNew] = useState("");
@@ -55,9 +57,11 @@ export default function ChangePasswordModal({
       <div className="relative mx-auto mt-20 w-[92%] max-w-lg rounded-3xl border border-white/10 bg-neutral-950/95 backdrop-blur-xl shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <div>
-            <h3 className="text-white font-black text-lg">Đổi mật khẩu</h3>
+            <h3 className="text-white font-black text-lg">
+              {t("profile.changePasswordTitle")}
+            </h3>
             <p className="text-white/50 text-xs mt-1">
-              Cần xác thực mật khẩu cũ
+              {t("profile.changePasswordDesc")}
             </p>
           </div>
 
@@ -74,7 +78,7 @@ export default function ChangePasswordModal({
           {/* Current password */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-              Mật khẩu cũ
+              {t("profile.currentPassword")}
             </label>
 
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-white/0">
@@ -99,7 +103,7 @@ export default function ChangePasswordModal({
           {/* New password */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-              Mật khẩu mới
+              {t("profile.newPassword")}
             </label>
 
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-white/0">
@@ -108,7 +112,7 @@ export default function ChangePasswordModal({
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 type={showNew ? "text" : "password"}
-                placeholder="Tối thiểu 8 ký tự"
+                placeholder={t("profile.passwordMinLength")}
                 className="w-full bg-transparent outline-none text-white placeholder:text-gray-500 text-sm"
               />
               <button
@@ -121,17 +125,23 @@ export default function ChangePasswordModal({
             </div>
 
             {newPassword && newPassword.length < 6 ? (
-              <p className="text-xs text-red-300">Mật khẩu mới tối thiểu 8 ký tự.</p>
+              <p className="text-xs text-red-300">
+                {t("profile.passwordMinLength")}
+              </p>
             ) : null}
-            {currentPassword && newPassword && currentPassword === newPassword ? (
-              <p className="text-xs text-red-300">Mật khẩu mới phải khác mật khẩu cũ.</p>
+            {currentPassword &&
+            newPassword &&
+            currentPassword === newPassword ? (
+              <p className="text-xs text-red-300">
+                {t("profile.passwordMismatch")}
+              </p>
             ) : null}
           </div>
 
           {/* Confirm new */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-              Nhập lại mật khẩu mới
+              {t("profile.confirmPassword")}
             </label>
 
             <input
@@ -143,7 +153,9 @@ export default function ChangePasswordModal({
             />
 
             {confirmNew && newPassword !== confirmNew ? (
-              <p className="text-xs text-red-300">Mật khẩu nhập lại không khớp.</p>
+              <p className="text-xs text-red-300">
+                {t("profile.passwordMismatch")}
+              </p>
             ) : null}
           </div>
         </div>
@@ -154,7 +166,7 @@ export default function ChangePasswordModal({
             onClick={handleClose}
             className="w-1/3 py-3 rounded-xl border border-white/10 text-white/80 hover:bg-white/5 font-bold"
           >
-            Hủy
+            {t("profile.cancel")}
           </button>
 
           <button
@@ -164,10 +176,12 @@ export default function ChangePasswordModal({
             className={[
               "w-2/3 py-3 rounded-xl font-black flex items-center justify-center gap-2",
               "bg-linear-to-r from-orange-500 to-red-600 text-white",
-              !canSave || isSubmitting ? "opacity-60 cursor-not-allowed" : "hover:opacity-95",
+              !canSave || isSubmitting
+                ? "opacity-60 cursor-not-allowed"
+                : "hover:opacity-95",
             ].join(" ")}
           >
-            {isSubmitting ? "Đang đổi..." : "Đổi mật khẩu"}
+            {isSubmitting ? t("profile.changing") : t("profile.changePassword")}
           </button>
         </div>
       </div>

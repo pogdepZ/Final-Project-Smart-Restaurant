@@ -1,14 +1,16 @@
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function PaymentSuccess() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get("session_id");
 
   useEffect(() => {
-    // Tự động redirect về trang chủ sau 5 giây
+    // Auto redirect to home after 5 seconds
     const timer = setTimeout(() => {
       navigate("/");
     }, 5000);
@@ -26,16 +28,16 @@ export default function PaymentSuccess() {
         </div>
 
         <h1 className="text-3xl font-black text-white mb-2">
-          Thanh toán thành công!
+          {t("payment.success")}
         </h1>
 
-        <p className="text-gray-400 mb-6">
-          Cảm ơn bạn đã thanh toán. Hóa đơn của bạn đã được xác nhận.
-        </p>
+        <p className="text-gray-400 mb-6">{t("payment.successMessage")}</p>
 
         {sessionId && (
           <div className="bg-white/5 rounded-xl p-4 mb-6">
-            <p className="text-xs text-gray-500 mb-1">Mã giao dịch</p>
+            <p className="text-xs text-gray-500 mb-1">
+              {t("payment.transactionId")}
+            </p>
             <p className="text-sm text-gray-300 font-mono break-all">
               {sessionId}
             </p>
@@ -44,14 +46,14 @@ export default function PaymentSuccess() {
 
         <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
           <Loader2 size={16} className="animate-spin" />
-          <span>Tự động quay về trang chủ sau 5 giây...</span>
+          <span>{t("payment.autoRedirect")}</span>
         </div>
 
         <button
           onClick={() => navigate("/")}
           className="mt-6 w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all"
         >
-          Quay về ngay
+          {t("payment.backNow")}
         </button>
       </div>
     </div>

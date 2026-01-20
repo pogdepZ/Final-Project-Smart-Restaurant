@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Mail,
@@ -12,20 +12,25 @@ import Input from "../../../Components/Input";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { signInSchema } from "./schema/schemaSignIn";
+import { getSignInSchema } from "./schema/schemaSignIn";
 import { useDispatch } from "react-redux";
 import { loginThunk, setCredentials } from "../../../store/slices/authSlice";
 import axiosClient from "../../../store/axiosClient";
+import { useTranslation } from "react-i18next";
 
 const SignIn = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const schema = useMemo(() => getSignInSchema(t), [t]);
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm({
-    resolver: yupResolver(signInSchema),
+    resolver: yupResolver(schema),
     defaultValues: {
       email: "",
       password: "",
@@ -36,7 +41,7 @@ const SignIn = () => {
     try {
       const result = await dispatch(loginThunk(values)).unwrap();
 
-      toast.success("Đăng nhập thành công")
+      toast.success(t("auth.loginSuccess"));
 
       const role = result?.user?.role;
 
@@ -50,10 +55,11 @@ const SignIn = () => {
         navigate("/");
       }
     } catch (error) {
-      const message = error ||
+      const message =
+        error ||
         error?.message ||
         error?.response?.data?.message ||
-        "Đăng nhập thất bại. Vui lòng thử lại!";
+        t("auth.loginFailed");
 
       toast.error(`${message}`);
     }
@@ -63,7 +69,7 @@ const SignIn = () => {
     if (!window.google || !googleBtnRef.current) return;
 
     window.google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID, 
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
       callback: async (response) => {
         // response.credential = Google ID token
         const res = await axiosClient.post("/auth/google", {
@@ -72,7 +78,7 @@ const SignIn = () => {
 
         // lưu token/user giống loginThunk
         dispatch(
-          setCredentials({ accessToken: res.accessToken, user: res.user })
+          setCredentials({ accessToken: res.accessToken, user: res.user }),
         );
 
         // điều hướng theo role
@@ -118,8 +124,10 @@ const SignIn = () => {
 
         <div className="relative z-10 max-w-md space-y-8">
           <h2 className="text-4xl font-black text-white font-sans leading-tight">
-            Nơi hương vị <span className="text-orange-500">Châu Âu</span> <br />
-            gặp gỡ tâm hồn Việt.
+            {t("auth.heroTitle1")}{" "}
+            <span className="text-orange-500">{t("auth.heroTitle2")}</span>{" "}
+            <br />
+            {t("auth.heroTitle3")}
           </h2>
 
           <div className="space-y-4">
@@ -127,23 +135,19 @@ const SignIn = () => {
               <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400">
                 <Star size={20} />
               </div>
-              <p className="text-sm">
-                Trải nghiệm Fine Dining 5 sao với đầu bếp quốc tế.
-              </p>
+              <p className="text-sm">{t("auth.feature1")}</p>
             </div>
             <div className="flex items-center gap-4 text-white/80">
               <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400">
                 <UtensilsCrossed size={20} />
               </div>
-              <p className="text-sm">
-                Thực đơn đa dạng từ Steak đến Pasta thủ công.
-              </p>
+              <p className="text-sm">{t("auth.feature2")}</p>
             </div>
             <div className="flex items-center gap-4 text-white/80">
               <div className="p-2 bg-orange-500/20 rounded-lg text-orange-400">
                 <Clock size={20} />
               </div>
-              <p className="text-sm">Mở cửa hàng ngày: 09:00 AM - 10:00 PM.</p>
+              <p className="text-sm">{t("auth.openingHours")}</p>
             </div>
           </div>
         </div>
@@ -158,9 +162,9 @@ const SignIn = () => {
         <div className="bg-white/3 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-white leading-tight">
-              Chào mừng{" "}
+              {t("auth.welcome")}{" "}
               <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
-                đến với
+                {t("auth.welcomeTo")}
               </span>
             </h2>
             <p className="text-gray-400 text-xl mt-2 font-light tracking-wide italic font-display">
@@ -170,7 +174,7 @@ const SignIn = () => {
 
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
             <Input
-              label="Email Address"
+              label={t("auth.email")}
               type="email"
               placeholder="waiter@lumiere.com"
               icon={Mail}
@@ -179,7 +183,7 @@ const SignIn = () => {
             />
 
             <Input
-              label="Password"
+              label={t("auth.password")}
               type="password"
               placeholder="••••••••"
               icon={Lock}
@@ -192,7 +196,7 @@ const SignIn = () => {
                 to="/forgot"
                 className="text-xs font-bold text-orange-400 hover:text-orange-300 uppercase tracking-tighter"
               >
-                Quên mật khẩu?
+                {t("auth.forgotPassword")}
               </Link>
             </div>
 
@@ -205,7 +209,7 @@ const SignIn = () => {
                 isSubmitting ? "opacity-70 cursor-not-allowed" : "",
               ].join(" ")}
             >
-              {isSubmitting ? "Đang đăng nhập..." : "Đăng Nhập"}
+              {isSubmitting ? t("auth.loggingIn") : t("auth.login")}
               <ArrowRight size={18} />
             </button>
 
@@ -216,7 +220,7 @@ const SignIn = () => {
               </div>
               <div className="relative flex justify-center text-[10px] uppercase">
                 <span className="px-3 text-gray-400 tracking-[0.3em]">
-                  Hoặc đăng nhập với
+                  {t("auth.orLoginWith")}
                 </span>
               </div>
             </div>
@@ -228,21 +232,22 @@ const SignIn = () => {
           </form>
 
           <p className="text-center text-gray-500 text-[13px] mt-8">
-            Chưa có tài khoản?
+            {t("auth.noAccount")}
             <Link
               to="/signup"
               className="text-white ml-2 font-bold hover:text-orange-400 transition-colors"
             >
-              Đăng ký ngay
+              {t("auth.registerNow")}
             </Link>
           </p>
 
-          {/* Tip dev để test nhanh */}
+          {/* Dev tip for quick testing */}
           <p className="text-center text-gray-600 text-[11px] mt-4">
-            Tip dev: dùng email chứa{" "}
-            <span className="text-gray-300 font-bold">waiter</span> hoặc{" "}
-            <span className="text-gray-300 font-bold">kitchen</span> để auto vào
-            trang tương ứng.
+            {t("auth.devTip")}{" "}
+            <span className="text-gray-300 font-bold">waiter</span>{" "}
+            {t("common.or")}{" "}
+            <span className="text-gray-300 font-bold">kitchen</span>{" "}
+            {t("auth.devTipEnd")}
           </p>
         </div>
       </div>

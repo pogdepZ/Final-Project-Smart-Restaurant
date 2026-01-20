@@ -1,5 +1,6 @@
 import React, { useRef, useLayoutEffect } from "react";
 import gsap from "gsap";
+import { useTranslation } from "react-i18next";
 
 // --- Hàm trợ giúp: Tách chuỗi thành từng ký tự bọc trong thẻ span ---
 const splitText = (text) => {
@@ -15,6 +16,7 @@ const splitText = (text) => {
 };
 
 const HeroTitle = () => {
+  const { t } = useTranslation();
   const titleRef = useRef(null);
   // Ref này để đảm bảo animation chỉ chạy 1 lần khi mount
   const animationRan = useRef(false);
@@ -52,7 +54,7 @@ const HeroTitle = () => {
             from: "random", // Thứ tự về đích ngẫu nhiên
           },
           delay: 0.5, // Chờ 0.5s mới bắt đầu chạy khi vào trang
-        }
+        },
       );
     }, titleRef); // Scope animation vào trong titleRef để an toàn
 
@@ -68,24 +70,22 @@ const HeroTitle = () => {
       ref={titleRef}
       className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight drop-shadow-2xl overflow-hidden p-2"
     >
-      {/* Dòng 1: Thưởng thức */}
-      <div className="block">{splitText("Thưởng thức ")}</div>
+      {/* Dòng 1 */}
+      <div className="block">{splitText(t("hero.enjoy") + " ")}</div>
 
-      {/* Dòng 2: Tinh Hoa */}
-      {/* SỬA Ở ĐÂY: Bỏ text-transparent, thay bằng màu cụ thể (text-orange-500) */}
+      {/* Dòng 2 */}
       <span className="text-orange-500 font-display">
-        {/* Map lại để thêm class font-display nếu cần */}
-        {splitText("Tinh Hoa").map((span, idx) =>
+        {splitText(t("hero.essence")).map((span, idx) =>
           React.cloneElement(span, {
             key: idx,
             className: `${span.props.className} font-display`,
-          })
+          }),
         )}
       </span>
       <br />
 
-      {/* Dòng 3: Ẩm Thực */}
-      <div className="block mt-2">{splitText("Ẩm Thực")}</div>
+      {/* Dòng 3 */}
+      <div className="block mt-2">{splitText(t("hero.cuisine"))}</div>
     </h1>
   );
 };
