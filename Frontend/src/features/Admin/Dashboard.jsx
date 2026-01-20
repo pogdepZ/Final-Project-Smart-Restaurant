@@ -44,7 +44,7 @@ function buildRange(period) {
     end.setDate(end.getDate() + 1);
     end.setHours(0, 0, 0, 0);
   } else if (period === "week") {
-    const d = (start.getDay() + 6) % 7; // 0=Mon
+    const d = (start.getDay() + 6) % 7;
     start.setDate(start.getDate() - d);
     start.setHours(0, 0, 0, 0);
     end.setDate(start.getDate() + 7);
@@ -67,7 +67,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!error) return;
 
-    // lấy message đẹp nhất có thể
     const msg =
       error?.response?.data?.message || error
       error?.message ||
@@ -100,23 +99,20 @@ export default function AdminDashboard() {
     return null;
   };
 
-  // ✅ period riêng
   const [revenuePeriod, setRevenuePeriod] = useState("month");
   const [ordersDailyPeriod, setOrdersDailyPeriod] = useState("month");
   const [peakHoursPeriod, setPeakHoursPeriod] = useState("week");
   const [popularItemsPeriod, setPopularItemsPeriod] = useState("week");
 
-  // ✅ revenue state riêng (để tự update)
   const [revenueValue, setRevenueValue] = useState(0);
   const [revenueLoading, setRevenueLoading] = useState(false);
 
-  // charts state
   const [ordersDaily, setOrdersDaily] = useState([]);
-  const [ordersDailyLoading, setOrdersDailyLoading] = useState(false); // line: orders/day in month
+  const [ordersDailyLoading, setOrdersDailyLoading] = useState(false);
   const [peakHours, setPeakHours] = useState([]);
-  const [peakLoading, setPeakLoading] = useState(false); // bar: orders/hour
+  const [peakLoading, setPeakLoading] = useState(false);
   const [popularItems, setPopularItems] = useState([]);
-  const [popularLoading, setPopularLoading] = useState(false); // pie: qty by item
+  const [popularLoading, setPopularLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,7 +122,6 @@ export default function AdminDashboard() {
         setRevenueLoading(true);
         const r = buildRange(revenuePeriod);
 
-        // nếu backend bạn muốn from/to thì truyền from/to
         const res = await dashboardApi.getRevenue({
           period: revenuePeriod,
           from: r.from,
@@ -158,7 +153,6 @@ export default function AdminDashboard() {
         const res = await dashboardApi.getOrdersDaily({
           from: r.from,
           to: r.to,
-          // hoặc month: r.month nếu backend bạn đang dùng month
         });
 
         if (cancelled) return;
@@ -245,9 +239,6 @@ export default function AdminDashboard() {
               Lumière Bistro
             </span>
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Thống kê nhanh + biểu đồ phân tích.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -349,7 +340,7 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* ✅ Analytics Charts */}
+      {/* Analytics Charts */}
       <div className="rounded-2xl bg-white/5 border border-white/10 p-3 sm:p-4 lg:col-span-3 mt-6">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -407,7 +398,6 @@ export default function AdminDashboard() {
                     }}
                   />
 
-                  {/* vùng bóng dưới line */}
                   <Line
                     type="monotone"
                     dataKey="orders"
@@ -528,7 +518,6 @@ export default function AdminDashboard() {
                   data={peakHours}
                   barSize={16}
                 >
-                  {/* Gradient */}
                   <defs>
                     <linearGradient id="barGlow" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#fb923c" stopOpacity={0.9} />
@@ -536,14 +525,12 @@ export default function AdminDashboard() {
                     </linearGradient>
                   </defs>
 
-                  {/* Grid */}
                   <CartesianGrid
                     stroke="rgba(255,255,255,0.06)"
                     strokeDasharray="3 3"
                     vertical={false}
                   />
 
-                  {/* X */}
                   <XAxis
                     dataKey="hour"
                     tickFormatter={(h) => `${h}h`}
@@ -553,7 +540,6 @@ export default function AdminDashboard() {
                     tickLine={false}
                   />
 
-                  {/* Y */}
                   <YAxis
                     width={26}
                     stroke="rgba(255,255,255,0.4)"
@@ -562,14 +548,12 @@ export default function AdminDashboard() {
                     tickLine={false}
                   />
 
-                  {/* Tooltip */}
                   <Tooltip
                     content={<DarkTooltip />}
                     cursor={{
                       fill: "rgba(249, 115, 22, 0.2)"
                     }} />
 
-                  {/* Bars */}
                   <Bar
                     dataKey="orders"
                     fill="url(#barGlow)"

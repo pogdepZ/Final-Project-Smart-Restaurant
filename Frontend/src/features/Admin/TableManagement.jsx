@@ -24,7 +24,6 @@ import {
 
 import TableDetailPanel from "./components/TableDetailPanel";
 
-/** Popup wrapper cho TableDetailPanel (slide từ phải) */
 function TableDetailPopup({ open, table, onClose, onRefresh }) {
   useEffect(() => {
     if (!open) return;
@@ -59,20 +58,17 @@ function TableDetailPopup({ open, table, onClose, onRefresh }) {
 const TableManagement = () => {
   const socket = useSocket();
 
-  // --- STATE ---
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTable, setSelectedTable] = useState(null);
   const [errors, setErrors] = useState({});
 
-  // Filter & Sort
   const [filters, setFilters] = useState({
     status: "",
     location: "",
     sort: "name_asc",
   });
 
-  // Modal Create/Edit
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -108,11 +104,9 @@ const TableManagement = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // --- SOCKET LISTENER ---
   useEffect(() => {
     if (!socket) return;
 
-    // Helper: Cập nhật bàn trong state (không refetch)
     const updateTableInState = (table) => {
       if (!table?.id) return;
       setTables((prev) => {
@@ -120,12 +114,10 @@ const TableManagement = () => {
         if (exists) {
           return prev.map((t) => (t.id === table.id ? { ...t, ...table } : t));
         }
-        // Nếu bàn mới, thêm vào cuối
         return [...prev, table];
       });
     };
 
-    // Lắng nghe cập nhật bàn thông thường
     socket.on("table_update", (payload) => {
       console.log("TableManagement: table_update", payload);
       const { type, table } = payload || {};
@@ -135,20 +127,17 @@ const TableManagement = () => {
         setTables((prev) => prev.map((t) => (t.id === table.id ? table : t)));
         toast.info(`Bàn ${table.table_number} vừa cập nhật!`);
 
-        // nếu đang mở popup đúng table đó => update luôn selectedTable
         setSelectedTable((cur) => (cur?.id === table.id ? table : cur));
       } else if (type === "create") {
         setTables((prev) => [...prev, table]);
       }
     });
 
-    // Lắng nghe khi có khách quét QR / kết thúc session
     socket.on("table_session_update", (payload) => {
       console.log("TableManagement: table_session_update", payload);
       const { type, table } = payload || {};
       if (!table?.id) return;
 
-      // Cập nhật bàn trong danh sách (không refetch)
       updateTableInState(table);
 
       if (type === "session_started") {
@@ -162,7 +151,6 @@ const TableManagement = () => {
       }
     });
 
-    // Lắng nghe cập nhật từ admin_room (thanh toán, session changes)
     socket.on("admin_table_update", (payload) => {
       console.log("TableManagement: admin_table_update", payload);
       const { type, table } = payload || {};
@@ -171,7 +159,6 @@ const TableManagement = () => {
       updateTableInState(table);
 
       if (type === "table_session") {
-        // Toast đã được xử lý ở table_session_update
       }
     });
 
@@ -182,7 +169,6 @@ const TableManagement = () => {
     };
   }, [socket]);
 
-  // --- FETCH TABLES ---
   const fetchTables = async () => {
     setLoading(true);
     try {
@@ -198,10 +184,8 @@ const TableManagement = () => {
 
   useEffect(() => {
     fetchTables();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  // --- BULK ACTIONS ---
   const handleDownloadZip = async () => {
     const zip = new JSZip();
     const folder = zip.folder("SmartRestaurant_QR_Codes");
@@ -403,7 +387,6 @@ const TableManagement = () => {
     }
   };
 
-  // ===== UI HELPERS =====
   const totalActive = useMemo(
     () => (tables || []).filter((t) => t.status === "active").length,
     [tables],
@@ -414,7 +397,6 @@ const TableManagement = () => {
     [tables],
   );
 
-  // Kiểm tra bàn có đang có khách không
   const isTableOccupied = (table) => !!table.current_session_id;
 
   return (
@@ -603,16 +585,14 @@ const TableManagement = () => {
                   key={table.id}
                   onClick={() => setSelectedTable(table)}
                   className={`group relative rounded-2xl border p-5 cursor-pointer transition
-                ${
-                  hasCustomer
-                    ? "bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/15 hover:border-blue-500/40"
-                    : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-orange-500/20"
-                }
-                ${
-                  selectedTable?.id === table.id
-                    ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
-                    : ""
-                }
+                ${hasCustomer
+                      ? "bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/15 hover:border-blue-500/40"
+                      : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-orange-500/20"
+                    }
+                ${selectedTable?.id === table.id
+                      ? "border-orange-500/40 ring-1 ring-orange-500/30 bg-white/10"
+                      : ""
+                    }
                 ${table.status === "inactive" ? "opacity-60 grayscale" : ""}
               `}
                 >
@@ -631,13 +611,12 @@ const TableManagement = () => {
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg
-                      ${
-                        hasCustomer
-                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                          : table.status === "active"
-                            ? "bg-orange-500/10 text-orange-300 border border-orange-500/20"
-                            : "bg-white/5 text-gray-400 border border-white/10"
-                      }`}
+                      ${hasCustomer
+                            ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                            : table.status === "active"
+                              ? "bg-orange-500/10 text-orange-300 border border-orange-500/20"
+                              : "bg-white/5 text-gray-400 border border-white/10"
+                          }`}
                       >
                         {String(table.table_number || "").replace(/\D/g, "") ||
                           "—"}
@@ -648,13 +627,12 @@ const TableManagement = () => {
                           {table.table_number}
                         </div>
                         <div
-                          className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${
-                            hasCustomer
+                          className={`text-[10px] uppercase tracking-wider font-bold mt-0.5 ${hasCustomer
                               ? "text-blue-400"
                               : table.status === "active"
                                 ? "text-green-400"
                                 : "text-red-400"
-                          }`}
+                            }`}
                         >
                           {hasCustomer
                             ? "Đang phục vụ"
@@ -706,11 +684,10 @@ const TableManagement = () => {
                         handleToggleStatus(table);
                       }}
                       className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border transition
-                    ${
-                      table.status === "active"
-                        ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
-                        : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
-                    }`}
+                    ${table.status === "active"
+                          ? "bg-red-500/10 border-red-500/20 text-red-200 hover:bg-red-500/20"
+                          : "bg-green-500/10 border-green-500/20 text-green-200 hover:bg-green-500/20"
+                        }`}
                       title={table.status === "active" ? "Tắt bàn" : "Bật bàn"}
                       disabled={hasCustomer}
                     >
@@ -764,10 +741,9 @@ const TableManagement = () => {
                     type="text"
                     placeholder="VD: T-01"
                     className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
-                      ${
-                        errors.table_number
-                          ? "border-red-500/60 focus:border-red-500"
-                          : "border-white/10 focus:border-orange-500/40"
+                      ${errors.table_number
+                        ? "border-red-500/60 focus:border-red-500"
+                        : "border-white/10 focus:border-orange-500/40"
                       }`}
                     value={formData.table_number}
                     onChange={(e) => {
@@ -790,10 +766,9 @@ const TableManagement = () => {
                       name="capacity"
                       type="number"
                       className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
-                        ${
-                          errors.capacity
-                            ? "border-red-500/60 focus:border-red-500"
-                            : "border-white/10 focus:border-orange-500/40"
+                        ${errors.capacity
+                          ? "border-red-500/60 focus:border-red-500"
+                          : "border-white/10 focus:border-orange-500/40"
                         }`}
                       value={formData.capacity}
                       onChange={(e) => {
@@ -815,10 +790,9 @@ const TableManagement = () => {
                       name="location"
                       className={`mt-1 w-full px-4 py-2.5 rounded-xl bg-neutral-950/60 text-white outline-none border transition
                         [&>option]:bg-neutral-950 [&>option]:text-white
-                        ${
-                          errors.location
-                            ? "border-red-500/60 focus:border-red-500"
-                            : "border-white/10 focus:border-orange-500/40"
+                        ${errors.location
+                          ? "border-red-500/60 focus:border-red-500"
+                          : "border-white/10 focus:border-orange-500/40"
                         }`}
                       value={formData.location}
                       onChange={(e) => {
@@ -874,7 +848,6 @@ const TableManagement = () => {
         </div>
       )}
 
-      {/* ✅ POPUP DETAIL PANEL */}
       <TableDetailPopup
         open={!!selectedTable}
         table={selectedTable}

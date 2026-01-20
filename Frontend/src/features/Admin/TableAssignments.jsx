@@ -14,14 +14,6 @@ import {
   MapPin,
 } from "lucide-react";
 
-/**
- * API expectation:
- * - GET  /admin/waiters                         -> { items: [{id,name,email}] } OR array
- * - GET  /admin/tables?status=active            -> array OR {items:[]}
- * - GET  /admin/table-assignments/:waiterId     -> { tableIds: [uuid...] }
- * - PUT  /admin/table-assignments/:waiterId     -> { message, tableIds }
- */
-
 function SkeletonRow() {
   return (
     <tr className="border-b border-white/5">
@@ -64,10 +56,9 @@ export default function TableAssignments() {
 
   const [selectedWaiterId, setSelectedWaiterId] = useState("");
 
-  // Filters
   const [q, setQ] = useState("");
-  const [locationFilter, setLocationFilter] = useState("ALL"); // ALL | Indoor | Outdoor | Patio | VIP Room
-  const [onlyAssigned, setOnlyAssigned] = useState("ALL"); // ALL | YES | NO
+  const [locationFilter, setLocationFilter] = useState("ALL");
+  const [onlyAssigned, setOnlyAssigned] = useState("ALL");
 
   // Assignment state
   const [assignedTableIds, setAssignedTableIds] = useState(new Set());
@@ -84,7 +75,6 @@ export default function TableAssignments() {
   );
 
   const dirty = useMemo(() => {
-    // compare Set sizes + values
     if (assignedTableIds.size !== initialAssignedIds.size) return true;
     for (const id of assignedTableIds) if (!initialAssignedIds.has(id)) return true;
     return false;

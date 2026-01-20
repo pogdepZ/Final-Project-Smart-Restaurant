@@ -24,8 +24,8 @@ export default function CreateMenuItemModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [modifierGroups, setModifierGroups] = useState([]); // list group
-  const [selectedGroupIds, setSelectedGroupIds] = useState([]); // mảng uuid
+  const [modifierGroups, setModifierGroups] = useState([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState(0);
   const [status, setStatus] = useState("available");
@@ -59,12 +59,10 @@ export default function CreateMenuItemModal({
     (async () => {
       try {
         setLoadingGroups(true);
-        // API này bạn tạo ở adminMenuApi / adminModifierApi
         const res = await adminMenuApi.getModifierGroups({ status: "active" });
         setModifierGroups(res?.groups || res?.data?.groups || []);
       } catch (e) {
         console.error(e);
-        // không chặn tạo món, nhưng bạn có thể setError nếu muốn
       } finally {
         setLoadingGroups(false);
       }
@@ -137,7 +135,6 @@ export default function CreateMenuItemModal({
       setLoading(true);
       setError("");
 
-      // ✅ 1) tạo món trước để có ID
       const created = await adminMenuApi.createMenuItem({
         categoryId,
         name: trimmed,
@@ -149,12 +146,10 @@ export default function CreateMenuItemModal({
         isChefRecommended,
       });
 
-      // ✅ 2) lấy ID (tuỳ axios interceptor)
       const newId = created?.id || created?.data?.id;
       if (!newId)
         throw new Error("Tạo món thành công nhưng không nhận được ID.");
 
-      // ✅ 3) gắn modifier groups
       if (selectedGroupIds?.length) {
         await adminMenuApi.setMenuItemModifierGroups(newId, selectedGroupIds);
       }

@@ -17,7 +17,6 @@ import AdminMenuItemDetailModal from "./components/AdminMenuItemDetailModal";
 import PaginationBar from "../../Components/PaginationBar";
 import ToggleSwitch from "../../Components/ToggleSwitch";
 import { useToggleChefRecommended } from "../../hooks/useToggleChefRecommended";
-import CreateCategoryModal from "./components/CreateCategoryModal";
 import CreateMenuItemModal from "./components/CreateMenuItemModal";
 import EditMenuItemModal from "./components/EditMenuItemModal";
 import ConfirmModal from "../../Components/ConfirmModal";
@@ -55,7 +54,6 @@ function MenuItemCard({
       className="p-4 transition cursor-pointer"
       onClick={onOpenDetail}
     >
-      {/* top */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-white font-bold truncate">{it.name}</div>
@@ -70,7 +68,6 @@ function MenuItemCard({
         </div>
       </div>
 
-      {/* middle */}
       <div className="mt-3 flex flex-wrap items-center gap-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           <ToggleSwitch
@@ -95,7 +92,6 @@ function MenuItemCard({
         </div>
       </div>
 
-      {/* actions */}
       <div className="mt-3 flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
@@ -165,26 +161,22 @@ function SkeletonRow() {
 }
 
 export default function MenuManagement() {
-  // filters (server-side)
   const [q, setQ] = useState("");
   const [categoryId, setCategoryId] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [chefOnly, setChefOnly] = useState(false);
   const [sort, setSort] = useState("NEWEST");
 
-  const [openCreateCategory, setOpenCreateCategory] = useState(false);
   const [openCreateItem, setOpenCreateItem] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [detailItem, setDetailItem] = useState(null);     // xem chi tiết
-  const [deleteItem, setDeleteItem] = useState(null);     // confirm xoá
+  const [detailItem, setDetailItem] = useState(null);
+  const [deleteItem, setDeleteItem] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-
-  // paging
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
@@ -192,28 +184,19 @@ export default function MenuManagement() {
 
   const toggleStatus = async (it, nextChecked) => {
     const id = it.id;
-    const prevStatus = it.status; // "available" | "unavailable" | "sold_out"
+    const prevStatus = it.status;
     const nextStatus = nextChecked ? "available" : "unavailable";
 
-    // optimistic
     setUiItems((cur) =>
       cur.map((x) => (x.id === id ? { ...x, status: nextStatus } : x))
     );
     setStatusMap((m) => ({ ...m, [id]: true }));
 
     try {
-      // ✅ Option A: nếu bạn có endpoint updateMenuItem
-      // await adminMenuApi.updateMenuItem(id, { status: nextStatus });
-
-      // ✅ Option B: nếu bạn có endpoint riêng
-      // await adminMenuApi.updateStatus(id, nextStatus);
-
-      // ✅ Option C: nếu BE đang dùng PUT/PATCH chung:
       await adminMenuApi.updateMenuItem(id, { status: nextStatus });
 
       toast.success(`Đã đổi status: ${nextStatus}`);
     } catch (err) {
-      // rollback
       setUiItems((cur) =>
         cur.map((x) => (x.id === id ? { ...x, status: prevStatus } : x))
       );
@@ -251,7 +234,6 @@ export default function MenuManagement() {
   const items = data?.items ?? [];
   const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 1 };
 
-  // ✅ local UI items để optimistic
   const [uiItems, setUiItems] = useState([]);
   useEffect(() => {
     setUiItems(items);
@@ -263,8 +245,7 @@ export default function MenuManagement() {
     if (!exists) setCategoryId("ALL");
   }, [categories, categoryId]);
 
-  // ✅ loading theo từng item
-  const [togglingMap, setTogglingMap] = useState({}); // { [id]: true/false }
+  const [togglingMap, setTogglingMap] = useState({});
   const [statusMap, setStatusMap] = useState({});
 
   const totalPages = pagination.totalPages || 1;
@@ -273,7 +254,6 @@ export default function MenuManagement() {
     refetch();
   };
 
-  // Khi đổi filter => reset về page 1
   const resetPage = () => setPage(1);
 
   return (
@@ -294,9 +274,6 @@ export default function MenuManagement() {
               menu
             </span>
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Search • Filter • Sort • Pagination
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -495,14 +472,14 @@ export default function MenuManagement() {
 
                     <td
                       className="py-3 px-3 align-top"
-                      onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal khi toggle
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center gap-3">
 
                         <div className="flex items-center gap-2">
                           <ToggleSwitch
                             checked={it.status === "available"}
-                            disabled={!!statusMap[it.id] || it.status === "sold_out"} // sold_out thì khoá
+                            disabled={!!statusMap[it.id] || it.status === "sold_out"}
                             onChange={(nextChecked) => toggleStatus(it, nextChecked)}
                             label="Status"
                           />
@@ -511,12 +488,10 @@ export default function MenuManagement() {
                       </div>
                     </td>
 
-
-                    {/* ✅ cột Chef = toggle mượt */}
                     <td className="py-3 px-3 align-top">
                       <div
                         className="inline-flex items-center gap-2"
-                        onClick={(e) => e.stopPropagation()} // không mở modal
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <ToggleSwitch
                           checked={!!it.isChefRecommended}
@@ -535,9 +510,7 @@ export default function MenuManagement() {
 
                             try {
                               await toggleChef(id, next);
-                              // success: giữ state như hiện tại
                             } catch (err) {
-                              // rollback nếu fail
                               setUiItems((cur) =>
                                 cur.map((x) =>
                                   x.id === id ? { ...x, isChefRecommended: prev } : x
@@ -565,7 +538,7 @@ export default function MenuManagement() {
 
                     <td
                       className="py-3 px-3 align-top"
-                      onClick={(e) => e.stopPropagation()} // ✅ không mở detail modal
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <div className="inline-flex items-center gap-2 justify-end"
                         onClick={(e) => e.stopPropagation()}>
@@ -573,7 +546,7 @@ export default function MenuManagement() {
                           type="button"
                           className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
                           onClick={() => {
-                            setEditItem(it);   // mở modal edit
+                            setEditItem(it);
                             setEditOpen(true);
                           }}
                         >
@@ -619,7 +592,6 @@ export default function MenuManagement() {
           </table>
         </div>
 
-        {/* Mobile cards (< sm) */}
         <div className="sm:hidden divide-y divide-white/10">
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => <MenuItemCardSkeleton key={i} />)
@@ -650,7 +622,6 @@ export default function MenuManagement() {
             ))}
         </div>
 
-        {/* ✅ Pagination */}
         <PaginationBar
           page={pagination.page}
           totalPages={totalPages}
@@ -672,7 +643,6 @@ export default function MenuManagement() {
 
       <ModifierManagerPanel onReload={refetch} />
 
-      {/* Modal */}
       <AdminMenuItemDetailModal
         open={!!detailItem}
         item={detailItem}
@@ -719,7 +689,7 @@ export default function MenuManagement() {
             setUiItems((cur) => cur.filter((x) => x.id !== deleteItem.id));
             toast.success("Đã xoá món");
             setConfirmOpen(false);
-            setDeleteItem(null);     // ✅ reset đúng
+            setDeleteItem(null);
           } catch (e) {
             toast.error(e?.response?.data?.message || "Xoá thất bại");
           } finally {
