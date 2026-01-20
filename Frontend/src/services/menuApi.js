@@ -48,4 +48,9 @@ export const menuApi = {
     console.log(payload);
     return axiosClient.post("/menu/reviews", payload);
   },
+
+  async getTopChefBestSeller(limit = 5) {
+    return axiosClient.get(`/menu/top-chef?limit=${limit}`)
+  },
+
 };
