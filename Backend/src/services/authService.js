@@ -59,7 +59,7 @@ exports.googleLogin = async ({ credential }) => {
   const accessToken = jwt.sign(
     { id: user.id, role: user.role, name: user.name },
     config.auth.accessTokenSecret,
-    { expiresIn: "30m" }
+    { expiresIn: "2d" }
   );
 
   const refreshToken = jwt.sign(
@@ -163,7 +163,7 @@ exports.login = async ({ email, password }) => {
   const accessToken = jwt.sign(
     { id: user.id, role: user.role, name: user.name },
     config.auth.accessTokenSecret,
-    { expiresIn: "30m" }
+    { expiresIn: "2d" }
   );
 
   // Refresh token dài hạn
@@ -221,7 +221,7 @@ exports.refreshToken = async (refreshToken) => {
     const newAccessToken = jwt.sign(
       { id: user.id, role: user.role, name: user.name },
       config.auth.accessTokenSecret,
-      { expiresIn: "30m" }
+      { expiresIn: "2d" }
     );
 
     const newRefreshToken = jwt.sign(

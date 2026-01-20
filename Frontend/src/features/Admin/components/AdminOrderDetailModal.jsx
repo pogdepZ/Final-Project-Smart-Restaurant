@@ -30,7 +30,6 @@ const STATUS_META = {
   },
 };
 
-// Item status styles for row background & left border
 const ITEM_STATUS_STYLES = {
   received: {
     row: "bg-yellow-500/5 border-l-4 border-l-yellow-500",
