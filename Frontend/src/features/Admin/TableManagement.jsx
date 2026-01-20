@@ -192,7 +192,7 @@ const TableManagement = () => {
     toast.info("Đang nén file ZIP...");
 
     for (const table of tables) {
-      const clientUrl = `${import.meta.env.VITE_APP_BASE_URL}/menu?qrToken=${table.qr_token}`;
+      const clientUrl = `${import.meta.env.VITE_FRONTEND_BASE_URL}/menu?qrToken=${table.qr_token}`;
 
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
         clientUrl,
@@ -231,7 +231,7 @@ const TableManagement = () => {
     }
 
     for (const table of tables) {
-      const clientUrl = `${import.meta.env.VITE_APP_BASE_URL}/menu?qrToken=${table.qr_token}`;
+      const clientUrl = `${import.meta.env.VITE_FRONTEND_BASE_URL}/menu?qrToken=${table.qr_token}`;
 
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
         clientUrl,

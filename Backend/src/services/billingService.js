@@ -6,6 +6,7 @@ const socketService = require("./socketService");
 const orderRepository = require("../repositories/orderRepository");
 const db = require("../config/db");
 const tableSessionService = require("./tableSessionService");
+const couponService = require("./couponService");
 
 class BillingService {
   // A. Xem trước hóa đơn (Preview)
@@ -89,8 +90,11 @@ class BillingService {
 
   // B. Thanh toán (Checkout)
   async processTablePayment(tableId, userId, paymentData) {
-    const { payment_method, discount_type, discount_value } = paymentData;
+    const { payment_method, discount_type, discount_value, coupon_id } =
+      paymentData;
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>> coupon_id:", coupon_id);
+    
     // 1. Tính toán lại
     const billInfo = await this.previewTableBill(
       tableId,
@@ -130,6 +134,12 @@ class BillingService {
 
       // 6. Hủy tất cả bill requests của bàn này
       await billRequestRepo.cancelAllPendingByTableId(tableId);
+
+      // 7. Tăng used_count của coupon nếu có sử dụng
+      if (coupon_id) {
+        console.log("Using coupon:", coupon_id);
+        await couponService.useCoupon(coupon_id);
+      }
 
       await client.query("COMMIT");
 
