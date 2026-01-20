@@ -43,7 +43,7 @@ router.get('/items/:id/reviews', reviewController.getItemReviews);
 // Thêm đánh giá mới (0.25 điểm) - Yêu cầu ĐĂNG NHẬP
 // Dùng authMiddleware để lấy userId từ token và chặn khách chưa đăng nhập
 // Logic controller phải check: User đã mua món này chưa?
-router.post('/reviews', protect, reviewController.createReview);
+router.post('/reviews',  reviewController.createReview);
 router.get("/top-chef", menuController.getTopChefBestSeller);
 
 module.exports = router;
