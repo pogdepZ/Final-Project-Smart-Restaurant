@@ -210,7 +210,7 @@ export default function KitchenPage() {
   };
 
   return (
-    <div className=" bg-neutral-950 text-white">
+    <div className="h-screen bg-neutral-950 text-white" style={{ scrollbarGutter: "stable" }}>
       {/* Header */}
       <div className="top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur-md">
         <div className="container mx-auto max-w-6xl px-4 py-5">

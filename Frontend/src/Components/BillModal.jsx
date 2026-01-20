@@ -9,10 +9,14 @@ import {
   Wallet,
   Loader2,
   ExternalLink,
+  Tag,
+  Check,
+  XCircle,
 } from "lucide-react";
 import QRCodeReact from "react-qr-code";
 import { billApi } from "../services/billApi";
 import { stripeApi } from "../services/stripeApi";
+import { couponApi } from "../services/couponApi";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import { formatMoneyVND } from "../utils/orders";
@@ -71,15 +75,31 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
 
+  // Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { coupon, discount_amount }
+  const [couponError, setCouponError] = useState("");
+
   // 1. Fetch Bill Preview
   useEffect(() => {
     if (!tableId) return;
     const fetchBill = async () => {
       setCalculating(true);
       try {
+        // Tính discount từ coupon hoặc manual discount
+        let finalDiscountType = discountType;
+        let finalDiscountValue = Number(discountValue);
+
+        // Nếu có coupon đã áp dụng, sử dụng coupon thay vì manual discount
+        if (appliedCoupon) {
+          finalDiscountType = appliedCoupon.coupon.discount_type;
+          finalDiscountValue = appliedCoupon.coupon.discount_value;
+        }
+
         const res = await billApi.previewBill(tableId, {
-          discount_type: discountType,
-          discount_value: Number(discountValue),
+          discount_type: finalDiscountType,
+          discount_value: finalDiscountValue,
         });
         setBillData(res);
       } catch (err) {
@@ -91,7 +111,7 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     };
     const timeoutId = setTimeout(fetchBill, 500);
     return () => clearTimeout(timeoutId);
-  }, [tableId, discountType, discountValue]);
+  }, [tableId, discountType, discountValue, appliedCoupon]);
 
   // 2. Tạo QR Chuyển khoản
   useEffect(() => {
@@ -504,6 +524,45 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     };
   }, [showStripeQR, stripeSessionId]);
 
+  // Validate và áp dụng coupon
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Vui lòng nhập mã giảm giá");
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError("");
+
+    try {
+      const result = await couponApi.validate(
+        couponCode.trim(),
+        billData?.subtotal || 0,
+      );
+
+      if (result.valid) {
+        setAppliedCoupon(result);
+        // Reset manual discount khi dùng coupon
+        setDiscountType("none");
+        setDiscountValue(0);
+        toast.success(result.message);
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || "Mã không hợp lệ";
+      setCouponError(errorMsg);
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // Xóa coupon đã áp dụng
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+  };
+
   const handleCheckout = async () => {
     if (!billData) return;
     if (
@@ -513,12 +572,21 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
     )
       return;
 
+    // Tính discount cuối cùng
+    let finalDiscountType = discountType;
+    let finalDiscountValue = Number(discountValue);
+    if (appliedCoupon) {
+      finalDiscountType = appliedCoupon.coupon.discount_type;
+      finalDiscountValue = appliedCoupon.coupon.discount_value;
+    }
+
     setLoading(true);
     try {
       await billApi.checkoutBill(tableId, {
         payment_method: paymentMethod,
-        discount_type: discountType,
-        discount_value: Number(discountValue),
+        discount_type: finalDiscountType,
+        discount_value: finalDiscountValue,
+        coupon_id: appliedCoupon?.coupon?.id || null,
       });
 
       toast.success("Thanh toán thành công!");
@@ -643,22 +711,104 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
             </div>
           </div>
 
+          {/* Coupon Code Input */}
+          <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-4 rounded-xl border border-purple-500/20">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag size={16} className="text-purple-400" />
+              <label className="text-sm font-bold text-purple-300">
+                Mã giảm giá
+              </label>
+            </div>
+
+            {appliedCoupon ? (
+              // Hiển thị coupon đã áp dụng
+              <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Check size={16} className="text-green-400" />
+                  </div>
+                  <div>
+                    <div className="text-green-400 font-bold text-sm">
+                      {appliedCoupon.coupon.code}
+                    </div>
+                    <div className="text-green-300/70 text-xs">
+                      {appliedCoupon.coupon.description ||
+                        (appliedCoupon.coupon.discount_type === "percent"
+                          ? `Giảm ${appliedCoupon.coupon.discount_value}%`
+                          : `Giảm ${formatMoneyVND(appliedCoupon.coupon.discount_value)}`)}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRemoveCoupon}
+                  className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-all"
+                  title="Xóa mã"
+                >
+                  <XCircle size={18} />
+                </button>
+              </div>
+            ) : (
+              // Form nhập mã
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setCouponError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleApplyCoupon();
+                    }}
+                    placeholder="Nhập mã giảm giá..."
+                    className={`flex-1 bg-black/40 text-white border rounded-lg px-3 py-2.5 text-sm outline-none transition-colors ${
+                      couponError
+                        ? "border-red-500/50 focus:border-red-500"
+                        : "border-white/10 focus:border-purple-500"
+                    }`}
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-600/50 text-white rounded-lg font-bold text-sm transition-all disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {couponLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      "Áp dụng"
+                    )}
+                  </button>
+                </div>
+                {couponError && (
+                  <p className="text-red-400 text-xs flex items-center gap-1">
+                    <XCircle size={12} />
+                    {couponError}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Discount & Payment Method Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Discount */}
-            <div className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2">
+            {/* Manual Discount - Disabled when coupon applied */}
+            <div
+              className={`bg-white/5 p-3 rounded-xl border border-white/5 space-y-2 ${appliedCoupon ? "opacity-50" : ""}`}
+            >
               <label className="text-xs font-bold text-gray-400 uppercase">
-                Giảm giá
+                Giảm giá thủ công {appliedCoupon && "(Đã dùng mã)"}
               </label>
               {/* Thêm min-w-0 để tránh lỗi tràn layout trên grid */}
               <div className="flex gap-2 min-w-0">
                 <select
-                  className="bg-black/40 text-white border border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none w-20 cursor-pointer"
+                  className="bg-black/40 text-white border border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none w-20 cursor-pointer disabled:cursor-not-allowed"
                   value={discountType}
                   onChange={(e) => {
                     setDiscountType(e.target.value);
                     setDiscountValue(0);
                   }}
+                  disabled={!!appliedCoupon}
                 >
                   <option value="none">Không</option>
                   <option value="percent">%</option>
@@ -666,11 +816,11 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
                 </select>
                 <input
                   type="number"
-                  className="flex-1 min-w-0 bg-black/40 text-white border border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-500 transition-colors"
+                  className="flex-1 min-w-0 bg-black/40 text-white border border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-500 transition-colors disabled:cursor-not-allowed"
                   placeholder="0"
                   value={discountValue}
                   onChange={(e) => setDiscountValue(e.target.value)}
-                  disabled={discountType === "none"}
+                  disabled={discountType === "none" || !!appliedCoupon}
                 />
               </div>
             </div>
@@ -919,7 +1069,14 @@ const BillModal = ({ tableId, tableName, onClose, onPaymentSuccess }) => {
             </div>
             {billData.discount_amount > 0 && (
               <div className="flex justify-between text-sm text-green-400">
-                <span>Giảm giá</span>
+                <span className="flex items-center gap-1">
+                  Giảm giá
+                  {appliedCoupon && (
+                    <span className="text-[10px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded">
+                      {appliedCoupon.coupon.code}
+                    </span>
+                  )}
+                </span>
                 <span>-{formatMoneyVND(billData.discount_amount)}</span>
               </div>
             )}

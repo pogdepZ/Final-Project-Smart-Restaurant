@@ -11,5 +11,6 @@ router.use("/users", require("./user.routes"));
 router.use("/billing", require("./billing.routes"));
 router.use("/bill-requests", require("./billRequest.routes"));
 router.use("/stripe", require("./stripe.routes"));
+router.use("/coupons", require("./coupon.routes"));
 
 module.exports = router;

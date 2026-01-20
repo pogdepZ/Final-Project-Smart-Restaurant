@@ -286,7 +286,7 @@ export default function WaiterOrdersPage() {
         <div className="container mx-auto max-w-6xl px-4 py-5">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20">
+              <div className="inline-flex pt-5 items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20">
                 <Receipt className="w-4 h-4 text-orange-500" />
                 <span className="text-orange-500 font-bold text-sm uppercase tracking-wider">
                   Waiter Console
