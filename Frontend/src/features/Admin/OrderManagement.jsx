@@ -38,6 +38,13 @@ const STATUS_META = {
   },
 };
 
+const normalizeQuery = (s) =>
+  String(s || "")
+    .trim()
+    .replace(/^#/, "")
+    .toLowerCase();
+
+
 function formatDateTime(dt) {
   if (!dt) return "—";
   const d = new Date(dt);
@@ -107,7 +114,7 @@ export default function OrderManagement() {
 
   const params = useMemo(
     () => ({
-      q,
+      q: normalizeQuery(q),
       status,
       from: fromDate || "",
       to: toDate || "",
@@ -187,7 +194,7 @@ export default function OrderManagement() {
             <div className="mt-3 grid grid-cols-1 md:grid-cols-15 gap-3">
               {/* Search */}
               <div className="md:col-span-7">
-                <label className="text-xs text-gray-400 mb-1 block">Tìm theo mã</label>
+                <label className="text-xs text-gray-400 mb-1 block">Tìm kiếm đơn hàng</label>
                 <div className="relative">
                   <Search
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
@@ -199,7 +206,7 @@ export default function OrderManagement() {
                       setQ(e.target.value);
                       resetPage();
                     }}
-                    placeholder="Mã Đơn Hàng"
+                    placeholder="Mã đơn hàng - Tên bàn"
                     className="w-full bg-neutral-950/60 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/40 transition"
                   />
                 </div>
