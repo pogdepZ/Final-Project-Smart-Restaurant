@@ -1,6 +1,7 @@
 // src/services/tableAssignmentService.js
 const db = require("../config/db");
 const repo = require("../repositories/tableAssignmentRepository");
+const socketService = require("./socketService");
 
 const toUiWaiter = (u) => ({
   id: u.id,
@@ -87,11 +88,32 @@ exports.replaceAssignments = async (waiterId, tableIds = []) => {
     await db.query("COMMIT");
   } catch (e) {
     await db.query("ROLLBACK");
-    throw e;  
+    throw e;
   } finally {
   }
 
   const newIds = await repo.listTableIdsByWaiter(waiterId);
+
+  // Lấy thông tin chi tiết các bàn để gửi qua socket
+  let tables = [];
+  if (newIds.length > 0) {
+    tables = await repo.findTablesByIds(newIds.map(String));
+  }
+
+  // 🔔 Emit socket event để thông báo cho waiter
+  socketService.notifyTableAssignmentUpdate({
+    waiterId: waiterId,
+    waiterName: waiter.name,
+    tableIds: newIds.map(String),
+    tables: tables.map((t) => ({
+      id: t.id,
+      table_number: t.table_number,
+      location: t.location,
+      capacity: t.capacity,
+      status: t.status,
+    })),
+  });
+
   return {
     message: "Updated table assignments",
     waiter: toUiWaiter(waiter),

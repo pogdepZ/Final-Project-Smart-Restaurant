@@ -188,16 +188,50 @@ export default function WaiterOrdersPage() {
       fetchAllData();
     };
 
+    // 🏷️ Handler cho cập nhật phân công bàn từ admin
+    const handleTableAssignmentUpdate = (data) => {
+      console.log("Received table_assignment_update via Socket.IO:", data);
+
+      // Lấy userId từ localStorage để kiểm tra có phải waiter này không
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const currentUserId = currentUser?.id;
+
+      // Nếu là waiter này được cập nhật
+      if (String(data.waiterId) === String(currentUserId)) {
+        // 🔔 Phát âm thanh thông báo
+        if (soundEnabled) {
+          playNotificationSound();
+        }
+
+        // Cập nhật trực tiếp danh sách bàn nếu có data
+        if (data.tables && Array.isArray(data.tables)) {
+          setMyTables(data.tables);
+          toast.info(
+            `📋 Admin đã cập nhật danh sách bàn của bạn! (${data.tables.length} bàn)`,
+            { autoClose: 5000 },
+          );
+        } else {
+          // Nếu không có tables chi tiết, fetch lại
+          fetchAllData();
+          toast.info(`📋 Danh sách bàn phụ trách đã được cập nhật!`, {
+            autoClose: 5000,
+          });
+        }
+      }
+    };
+
     socket.on("new_order", handleNewOrder);
     socket.on("order_items_added", handleOrderItemsAdded);
     socket.on("update_order", handleUpdateOrder);
     socket.on("payment_completed", handlePaymentCompleted);
+    socket.on("table_assignment_update", handleTableAssignmentUpdate);
 
     return () => {
       socket.off("new_order", handleNewOrder);
       socket.off("order_items_added", handleOrderItemsAdded);
       socket.off("update_order", handleUpdateOrder);
       socket.off("payment_completed", handlePaymentCompleted);
+      socket.off("table_assignment_update", handleTableAssignmentUpdate);
     };
   }, [socket, soundEnabled, playNotificationSound, orders]);
 

@@ -306,6 +306,40 @@ class SocketService {
       timestamp: new Date().toISOString(),
     });
   }
+
+  // Thông báo thay đổi phân công bàn cho waiter
+  notifyTableAssignmentUpdate(data) {
+    if (!this.io) return;
+
+    const { waiterId, waiterName, tableIds, tables } = data;
+
+    console.log(
+      "📡 Bắn socket cập nhật phân công bàn - Waiter:",
+      waiterName,
+      "- Tables:",
+      tableIds?.length || 0,
+    );
+
+    // Emit cho tất cả waiter room để waiter tự kiểm tra
+    this.io.to("waiter_room").emit("table_assignment_update", {
+      waiterId: waiterId,
+      waiterName: waiterName,
+      tableIds: tableIds,
+      tables: tables,
+      message: `Danh sách bàn phụ trách đã được cập nhật`,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Cũng gửi cho admin room để admin biết
+    this.io.to("admin_room").emit("admin_table_assignment_update", {
+      type: "table_assignment",
+      waiterId: waiterId,
+      waiterName: waiterName,
+      tableIds: tableIds,
+      message: `Đã cập nhật phân công bàn cho ${waiterName}`,
+      timestamp: new Date().toISOString(),
+    });
+  }
 }
 
 // Xuất ra một instance duy nhất (Singleton)

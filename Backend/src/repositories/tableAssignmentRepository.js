@@ -41,7 +41,7 @@ exports.listTableIdsByWaiter = async (waiterId) => {
 exports.findTablesByIds = async (tableIds = []) => {
   if (!tableIds.length) return [];
   const sql = `
-    SELECT id, status
+    SELECT id, table_number, location, capacity, status
     FROM public.tables
     WHERE id = ANY($1::uuid[])
   `;
