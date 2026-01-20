@@ -356,7 +356,7 @@ export default function OrderManagement() {
                     {/* Mã đơn (mobile chỉ cần id + bàn nhỏ) */}
                     <td className="py-3 pr-3 pl-4 align-top">
                       <div className="text-white font-bold break-all sm:break-normal">
-                        {o.id}
+                        #{o?.id?.slice(0, 8) ?? "—"}
                       </div>
 
                       {/* bàn: vẫn cho hiện, nhưng nhỏ */}

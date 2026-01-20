@@ -135,7 +135,7 @@ export default function OrderDetailModal({
                 <div className="text-white font-black leading-tight">
                   Chi tiết đơn{" "}
                   <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-red-500">
-                    {order?.code ?? "—"}
+                    #{order?.id.slice(0, 8) ?? "—"}
                   </span>
                 </div>
                 <div className="text-xs text-gray-400 mt-0.5">
@@ -189,7 +189,7 @@ export default function OrderDetailModal({
                   </div>
 
                   <div className="mt-3 divide-y divide-white/10">
-                    <InfoRow label="Mã đơn" value={order?.id} />
+                    <InfoRow label="Mã đơn" value={`#${order?.id?.slice(0, 8)}`} />
                     <InfoRow label="Bàn" value={order?.tableName} />
                     <InfoRow
                       label="Tạo lúc"
