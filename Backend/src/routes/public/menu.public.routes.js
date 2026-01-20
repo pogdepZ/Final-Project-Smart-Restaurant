@@ -44,5 +44,6 @@ router.get('/items/:id/reviews', reviewController.getItemReviews);
 // Dùng authMiddleware để lấy userId từ token và chặn khách chưa đăng nhập
 // Logic controller phải check: User đã mua món này chưa?
 router.post('/reviews', protect, reviewController.createReview);
+router.get("/top-chef", menuController.getTopChefBestSeller);
 
 module.exports = router;

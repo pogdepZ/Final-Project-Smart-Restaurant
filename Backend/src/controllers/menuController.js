@@ -75,3 +75,17 @@ exports.getMenuItemsPublic = asyncHandler(async (req, res) => {
   const result = await service.getMenuItemsPublic(req.query);
   res.json(result);
 });
+
+exports.getTopChefBestSeller = async (req, res, next) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit || "5", 10), 20);
+    const data = await service.getTopChefBestSeller(limit);
+
+    res.status(200).json({
+      message: "Top chef recommended best sellers",
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

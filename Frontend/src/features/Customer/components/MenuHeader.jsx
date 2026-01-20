@@ -22,7 +22,6 @@ export default function MenuHeader({
   setActiveCategoryId,
 }) {
   return (
-    // ✨ RESPONSIVE: Giảm padding dọc trên mobile (py-2) và tăng lên ở desktop (md:py-4)
     <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/98 backdrop-blur-2xl shadow-2xl py-2 md:py-4 transition-all duration-300">
       <div className="px-3 md:px-4 container mx-auto max-w-5xl">
         
@@ -31,26 +30,24 @@ export default function MenuHeader({
           <div className="relative flex-1 group">
             <Search
               className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-500 transition-all"
-              size={18} // Nhỏ hơn xíu trên mobile cho cân đối
+              size={18} 
             />
             <input
               type="text"
-              placeholder="Bạn muốn ăn gì?..." // Placeholder ngắn hơn cho mobile
+              placeholder="Bạn muốn ăn gì?..." 
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") applySearch();
               }}
-              // ✨ RESPONSIVE: Padding nhỏ hơn chút trên mobile
+            
               className="w-full bg-neutral-900 border border-neutral-800 rounded-full 
                          pl-10 md:pl-12 pr-4 py-2 md:py-2.5 
                          text-sm text-white placeholder-gray-500 
                          focus:outline-none focus:border-orange-500/50 
                          transition-all duration-200 shadow-lg"
             />
-          </div>
-
-          {/* ✨ RESPONSIVE: Ẩn nút Search trên màn hình nhỏ (<640px) */}
+          </div>      
           <button
             onClick={applySearch}
             disabled={disabledSearch}

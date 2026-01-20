@@ -21,7 +21,6 @@ export default function Forgot() {
   const onSubmit = async ({ email }) => {
     try {
       await authApi.forgotPassword(email);
-      // ✅ Không nói “email có tồn tại hay không”
       toast.success("Nếu email tồn tại, hệ thống đã gửi link đặt lại mật khẩu.");
     } catch (e) {
       toast.error(e?.response?.data?.message || "Không gửi được email, thử lại sau.");
