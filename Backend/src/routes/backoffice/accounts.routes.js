@@ -26,6 +26,8 @@ router.patch(
 // /admin/accounts/:id
 router.delete("/:id", protect, adminOnly, adminAccountController.deleteAccount);
 
-router.patch("/:id/actived", adminAccountController.setActived);
+router.patch("/:id/actived", protect, adminOnly, adminAccountController.setActived);
+
+router.patch("/:id", protect, adminOnly, adminAccountController.updateAccount);
 
 module.exports = router;

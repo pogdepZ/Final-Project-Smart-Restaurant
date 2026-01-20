@@ -22,4 +22,7 @@ export const adminAccountApi = {
   deleteAccount(id) {
     return axiosClient.delete(`/admin/accounts/${id}`);
   },
+
+  updateAccount: (id, payload) =>
+    axiosClient.patch(`/admin/accounts/${id}`, payload),
 };
