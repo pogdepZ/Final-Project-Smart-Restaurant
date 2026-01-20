@@ -18,10 +18,8 @@ exports.createReview = async (req, res) => {
   // req.user.id: Lấy từ Auth Middleware (người đang đăng nhập)
   // req.body: Chứa { menuItemId, rating, comment }
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
     const payload = req.body;
-    console.log('Creating review for userId:', userId, 'with payload:', payload);
-
     const newReview = await reviewService.createReview(userId, payload);
     return res.status(201).json({
       message: "Đánh giá món ăn thành công",

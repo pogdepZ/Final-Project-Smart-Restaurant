@@ -11,13 +11,14 @@ exports.createReview = async (userId, payload) => {
   // 1. Kiểm tra Business Logic: User đã mua món này chưa?
   // Repo cần query bảng Orders/OrderItem
 
-  const hasPurchased = await repo.checkUserPurchasedItem(userId, menuItemId);
-  
-  if(!userId) {
+  if (!userId) {
     const err = new Error('Bạn cần đăng nhập để đánh giá món ăn');
     err.status = 401;
     throw err;
   }
+
+  const hasPurchased = await repo.checkUserPurchasedItem(userId, menuItemId);
+
 
   if (!hasPurchased) {
     const err = new Error('Bạn cần đặt món này thành công trước khi đánh giá');
