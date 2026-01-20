@@ -153,7 +153,7 @@ export default function WaiterOrdersPage() {
     const handlePaymentCompleted = (data) => {
       console.log("Received payment_completed via Socket.IO:", data);
 
-      const { table_number, total_amount, message } = data;
+      const { table_id, table_number, total_amount, message } = data;
 
       // 🔔 Phát âm thanh thông báo thanh toán
       if (soundEnabled) {
@@ -169,7 +169,22 @@ export default function WaiterOrdersPage() {
         },
       );
 
-      // Refresh lại dữ liệu để cập nhật trạng thái bàn
+      // Cập nhật trực tiếp orders của bàn vừa thanh toán thành "completed"
+      setOrders((prev) =>
+        prev.map((order) => {
+          if (
+            order.table_id === table_id ||
+            order.table_id === String(table_id)
+          ) {
+            if (order.status !== "completed" && order.status !== "rejected") {
+              return { ...order, status: "completed" };
+            }
+          }
+          return order;
+        }),
+      );
+
+      // Cũng refresh lại danh sách bàn
       fetchAllData();
     };
 
