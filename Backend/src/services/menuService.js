@@ -306,3 +306,18 @@ exports.getMenuItemsPublic = async (query) => {
     },
   };
 };
+
+
+
+exports.getTopChefBestSeller = async (limit) => {
+  const rows = await repo.findTopChefBestSeller(limit);
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    categoryId: r.category_id,
+    price: Number(r.price),
+    description: r.description,
+    image: r.image_url,
+    soldQty: Number(r.sold_qty),
+  }));
+};

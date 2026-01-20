@@ -303,3 +303,42 @@ exports.getItemById = async (id) => {
   const result = await db.query(sql, [id]);
   return result.rows[0];
 };
+
+exports.findTopChefBestSeller = async (limit) => {
+  const sql = `
+    SELECT
+      mi.id,
+      mi.name,
+      mi.description,
+      mi.price,
+      mi.category_id,
+      mi.is_chef_recommended,
+      COALESCE(SUM(oi.quantity), 0) AS sold_qty,
+      p.url AS image_url
+    FROM menu_items mi
+
+    -- ảnh primary
+    LEFT JOIN menu_item_photos p 
+      ON p.menu_item_id = mi.id
+     AND p.is_primary = true
+
+    -- thống kê bán
+    JOIN order_items oi 
+      ON oi.menu_item_id = mi.id
+    JOIN orders o 
+      ON o.id = oi.order_id
+     AND o.payment_status = 'paid'   -- ⚠️ đổi cho đúng field hệ thống bạn
+
+    WHERE
+      mi.is_deleted = false
+      AND mi.status = 'available'
+      AND mi.is_chef_recommended = true
+
+    GROUP BY mi.id, p.url
+    ORDER BY sold_qty DESC, mi.updated_at DESC
+    LIMIT $1;
+  `;
+
+  const { rows } = await db.query(sql, [limit]);
+  return rows;
+};
