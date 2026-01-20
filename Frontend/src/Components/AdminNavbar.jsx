@@ -53,7 +53,7 @@ export default function AdminNavbar() {
 
   return (
     <>
-      <nav className="fixed top-0 w-full z-50 bg-neutral-950/95 backdrop-blur-md border-b border-white/10 h-16">
+      <nav className="fixed top-0 w-full z-50 bg-neutral-950/95 backdrop-blur-xl border-b border-white/10 h-16">
         <div className="container mx-auto max-w-7xl px-4 h-full flex items-center justify-between">
           {/* Brand */}
           <Link to="/admin" className="flex items-center gap-2">
@@ -71,7 +71,7 @@ export default function AdminNavbar() {
           </Link>
 
           {/* Desktop menu */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden xl:flex items-center gap-2">
             {navItems.map((it) => (
               <AdminNavLink
                 key={it.to}
@@ -94,7 +94,7 @@ export default function AdminNavbar() {
             </Link>
             <button
               onClick={logout}
-              className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all active:scale-95"
+              className="hidden xl:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 transition-all active:scale-95"
             >
               <LogOut size={18} className="text-orange-400" />
               Đăng xuất
@@ -103,7 +103,7 @@ export default function AdminNavbar() {
             {/* Mobile toggle */}
             <button
               onClick={() => setOpen((v) => !v)}
-              className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 active:scale-95"
+              className="xl:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 active:scale-95"
             >
               {open ? (
                 <X size={22} className="text-orange-400" />
@@ -117,7 +117,7 @@ export default function AdminNavbar() {
 
       {/* Mobile overlay */}
       <div
-        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm ${
+        className={`fixed inset-0 bg-black/60 z-40 xl:hidden transition-opacity duration-300 backdrop-blur-sm ${
           open ? "opacity-100 visible" : "opacity-0 invisible"
         }`}
         onClick={() => setOpen(false)}
@@ -125,7 +125,7 @@ export default function AdminNavbar() {
 
       {/* Mobile drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-80 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col md:hidden ${
+        className={`fixed top-0 right-0 h-full w-80 bg-neutral-900 z-40 border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out pt-20 px-6 flex flex-col xl:hidden ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

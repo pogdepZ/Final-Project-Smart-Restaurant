@@ -10,7 +10,7 @@ const WaiterLayout = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Navbar></Navbar>
-      <main className="flex-1">
+      <main className="flex-1 pt-14 bg-neutral-950 text-white font-sans">
         <BillRequestNotification />
         <Outlet />
       </main>
