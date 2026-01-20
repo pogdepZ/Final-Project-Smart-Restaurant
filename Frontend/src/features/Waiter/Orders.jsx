@@ -278,11 +278,11 @@ export default function WaiterOrdersPage() {
 
   return (
     <div
-      className="h-screen overflow-y-auto bg-neutral-950 text-white font-sans"
+      className=" bg-neutral-950 text-white font-sans"
       style={{ scrollbarGutter: "stable" }}
     >
       {/* Header */}
-      <div className="sticky top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur-md">
+      <div className="top-0 z-30 border-b border-white/10 bg-neutral-950/95 backdrop-blur-md">
         <div className="container mx-auto max-w-6xl px-4 py-5">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
