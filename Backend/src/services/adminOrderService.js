@@ -62,7 +62,7 @@ exports.getOrderDetail = async (id) => {
 
   const order = {
     ...mapOrderRow(o),
-    items: (items || []).map((it) => ({
+    items: items.map((it) => ({
       id: it.id,
       menuItemId: it.menu_item_id,
       name: it.item_name,
@@ -71,10 +71,11 @@ exports.getOrderDetail = async (id) => {
       quantity: it.quantity,
       totalPrice: Number(it.subtotal),
       note: it.note,
+      modifiers: it.modifiers || [],
     })),
   };
 
-  // sắp xếp items theo trạng thái 
+  // giữ nguyên sort
   order.items.sort((a, b) => {
     const statusOrder = {
       received: 1,

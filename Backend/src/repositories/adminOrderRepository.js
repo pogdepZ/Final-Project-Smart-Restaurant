@@ -140,18 +140,35 @@ async function findOrderById(orderId) {
 async function findOrderItems(orderId) {
   const sql = `
     SELECT
-      id,
-      order_id,
-      menu_item_id,
-      item_name,
-      price,
-      quantity,
-      subtotal,
-      status,
-      note
-    FROM order_items
-    WHERE order_id = $1
-    ORDER BY id ASC
+      oi.id,
+      oi.order_id,
+      oi.menu_item_id,
+      oi.item_name,
+      oi.price,
+      oi.quantity,
+      oi.subtotal,
+      oi.status,
+      oi.note,
+
+      COALESCE(
+        json_agg(
+          jsonb_build_object(
+            'id', oim.id,
+            'modifier_option_id', oim.modifier_option_id,
+            'modifier_name', oim.modifier_name,
+            'price', oim.price
+          )
+        ) FILTER (WHERE oim.id IS NOT NULL),
+        '[]'
+      ) AS modifiers
+
+    FROM order_items oi
+    LEFT JOIN order_item_modifiers oim 
+      ON oim.order_item_id = oi.id
+
+    WHERE oi.order_id = $1
+    GROUP BY oi.id
+    ORDER BY oi.id ASC
   `;
 
   const result = await db.query(sql, [orderId]);
