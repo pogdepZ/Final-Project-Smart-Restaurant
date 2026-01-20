@@ -13,6 +13,13 @@ router.post(
   stripeController.createPaymentIntent,
 );
 
+// Protected: Tạo Payment Link (QR Code)
+router.post(
+  "/create-payment-link/:tableId",
+  protect,
+  stripeController.createPaymentLink,
+);
+
 // Protected: Xác nhận thanh toán
 router.post("/confirm-payment", protect, stripeController.confirmPayment);
 
@@ -21,6 +28,9 @@ router.get(
   "/payment-status/:paymentIntentId",
   stripeController.getPaymentStatus,
 );
+
+// Public: Kiểm tra trạng thái Checkout Session
+router.get("/session-status/:sessionId", stripeController.getSessionStatus);
 
 // Webhook từ Stripe (cần raw body)
 // Lưu ý: Route này phải được đăng ký TRƯỚC middleware express.json()

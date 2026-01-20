@@ -71,10 +71,16 @@ exports.getOrderDetail = async (id) => {
       quantity: it.quantity,
       totalPrice: Number(it.subtotal),
       note: it.note,
+      modifiers: (it.modifiers || []).map((m) => ({
+        id: m.id,
+        modifierOptionId: m.modifier_option_id,
+        name: m.modifier_name,
+        price: Number(m.price || 0),
+      })),
     })),
   };
 
-  // sắp xếp items theo trạng thái 
+  // sắp xếp items theo trạng thái
   order.items.sort((a, b) => {
     const statusOrder = {
       received: 1,

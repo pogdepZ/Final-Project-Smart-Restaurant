@@ -108,6 +108,66 @@ exports.getPaymentStatus = async (req, res) => {
 };
 
 /**
+ * Tạo Payment Link cho thanh toán QR Code (Stripe Checkout)
+ */
+exports.createPaymentLink = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { discount_type, discount_value } = req.body;
+
+    const result = await stripeService.createPaymentLink(tableId, {
+      discount_type,
+      discount_value,
+    });
+
+    res.json({
+      success: true,
+      sessionId: result.sessionId,
+      url: result.url,
+      amount: result.amount,
+      billInfo: result.billInfo,
+    });
+  } catch (err) {
+    console.error("Create Payment Link Error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/**
+ * Lấy Stripe config (publishable key)
+ */
+exports.getConfig = (req, res) => {
+  res.json({
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  });
+};
+
+/**
+ * Kiểm tra trạng thái Checkout Session
+ */
+exports.getSessionStatus = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const status = await stripeService.getSessionStatus(sessionId);
+
+    res.json({
+      success: true,
+      ...status,
+    });
+  } catch (err) {
+    console.error("Get Session Status Error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/**
  * Lấy Stripe publishable key cho frontend
  */
 exports.getConfig = async (req, res) => {

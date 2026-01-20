@@ -288,7 +288,17 @@ class SocketService {
       timestamp: new Date().toISOString(),
     });
 
-    // Cũng gửi cho kitchen room để waiter biết
+    // Gửi cho waiter room để waiter biết
+    this.io.to("waiter_room").emit("payment_completed", {
+      table_id: table_id,
+      table_number: table_number,
+      bill: bill,
+      total_amount: total_amount,
+      message: `💰 Bàn ${table_number} đã thanh toán xong!`,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Cũng gửi cho kitchen room
     this.io.to("kitchen_room").emit("payment_completed", {
       table_id: table_id,
       table_number: table_number,
