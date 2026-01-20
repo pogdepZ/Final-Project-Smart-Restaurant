@@ -139,9 +139,13 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
   const [openEdit, setOpenEdit] = useState(false);
   const [editCat, setEditCat] = useState(null);
 
+  // ===== DELETE STATE (updated) =====
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteCat, setDeleteCat] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  // when backend says "category còn món" -> require moveToCategoryId
+  const [requireMove, setRequireMove] = useState(false);
   const [moveToCategoryId, setMoveToCategoryId] = useState("");
 
   const fetchCategories = async () => {
@@ -169,6 +173,65 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
       return true;
     });
   }, [categories, q]);
+
+  const closeDeleteModal = () => {
+    if (deleting) return;
+    setConfirmOpen(false);
+    setDeleteCat(null);
+    setMoveToCategoryId("");
+    setRequireMove(false);
+  };
+
+  const afterDeleted = async () => {
+    await fetchCategories();
+    onReloadCategories?.();
+    onReloadMenuItems?.();
+  };
+
+  // Try delete without moveToCategoryId first.
+  // If backend says need move -> switch UI to requireMove.
+  const handleDeleteConfirm = async () => {
+    if (!deleteCat?.id) return;
+
+    try {
+      setDeleting(true);
+
+      if (!requireMove) {
+        // ✅ attempt delete directly
+        await adminMenuApi.deleteCategory(deleteCat.id); // no body
+        toast.success("Đã xoá category");
+        closeDeleteModal();
+        await afterDeleted();
+        return;
+      }
+
+      // requireMove mode
+      if (!moveToCategoryId) {
+        toast.error("Vui lòng chọn category thay thế");
+        return;
+      }
+
+      await adminMenuApi.deleteCategory(deleteCat.id, { moveToCategoryId });
+      toast.success("Đã xoá category & chuyển món");
+      closeDeleteModal();
+      await afterDeleted();
+    } catch (e) {
+      const msg = e?.response?.data?.message || "Không thể xoá category";
+
+      // ✅ backend message indicates category still has items and needs move
+      const needMove =
+        /chọn category thay thế|còn món|chuyển món/i.test(String(msg));
+
+      if (needMove) {
+        setRequireMove(true);
+        toast.info("Category còn món — hãy chọn category thay thế để chuyển món trước khi xoá.");
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
@@ -262,6 +325,7 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
                     onClick={() => {
                       setDeleteCat(c);
                       setMoveToCategoryId("");
+                      setRequireMove(false); // reset mode
                       setConfirmOpen(true);
                     }}
                   >
@@ -279,8 +343,8 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
         onClose={() => setOpenCreate(false)}
         onSuccess={() => {
           setOpenCreate(false);
-          fetchCategories(); 
-          onReloadCategories?.(); 
+          fetchCategories();
+          onReloadCategories?.();
           onReloadMenuItems?.();
         }}
       />
@@ -300,11 +364,12 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
         }}
       />
 
+      {/* ✅ Delete modal updated */}
       <ConfirmModal
         open={confirmOpen}
         danger
         title="Xoá category"
-        confirmText="Xoá"
+        confirmText={requireMove ? "Chuyển & xoá" : "Xoá"}
         cancelText="Huỷ"
         loading={deleting}
         description={
@@ -313,60 +378,38 @@ export default function CategoryManagerPanel({ onReloadMenuItems, onReloadCatego
               Bạn có chắc muốn xoá "<b>{deleteCat?.name}</b>" không?
             </div>
 
-            <div className="text-xs text-gray-400">
-              Nếu category này đang có menu items, hãy chọn category thay thế để chuyển món sang.
-            </div>
+            {!requireMove ? (
+              <div className="text-xs text-gray-400">
+                Hệ thống sẽ tự kiểm tra: nếu category còn món, bạn sẽ được yêu cầu chọn category thay thế.
+              </div>
+            ) : (
+              <>
+                <div className="text-xs text-gray-400">
+                  Category này còn menu items. Hãy chọn category thay thế để chuyển món sang trước khi xoá.
+                </div>
 
-            <select
-              value={moveToCategoryId}
-              onChange={(e) => setMoveToCategoryId(e.target.value)}
-              className="w-full bg-neutral-950 text-white border border-white/10 rounded-xl px-3 py-2.5 text-sm
+                <select
+                  value={moveToCategoryId}
+                  onChange={(e) => setMoveToCategoryId(e.target.value)}
+                  className="w-full bg-neutral-950 text-white border border-white/10 rounded-xl px-3 py-2.5 text-sm
                          focus:outline-none focus:border-orange-500/40
                          [&>option]:bg-neutral-900 [&>option]:text-white"
-            >
-              <option value="">-- Chọn category thay thế --</option>
-              {categories
-                .filter((x) => x.id !== deleteCat?.id)
-                .map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.name}
-                  </option>
-                ))}
-            </select>
+                >
+                  <option value="">-- Chọn category thay thế --</option>
+                  {categories
+                    .filter((x) => x.id !== deleteCat?.id)
+                    .map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
+                      </option>
+                    ))}
+                </select>
+              </>
+            )}
           </div>
         }
-        onClose={() => {
-          if (deleting) return;
-          setConfirmOpen(false);
-          setDeleteCat(null);
-          setMoveToCategoryId("");
-        }}
-        onConfirm={async () => {
-          if (!deleteCat?.id) return;
-
-          if (!moveToCategoryId) {
-            toast.error("Bạn phải chọn category thay thế");
-            return;
-          }
-
-          try {
-            setDeleting(true);
-            await adminMenuApi.deleteCategory(deleteCat.id, { moveToCategoryId });
-
-            toast.success("Đã xoá category & chuyển món");
-            setConfirmOpen(false);
-            setDeleteCat(null);
-            setMoveToCategoryId("");
-
-            fetchCategories();
-            onReloadCategories?.();
-            onReloadMenuItems?.();
-          } catch (e) {
-            toast.error(e?.response?.data?.message || "Không thể xoá category");
-          } finally {
-            setDeleting(false);
-          }
-        }}
+        onClose={closeDeleteModal}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );
